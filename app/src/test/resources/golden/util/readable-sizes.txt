@@ -1,0 +1,18 @@
+size -1.0 -> 0 B
+size 0.0 -> 0 B
+size 1.0 -> 1 B
+size 1023.0 -> 1,023 B
+size 1024.0 -> 1 KB
+size 1536.0 -> 1.5 KB
+size 1048576.0 -> 1 MB
+size 5.5E9 -> 5.1 GB
+size 3.2E12 -> 2.9 TB
+size 1.1E15 -> 1,000.4 TB
+rate -8 bits -> 0 B/s
+rate 0 bits -> 0 B/s
+rate 7 bits -> 0 B/s
+rate 8 bits -> 1 B/s
+rate 8192 bits -> 1 KB/s
+rate 1000000 bits -> 122.1 KB/s
+rate 800000000 bits -> 95.4 MB/s
+rate 80000000000 bits -> 9.3 GB/s

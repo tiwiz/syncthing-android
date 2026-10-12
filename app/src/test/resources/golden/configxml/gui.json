@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "useTLS": true,
+  "address": "127.0.0.1:8384",
+  "user": null,
+  "password": "",
+  "apiKey": "fixture-api-key",
+  "theme": "default",
+  "insecureAdminAccess": false,
+  "insecureAllowFrameLoading": false,
+  "insecureSkipHostCheck": false
+}

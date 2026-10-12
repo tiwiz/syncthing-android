@@ -47,6 +47,8 @@ dependencies {
     testImplementation(libs.robolectric)
 }
 
+val goldenRecord = providers.gradleProperty("golden.record").getOrElse("false")
+
 android {
     compileSdk = libs.versions.compile.sdk.get().toInt()
     namespace = "com.nutomic.syncthingandroid"
@@ -152,6 +154,8 @@ android {
             all {
                 // Robolectric's SDK 36 image reaches into JDK internals on JDK 21.
                 it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+                // -Pgolden.record=true rewrites the golden files of characterization tests.
+                it.systemProperty("golden.record", goldenRecord)
             }
         }
     }

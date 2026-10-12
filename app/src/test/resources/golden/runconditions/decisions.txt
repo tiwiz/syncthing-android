@@ -1,0 +1,124 @@
+## defaults, on wi-fi
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## defaults, on ethernet
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## defaults, on mobile data
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi but WiFi isn't connected or the phone is in flight mode.
+
+## defaults, no network (flight mode)
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi but WiFi isn't connected or the phone is in flight mode.
+
+## mobile data allowed, on mobile data
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is allowed to run on mobile data. | Syncthing is allowed to run on non-roaming mobile data connections. The active connection is non-roaming.
+
+## mobile data allowed, roaming
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is allowed to run on mobile data. | Syncthing is not running as you disallowed it to run on roaming mobile data connections. | Syncthing is allowed to run on WiFi but WiFi isn't connected or the phone is in flight mode.
+
+## mobile data and roaming allowed, roaming
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is allowed to run on mobile data. | Syncthing is allowed to run on roaming and non-roaming mobile data connections.
+
+## wi-fi disallowed, on wi-fi
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is not allowed to run on WiFi or ethernet.
+
+## metered wi-fi allowed, on wi-fi
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on metered and non-metered WiFi connections. | Syncthing is allowed to run on the current WiFi network.
+
+## flight mode allowed, no network
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi but WiFi isn't connected or the phone is in flight mode. | Syncthing is running as you allowed it to run when flight mode is active.
+
+## whitelist on, SSID listed
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## whitelist on, SSID not listed
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is not running as the current WiFi network's name is not whitelisted.
+
+## whitelist on, SSID unknown (no location)
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | You enabled 'Run on selected WiFi networks' in the settings. Android location services are currently turned off. According to Android restrictions, Syncthing cannot determine the current WiFi network name to decide if it should run. Solution: Turn location on, grant location permission and reconnect WiFi.
+
+## whitelist on, no wi-fi info
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | You enabled 'Run on selected WiFi networks' in the settings. Android location services are currently turned off. According to Android restrictions, Syncthing cannot determine the current WiFi network name to decide if it should run. Solution: Turn location on, grant location permission and reconnect WiFi.
+
+## charger only, on battery
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Phone is not charging.
+
+## charger only, on AC
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## charger only, docked
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## battery only, on USB
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Phone is not running on battery power.
+
+## battery saver on, respected (default)
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not running as the phone is currently power saving.
+
+## battery saver on, ignored
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## auto-sync off, respected
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not running as Android currently has 'Auto-sync data' disabled.
+
+## auto-sync off, ignored (default)
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is not configured to run on mobile data connection. | Syncthing is allowed to run on WiFi and WiFi is currently connected. | Syncthing is allowed to run on non-metered WiFi connections. The active WiFi connection is non-metered. | Syncthing is allowed to run on the current WiFi network.
+
+## force start, no network
+shouldRun callbacks: [true]
+precondition callbacks: 1
+explanation: Syncthing is running because you forced it to start regardless of the run conditions.
+
+## force stop, on wi-fi
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: Syncthing is not running because you forced it to stop regardless of the run conditions.
+
+## time schedule on, never ran
+shouldRun callbacks: []
+precondition callbacks: 0
+explanation: You enabled 'Run according to time schedule' and the last sync was less than a minute ago.

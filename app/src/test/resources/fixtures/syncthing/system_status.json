@@ -1,0 +1,73 @@
+{
+  "alloc": 3236208,
+  "connectionServiceStatus": {
+    "dynamic+https://relays.syncthing.net/endpoint": {
+      "error": null,
+      "lanAddresses": [
+        "relay://198.51.100.195:22067/?id=V3U33RA-XU5C33Z-NPWUJWW-S5PKUSF-QP46ZZ4-WV4ZPKV-J66ASC3-MKEUCQZ"
+      ],
+      "wanAddresses": [
+        "relay://198.51.100.195:22067/?id=V3U33RA-XU5C33Z-NPWUJWW-S5PKUSF-QP46ZZ4-WV4ZPKV-J66ASC3-MKEUCQZ"
+      ]
+    },
+    "quic://0.0.0.0:22000": {
+      "error": null,
+      "lanAddresses": [
+        "quic://0.0.0.0:22000",
+        "quic://192.0.2.76:22000",
+        "quic://[fdac:9c08:ca65:89f:9e7b:efff:febf:c6e4]:22000",
+        "quic://[fd7a:115c:a1e0::5d2d:d463]:22000"
+      ],
+      "wanAddresses": [
+        "quic://0.0.0.0:22000"
+      ]
+    },
+    "tcp://0.0.0.0:22000": {
+      "error": null,
+      "lanAddresses": [
+        "tcp://0.0.0.0:22000",
+        "tcp://192.0.2.76:22000",
+        "tcp://[fdac:9c08:ca65:89f:9e7b:efff:febf:c6e4]:22000",
+        "tcp://[fd7a:115c:a1e0::5d2d:d463]:22000"
+      ],
+      "wanAddresses": [
+        "tcp://0.0.0.0:0",
+        "tcp://0.0.0.0:22000"
+      ]
+    }
+  },
+  "cpuPercent": 0,
+  "discoveryEnabled": true,
+  "discoveryErrors": {
+    "global@https://discovery-announce-v6.syncthing.net/v2/": "Post \"https://discovery-announce-v6.syncthing.net/v2/\": dial tcp [2a01:4f8:13b:1643::2]:443: connect: network is unreachable"
+  },
+  "discoveryMethods": 5,
+  "discoveryStatus": {
+    "IPv4 local": {
+      "error": null
+    },
+    "IPv6 local": {
+      "error": null
+    },
+    "global@https://discovery-announce-v4.syncthing.net/v2/": {
+      "error": null
+    },
+    "global@https://discovery-announce-v6.syncthing.net/v2/": {
+      "error": "Post \"https://discovery-announce-v6.syncthing.net/v2/\": dial tcp [2a01:4f8:13b:1643::2]:443: connect: network is unreachable"
+    },
+    "global@https://discovery-lookup.syncthing.net/v2/": {
+      "error": null
+    }
+  },
+  "goroutines": 92,
+  "guiAddressOverridden": true,
+  "guiAddressUsed": "127.0.0.1:18999",
+  "lastDialStatus": {},
+  "myID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+  "pathSeparator": "/",
+  "startTime": "2026-10-13T00:01:32+02:00",
+  "sys": 15358216,
+  "tilde": "/storage/emulated/0",
+  "uptime": 15,
+  "urVersionMax": 3
+}

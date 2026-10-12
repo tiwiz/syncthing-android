@@ -1,0 +1,5 @@
+object defaults, on wi-fi -> true
+object defaults, on mobile data -> false
+object mobile data allowed, on mobile data -> true
+object wi-fi disallowed, on wi-fi -> false
+object charger only, on battery -> false

@@ -1,0 +1,137 @@
+## self-signed RSA (rsa-cert.pem + rsa-key.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing-fixture-rsa, issuer=syncthing-fixture-rsa, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## self-signed EC (ec-cert.pem + ec-key.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing-fixture-ec, issuer=syncthing-fixture-ec, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## slots swapped (rsa-key.pem + rsa-cert.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing-fixture-rsa, issuer=syncthing-fixture-rsa, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is keySlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## legacy PKCS#1 key (rsa-cert.pem + rsa-key-pkcs1.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing-fixture-rsa, issuer=syncthing-fixture-rsa, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: WARN — Legacy key format — Syncthing accepts it, but it cannot be checked against the certificate here.
+
+## key of another certificate (rsa-cert.pem + other-rsa-key.pem)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing-fixture-rsa, issuer=syncthing-fixture-rsa, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: FAIL — The private key does NOT match the certificate.
+
+## expired (expired-cert.pem + expired-key.pem)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing-fixture-expired, issuer=syncthing-fixture-expired, notAfter=Jan 1, 2020, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: FAIL — A certificate in the chain has expired.
+KEY: PASS — The private key matches the certificate.
+
+## not yet valid (future-cert.pem + future-key.pem)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing-fixture-future, issuer=syncthing-fixture-future, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: FAIL — A certificate in the chain is not yet valid.
+KEY: PASS — The private key matches the certificate.
+
+## CA-signed chain, CA trusted (leaf-chain.pem + leaf-key.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing.example, issuer=Syncthing Fixture CA, notAfter=Jan 1, 2125, selfSigned=false)
+certPem is certSlot
+CHAIN: PASS — Full chain present (2 certificates).
+TRUST: PASS — Trusted by Android (chain validated; the hostname is intentionally not checked for the local connection).
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## CA-signed chain, CA not trusted (leaf-chain.pem + leaf-key.pem)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing.example, issuer=Syncthing Fixture CA, notAfter=Jan 1, 2125, selfSigned=false)
+certPem is certSlot
+CHAIN: PASS — Full chain present (2 certificates).
+TRUST: FAIL — Not trusted by Android — install your root CA on the device and include the full chain.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## CA-signed leaf without chain, CA trusted (leaf-cert.pem + leaf-key.pem)
+parseError: null
+canApply: true
+info: CertInfo(subject=syncthing.example, issuer=Syncthing Fixture CA, notAfter=Jan 1, 2125, selfSigned=false)
+certPem is certSlot
+CHAIN: WARN — Only the leaf certificate is present — include the intermediate(s) so the chain is complete.
+TRUST: PASS — Trusted by Android (chain validated; the hostname is intentionally not checked for the local connection).
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## CA-signed chain, no trust store (leaf-chain.pem + leaf-key.pem)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing.example, issuer=Syncthing Fixture CA, notAfter=Jan 1, 2125, selfSigned=false)
+certPem is certSlot
+CHAIN: PASS — Full chain present (2 certificates).
+TRUST: FAIL — The Android trust store is unavailable.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: PASS — The private key matches the certificate.
+
+## two certificates (rsa-cert.pem + ec-cert.pem)
+parseError: Both files are certificates — one must be the private key.
+canApply: false
+info: null
+certPem is certSlot
+
+## two keys (rsa-key.pem + ec-key.pem)
+parseError: Both files are private keys — one must be the certificate.
+canApply: false
+info: null
+certPem is certSlot
+
+## garbage (garbage.txt + garbage.txt)
+parseError: No PEM certificate found in the selected files.
+canApply: false
+info: null
+certPem is certSlot
+
+## certificate and garbage (rsa-cert.pem + garbage.txt)
+parseError: null
+canApply: false
+info: CertInfo(subject=syncthing-fixture-rsa, issuer=syncthing-fixture-rsa, notAfter=Jan 1, 2125, selfSigned=true)
+certPem is certSlot
+CHAIN: PASS — Self-signed certificate.
+TRUST: PASS — Self-signed — the app will pin this certificate.
+VALIDITY: PASS — Valid until Jan 1, 2125.
+KEY: FAIL — No private key found in the selected file.
