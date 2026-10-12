@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
 }
 
 dependencies {
@@ -43,8 +44,13 @@ dependencies {
 
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
 }
 
 val goldenRecord = providers.gradleProperty("golden.record").getOrElse("false")
@@ -156,6 +162,8 @@ android {
                 it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
                 // -Pgolden.record=true rewrites the golden files of characterization tests.
                 it.systemProperty("golden.record", goldenRecord)
+                // Draw Compose with the hardware renderer so screenshots match the device.
+                it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
             }
         }
     }
@@ -170,6 +178,11 @@ android {
         includeInBundle = false
     }
 
+}
+
+roborazzi {
+    // Golden screenshots are committed next to the tests.
+    outputDir.set(file("src/test/screenshots"))
 }
 
 abstract class ValidateAppVersionCode : DefaultTask() {
