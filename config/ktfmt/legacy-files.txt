@@ -1,0 +1,33 @@
+# Kotlin files in app/src/main that are not ktfmt-clean yet (paths relative to the repo root).
+# Remove a file from this list the first time it is refactored, after running ktfmtFormatMain.
+app/src/main/java/com/nutomic/syncthingandroid/fragments/DeviceIdDialogFragment.kt
+app/src/main/java/com/nutomic/syncthingandroid/fragments/DrawerFragment.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingActivity.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingPage.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingScaffold.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/pages/BatteryOptimizationPage.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/pages/KeyGenerationPage.kt
+app/src/main/java/com/nutomic/syncthingandroid/onboarding/pages/LocationPermissionPage.kt
+app/src/main/java/com/nutomic/syncthingandroid/recentchanges/RecentChangesActivity.kt
+app/src/main/java/com/nutomic/syncthingandroid/recentchanges/RecentChangesScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/LicensesScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsAboutScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsActivity.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsBehaviorScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsCustomCertificateScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsExperimentalScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsImportExportScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsNavigation.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsRootScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsRunConditionsScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsScaffold.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsSyncthingOptionsScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsTroubleShootingScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsUserInterfaceScreen.kt
+app/src/main/java/com/nutomic/syncthingandroid/settings/SharedPreferenceFlow.kt
+app/src/main/java/com/nutomic/syncthingandroid/theme/ApplicationTheme.kt
+app/src/main/java/com/nutomic/syncthingandroid/util/CertificateValidator.kt
+app/src/main/java/com/nutomic/syncthingandroid/util/CompositionLocals.kt
+app/src/main/java/com/nutomic/syncthingandroid/webgui/WebGuiActivity.kt
+app/src/main/java/com/nutomic/syncthingandroid/webgui/WebGuiScreen.kt

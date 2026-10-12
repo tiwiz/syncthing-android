@@ -22,10 +22,10 @@ import org.robolectric.shadows.ShadowNetworkInfo
 import org.robolectric.shadows.ShadowWifiInfo
 
 /**
- * Characterizes the "should Syncthing run?" decision for a matrix of device states and
- * preferences. Each scenario builds a fresh [RunConditionMonitor], which decides in its
- * constructor, and records the decision, the explanation shown to the user, and whether the
- * per-folder/device conditions were re-applied.
+ * Characterizes the "should Syncthing run?" decision for a matrix of device states and preferences.
+ * Each scenario builds a fresh [RunConditionMonitor], which decides in its constructor, and records
+ * the decision, the explanation shown to the user, and whether the per-folder/device conditions
+ * were re-applied.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "en-rUS", shadows = [ShadowContentResolverWithStatusListeners::class])
@@ -43,22 +43,21 @@ class RunConditionMonitorTest {
     /** The knobs a scenario can turn. */
     private inner class Device {
         fun network(type: Int?, roaming: Boolean = false) {
-            val info =
-                type?.let {
-                    ShadowNetworkInfo.newInstance(
-                            NetworkInfo.DetailedState.CONNECTED,
-                            it,
-                            0,
-                            true,
-                            NetworkInfo.State.CONNECTED,
-                        )
-                        .also { ni ->
-                            NetworkInfo::class
-                                .java
-                                .getMethod("setRoaming", Boolean::class.javaPrimitiveType)
-                                .invoke(ni, roaming)
-                        }
-                }
+            val info = type?.let {
+                ShadowNetworkInfo.newInstance(
+                        NetworkInfo.DetailedState.CONNECTED,
+                        it,
+                        0,
+                        true,
+                        NetworkInfo.State.CONNECTED,
+                    )
+                    .also { ni ->
+                        NetworkInfo::class
+                            .java
+                            .getMethod("setRoaming", Boolean::class.javaPrimitiveType)
+                            .invoke(ni, roaming)
+                    }
+            }
             shadowOf(connectivity).setActiveNetworkInfo(info)
         }
 
@@ -72,7 +71,10 @@ class RunConditionMonitorTest {
 
         fun masterSync(on: Boolean) = ContentResolver.setMasterSyncAutomatically(on)
 
-        /** [value] is the raw network name; WifiInfo.getSSID() adds the quotes. Null leaves it unknown. */
+        /**
+         * [value] is the raw network name; WifiInfo.getSSID() adds the quotes. Null leaves it
+         * unknown.
+         */
         fun ssid(value: String?) {
             val info = ShadowWifiInfo.newInstance()
             if (value != null) shadowOf(info).setSSID(value)
@@ -80,16 +82,19 @@ class RunConditionMonitorTest {
         }
 
         fun pref(key: String, value: Any) {
-            prefs.edit().apply {
-                when (value) {
-                    is Boolean -> putBoolean(key, value)
-                    is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    is String -> putString(key, value)
-                    is Set<*> -> putStringSet(key, value.map { it.toString() }.toSet())
-                    else -> error("Unsupported pref type for $key")
+            prefs
+                .edit()
+                .apply {
+                    when (value) {
+                        is Boolean -> putBoolean(key, value)
+                        is Int -> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        is String -> putString(key, value)
+                        is Set<*> -> putStringSet(key, value.map { it.toString() }.toSet())
+                        else -> error("Unsupported pref type for $key")
+                    }
                 }
-            }.commit()
+                .commit()
         }
     }
 
@@ -227,7 +232,10 @@ class RunConditionMonitorTest {
 
     @Test
     fun `should-run decision matrix`() {
-        Golden.assertMatches("runconditions/decisions.txt", scenarios.joinToString("\n") { run(it) })
+        Golden.assertMatches(
+            "runconditions/decisions.txt",
+            scenarios.joinToString("\n") { run(it) },
+        )
     }
 
     @Test
@@ -237,19 +245,25 @@ class RunConditionMonitorTest {
             listOf<Pair<String, Device.() -> Unit>>(
                 "object defaults, on wi-fi" to { network(wifiType) },
                 "object defaults, on mobile data" to { network(mobileType) },
-                "object mobile data allowed, on mobile data" to {
-                    network(mobileType)
-                    pref(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectId), true)
-                },
-                "object wi-fi disallowed, on wi-fi" to {
-                    network(wifiType)
-                    pref(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectId), false)
-                },
-                "object charger only, on battery" to {
-                    network(wifiType)
-                    plugged(0)
-                    pref(Constants.DYN_PREF_OBJECT_SYNC_ON_POWER_SOURCE(objectId), Constants.PowerSource.CHARGER)
-                },
+                "object mobile data allowed, on mobile data" to
+                    {
+                        network(mobileType)
+                        pref(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectId), true)
+                    },
+                "object wi-fi disallowed, on wi-fi" to
+                    {
+                        network(wifiType)
+                        pref(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectId), false)
+                    },
+                "object charger only, on battery" to
+                    {
+                        network(wifiType)
+                        plugged(0)
+                        pref(
+                            Constants.DYN_PREF_OBJECT_SYNC_ON_POWER_SOURCE(objectId),
+                            Constants.PowerSource.CHARGER,
+                        )
+                    },
             )
         val report =
             cases.joinToString("\n") { (name, setup) ->

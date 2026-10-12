@@ -31,7 +31,8 @@ class RestModelParsingTest {
 
     @Test fun `system connections`() = check("system_connections", Connections::class.java)
 
-    @Test fun `system discovery`() = check("system_discovery", typeOf<Map<String, DiscoveredDevice>>())
+    @Test
+    fun `system discovery`() = check("system_discovery", typeOf<Map<String, DiscoveredDevice>>())
 
     @Test fun `folder status`() = check("db_status", FolderStatus::class.java)
 

@@ -29,10 +29,27 @@ class FileUtilsTest {
     @Test
     fun `mime types by extension`() {
         val extensions =
-            listOf("jpg", "JPG", "jpeg", "png", "mp4", "mkv", "pdf", "txt", "md", "apk", "zip", "7z", "", "unknownext")
+            listOf(
+                "jpg",
+                "JPG",
+                "jpeg",
+                "png",
+                "mp4",
+                "mkv",
+                "pdf",
+                "txt",
+                "md",
+                "apk",
+                "zip",
+                "7z",
+                "",
+                "unknownext",
+            )
         Golden.assertMatches(
             "util/mime-types.txt",
-            extensions.joinToString("\n") { "[$it] -> ${FileUtils.getMimeTypeFromFileExtension(it)}" },
+            extensions.joinToString("\n") {
+                "[$it] -> ${FileUtils.getMimeTypeFromFileExtension(it)}"
+            },
         )
     }
 

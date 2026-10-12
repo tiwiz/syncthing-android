@@ -43,8 +43,8 @@ class CertificateValidatorTest {
         val store = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
         if (caPem != null) {
             val ca =
-                CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(caPem))
-                    as X509Certificate
+                CertificateFactory.getInstance("X.509")
+                    .generateCertificate(ByteArrayInputStream(caPem)) as X509Certificate
             store.setCertificateEntry("fixture-ca", ca)
         }
         val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
@@ -52,14 +52,21 @@ class CertificateValidatorTest {
         return factory.trustManagers.filterIsInstance<X509TrustManager>().first()
     }
 
-    private fun describe(label: String, certSlot: String, keySlot: String, trust: X509TrustManager?): String {
+    private fun describe(
+        label: String,
+        certSlot: String,
+        keySlot: String,
+        trust: X509TrustManager?,
+    ): String {
         val result = CertificateValidator.validate(cert(certSlot), cert(keySlot), trust)
         return buildString {
             appendLine("## $label ($certSlot + $keySlot)")
             appendLine("parseError: ${result.parseError}")
             appendLine("canApply: ${result.canApply}")
             appendLine("info: ${result.info}")
-            appendLine("certPem is ${if (result.certPem.contentEquals(cert(certSlot))) "certSlot" else "keySlot"}")
+            appendLine(
+                "certPem is ${if (result.certPem.contentEquals(cert(certSlot))) "certSlot" else "keySlot"}"
+            )
             result.checks.forEach { appendLine("${it.check}: ${it.status} — ${it.detail}") }
         }
     }
@@ -74,18 +81,53 @@ class CertificateValidatorTest {
                     describe("self-signed RSA", "rsa-cert.pem", "rsa-key.pem", trustsNothing),
                     describe("self-signed EC", "ec-cert.pem", "ec-key.pem", trustsNothing),
                     describe("slots swapped", "rsa-key.pem", "rsa-cert.pem", trustsNothing),
-                    describe("legacy PKCS#1 key", "rsa-cert.pem", "rsa-key-pkcs1.pem", trustsNothing),
-                    describe("key of another certificate", "rsa-cert.pem", "other-rsa-key.pem", trustsNothing),
+                    describe(
+                        "legacy PKCS#1 key",
+                        "rsa-cert.pem",
+                        "rsa-key-pkcs1.pem",
+                        trustsNothing,
+                    ),
+                    describe(
+                        "key of another certificate",
+                        "rsa-cert.pem",
+                        "other-rsa-key.pem",
+                        trustsNothing,
+                    ),
                     describe("expired", "expired-cert.pem", "expired-key.pem", trustsNothing),
                     describe("not yet valid", "future-cert.pem", "future-key.pem", trustsNothing),
-                    describe("CA-signed chain, CA trusted", "leaf-chain.pem", "leaf-key.pem", trustsCa),
-                    describe("CA-signed chain, CA not trusted", "leaf-chain.pem", "leaf-key.pem", trustsNothing),
-                    describe("CA-signed leaf without chain, CA trusted", "leaf-cert.pem", "leaf-key.pem", trustsCa),
-                    describe("CA-signed chain, no trust store", "leaf-chain.pem", "leaf-key.pem", null),
+                    describe(
+                        "CA-signed chain, CA trusted",
+                        "leaf-chain.pem",
+                        "leaf-key.pem",
+                        trustsCa,
+                    ),
+                    describe(
+                        "CA-signed chain, CA not trusted",
+                        "leaf-chain.pem",
+                        "leaf-key.pem",
+                        trustsNothing,
+                    ),
+                    describe(
+                        "CA-signed leaf without chain, CA trusted",
+                        "leaf-cert.pem",
+                        "leaf-key.pem",
+                        trustsCa,
+                    ),
+                    describe(
+                        "CA-signed chain, no trust store",
+                        "leaf-chain.pem",
+                        "leaf-key.pem",
+                        null,
+                    ),
                     describe("two certificates", "rsa-cert.pem", "ec-cert.pem", trustsNothing),
                     describe("two keys", "rsa-key.pem", "ec-key.pem", trustsNothing),
                     describe("garbage", "garbage.txt", "garbage.txt", trustsNothing),
-                    describe("certificate and garbage", "rsa-cert.pem", "garbage.txt", trustsNothing),
+                    describe(
+                        "certificate and garbage",
+                        "rsa-cert.pem",
+                        "garbage.txt",
+                        trustsNothing,
+                    ),
                 )
                 .joinToString("\n")
         Golden.assertMatches("util/certificate-validator.txt", report)

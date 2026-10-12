@@ -9,8 +9,8 @@ import org.robolectric.Shadows.shadowOf
 
 /**
  * Makes `bindService(SyncthingService)` connect to a real service instance that was created but
- * never started: Syncthing itself is not running (state DISABLED), like right after app start
- * when the run conditions say no.
+ * never started: Syncthing itself is not running (state DISABLED), like right after app start when
+ * the run conditions say no.
  *
  * Needs [ShadowEnvironmentWithAllFilesAccess], or the service stops itself in `onCreate`.
  */

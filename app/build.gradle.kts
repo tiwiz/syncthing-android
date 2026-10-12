@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktfmt)
 }
 
 dependencies {
@@ -41,6 +43,8 @@ dependencies {
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
     ksp(libs.dagger.compiler)
+
+    detektPlugins(libs.compose.rules.detekt)
 
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
@@ -183,6 +187,45 @@ android {
 roborazzi {
     // Golden screenshots are committed next to the tests.
     outputDir.set(file("src/test/screenshots"))
+}
+
+detekt {
+    buildUponDefaultConfig.set(true)
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    // Findings in app code that predate detekt (the debug task writes detekt-baseline-debug.xml).
+    // It may only shrink; tests have no baseline.
+    baseline.set(file("detekt-baseline.xml"))
+    basePath.set(rootProject.layout.projectDirectory)
+    parallel.set(true)
+}
+
+ktfmt {
+    kotlinLangStyle()
+}
+
+// Kotlin files in app/src/main that predate ktfmt. A file leaves the list when it is first
+// refactored; every other Kotlin file, and every new one, must be ktfmt-clean.
+val ktfmtLegacyFiles: List<String> =
+    rootProject.file("config/ktfmt/legacy-files.txt").readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+
+tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtBaseTask>().configureEach {
+    // Patterns are relative to the source root (app/src/main/java).
+    exclude(ktfmtLegacyFiles.map { it.removePrefix("app/src/main/java/") })
+}
+
+// The type-resolved detekt tasks run more rules than the plain one: "debug" covers app/src/main,
+// "debugUnitTest" covers app/src/test. Plain `detekt` (which `check` depends on) becomes an
+// alias for the two, so there is a single set of findings and a single baseline.
+tasks.named("detekt") {
+    enabled = false
+    dependsOn("detektDebug", "detektDebugUnitTest")
+}
+
+// Build scripts are shared with upstream; formatting them would only create merge conflicts.
+tasks.matching { it.name == "ktfmtCheckScripts" || it.name == "ktfmtFormatScripts" }.configureEach {
+    enabled = false
 }
 
 abstract class ValidateAppVersionCode : DefaultTask() {

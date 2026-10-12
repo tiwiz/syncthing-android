@@ -24,7 +24,9 @@ class SettingsRouteTest {
                 "About" to SettingsRoute.About,
                 "Licenses" to SettingsRoute.Licenses,
             )
-        expected.forEach { (name, route) -> assertEquals(name, route, SettingsRoute.fromString(name)) }
+        expected.forEach { (name, route) ->
+            assertEquals(name, route, SettingsRoute.fromString(name))
+        }
     }
 
     @Test

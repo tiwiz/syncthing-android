@@ -46,7 +46,10 @@ class ConfigRouterTest {
         assertEquals("Renamed", ConfigRouter(context).getFolders(null).single().label)
 
         router.removeDevice(null, REMOTE_DEVICE_ID)
-        assertEquals(emptyList<String>(), ConfigRouter(context).getDevices(null, false).map { it.deviceID })
+        assertEquals(
+            emptyList<String>(),
+            ConfigRouter(context).getDevices(null, false).map { it.deviceID },
+        )
 
         router.removeFolder(null, "cam-photos")
         assertEquals(emptyList<String>(), ConfigRouter(context).getFolders(null).map { it.id })
@@ -54,7 +57,8 @@ class ConfigRouterTest {
 
     @Test
     fun `ignoring a device or a folder needs a running syncthing`() {
-        // CHARACTERIZATION: without the REST API both calls only log an error; config.xml is untouched.
+        // CHARACTERIZATION: without the REST API both calls only log an error; config.xml is
+        // untouched.
         val before = Constants.getConfigFile(context).readText()
         router.ignoreDevice(null, "AAAAAAA-BBBBBBB", "stranger", "tcp://192.0.2.99:22000")
         router.ignoreFolder(null, REMOTE_DEVICE_ID, "secret-folder", "Secret")

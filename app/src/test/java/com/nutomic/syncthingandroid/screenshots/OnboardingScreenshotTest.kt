@@ -59,7 +59,8 @@ class OnboardingScreenshotTest(
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} granted={1} dark={2}")
         fun parameters(): List<Array<Any>> =
             OnboardingPage.entries.flatMap { page ->
-                val grantedStates = if (page == OnboardingPage.WELCOME) listOf(false) else listOf(false, true)
+                val grantedStates =
+                    if (page == OnboardingPage.WELCOME) listOf(false) else listOf(false, true)
                 grantedStates.flatMap { granted ->
                     listOf(arrayOf<Any>(page, granted, false), arrayOf<Any>(page, granted, true))
                 }

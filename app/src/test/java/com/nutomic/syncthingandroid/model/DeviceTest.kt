@@ -35,8 +35,14 @@ class DeviceTest {
     @Test
     fun `typo-tolerant digits are mapped like syncthing does`() {
         // 0 -> O, 1 -> I, 8 -> B
-        assertTrue(device("P56I0I7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2").checkDeviceID())
-        assertTrue(device("P56IO17-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-T88Z4TJ-XZWICQ2").checkDeviceID())
+        assertTrue(
+            device("P56I0I7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2")
+                .checkDeviceID()
+        )
+        assertTrue(
+            device("P56IO17-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-T88Z4TJ-XZWICQ2")
+                .checkDeviceID()
+        )
     }
 
     @Test

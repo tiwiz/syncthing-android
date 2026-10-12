@@ -3,7 +3,6 @@ package com.nutomic.syncthingandroid.util
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.model.Device
 import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -40,7 +39,7 @@ class ConfigXmlTest {
 
     @After
     fun restoreKernelVersion() {
-        System.setProperty("os.version", savedOsVersion ?: "")
+        System.setProperty("os.version", savedOsVersion.orEmpty())
     }
 
     private fun loaded(transform: (String) -> String = { it }): ConfigXml {
@@ -71,7 +70,9 @@ class ConfigXmlTest {
 
     @Test
     fun `config version 27 is migrated to 28 with the file watcher enabled`() {
-        loaded { it.replaceFirst("<configuration version=\"52\">", "<configuration version=\"27\">") }
+        loaded {
+            it.replaceFirst("<configuration version=\"52\">", "<configuration version=\"27\">")
+        }
         Golden.assertMatches("configxml/after-migration-27.xml", savedFile())
     }
 
@@ -91,7 +92,10 @@ class ConfigXmlTest {
         // The camera folder gets a random id suffix and a path in Robolectric's temp dir.
         val normalized =
             savedFile()
-                .replace(Regex("syncthingAndroidCamera-[a-z0-9]{5}-[a-z0-9]{5}"), "syncthingAndroidCamera-RANDOM")
+                .replace(
+                    Regex("syncthingAndroidCamera-[a-z0-9]{5}-[a-z0-9]{5}"),
+                    "syncthingAndroidCamera-RANDOM",
+                )
                 .replace(Regex("/tmp/robolectric-[^/\"]+"), "<robolectric-tmp>")
         Golden.assertMatches("configxml/after-load-camera-and-notifications.xml", normalized)
     }
@@ -111,7 +115,10 @@ class ConfigXmlTest {
     fun `folders and devices`() {
         val config = loaded()
         Golden.assertMatches("configxml/folders.json", gson.toJson(config.folders))
-        Golden.assertMatches("configxml/devices-with-local.json", gson.toJson(config.getDevices(true)))
+        Golden.assertMatches(
+            "configxml/devices-with-local.json",
+            gson.toJson(config.getDevices(true)),
+        )
         assertEquals(listOf(REMOTE_DEVICE_ID), config.getDevices(false).map { it.deviceID })
     }
 
@@ -128,7 +135,10 @@ class ConfigXmlTest {
             }
         config.addFolder(folder)
         config.saveChanges()
-        Golden.assertMatches("configxml/folder-added.json", gson.toJson(ConfigXml(context).apply { loadConfig() }.folders))
+        Golden.assertMatches(
+            "configxml/folder-added.json",
+            gson.toJson(ConfigXml(context).apply { loadConfig() }.folders),
+        )
 
         val reloaded = ConfigXml(context).apply { loadConfig() }
         val music = reloaded.folders.first { it.id == "music-abcd" }
@@ -137,12 +147,18 @@ class ConfigXmlTest {
         reloaded.updateFolder(music)
         reloaded.setFolderPause("cam-photos", true)
         reloaded.saveChanges()
-        Golden.assertMatches("configxml/folder-updated.json", gson.toJson(ConfigXml(context).apply { loadConfig() }.folders))
+        Golden.assertMatches(
+            "configxml/folder-updated.json",
+            gson.toJson(ConfigXml(context).apply { loadConfig() }.folders),
+        )
 
         val again = ConfigXml(context).apply { loadConfig() }
         again.removeFolder("music-abcd")
         again.saveChanges()
-        assertEquals(listOf("cam-photos"), ConfigXml(context).apply { loadConfig() }.folders.map { it.id })
+        assertEquals(
+            listOf("cam-photos"),
+            ConfigXml(context).apply { loadConfig() }.folders.map { it.id },
+        )
     }
 
     @Test
@@ -150,7 +166,13 @@ class ConfigXmlTest {
         // CHARACTERIZATION: callers always set versioning; ConfigXml dereferences it unchecked.
         val config = loaded()
         assertThrows(NullPointerException::class.java) {
-            config.addFolder(Folder().apply { id = "x"; path = "/x"; versioning = null })
+            config.addFolder(
+                Folder().apply {
+                    id = "x"
+                    path = "/x"
+                    versioning = null
+                }
+            )
         }
     }
 
@@ -176,7 +198,9 @@ class ConfigXmlTest {
         assertEquals(listOf(LOCAL_DEVICE_ID), remaining.getDevices(true).map { it.deviceID })
         // CHARACTERIZATION: the removed device stays in the <folder> elements it shared, unlike
         // Syncthing's own REST API, which unshares it.
-        assertTrue(remaining.folders.single().sharedWithDevices.any { it.deviceID == REMOTE_DEVICE_ID })
+        assertTrue(
+            remaining.folders.single().sharedWithDevices.any { it.deviceID == REMOTE_DEVICE_ID }
+        )
     }
 
     @Test

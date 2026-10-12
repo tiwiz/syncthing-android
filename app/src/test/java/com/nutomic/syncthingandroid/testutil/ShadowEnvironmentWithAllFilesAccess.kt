@@ -13,6 +13,10 @@ import org.robolectric.shadows.ShadowEnvironment
 @Implements(Environment::class)
 class ShadowEnvironmentWithAllFilesAccess : ShadowEnvironment() {
     companion object {
-        @JvmStatic @Implementation fun isExternalStorageManager(): Boolean = true
+        // A shadow replaces a framework method, so it has to stay a function.
+        @Suppress("FunctionOnlyReturningConstant")
+        @JvmStatic
+        @Implementation
+        fun isExternalStorageManager(): Boolean = true
     }
 }

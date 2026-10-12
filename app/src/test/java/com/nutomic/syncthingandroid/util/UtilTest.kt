@@ -44,14 +44,17 @@ class UtilTest {
         val rates = listOf(-8L, 0L, 7L, 8L, 8_192L, 1_000_000L, 800_000_000L, 80_000_000_000L)
         val table = buildString {
             sizes.forEach { appendLine("size $it -> ${Util.readableFileSize(context, it)}") }
-            rates.forEach { appendLine("rate $it bits -> ${Util.readableTransferRate(context, it)}") }
+            rates.forEach {
+                appendLine("rate $it bits -> ${Util.readableTransferRate(context, it)}")
+            }
         }
         Golden.assertMatches("util/readable-sizes.txt", table)
     }
 
     @Test
     fun `sizes of one PiB and more crash`() {
-        // CHARACTERIZATION: the unit arrays stop at TiB, so 1024^5 bytes and above index past the end.
+        // CHARACTERIZATION: the unit arrays stop at TiB, so 1024^5 bytes and above index past the
+        // end.
         assertThrows(ArrayIndexOutOfBoundsException::class.java) {
             Util.readableFileSize(context, 1024.0 * 1024 * 1024 * 1024 * 1024)
         }
@@ -72,10 +75,14 @@ class UtilTest {
                 "MY-LINK-/Cool 12345 Configuration Utility/sdk/bin/go2sync.dll",
                 "MY-LINK-Iam-bin-sum-another-and-make-long/Cool 12345 Configuration Utility/sdk/bin/go2sync.dll",
                 "MY-LINK-Iam-bin-sum-another-and-make-long-textfiles-are-cool.txt",
-                "MY-LINK-/Cool 12345 Configuration Utility/sdk/bin-Iam-bin-sum-another-and-make-long/go2sync-long-textfiles-are-cool.dll",
-                "MY-LINK-//Cool 12345 Configuration Utility/sdk/bin-Iam-bin-sum-another-and-make-long//go2sync-long-textfiles-are-cool",
-                "MY-LINK-//Cool 12345 Configuration Utility/sdk/bin-Iam-bin-sum-another-and-make-long//go2sync-long-textfiles-are-cool.correctlongeextensionswassolldas-denn-bitte",
-                "MY-LINK-Iam-bin-sum-another-and-make-long/Cool 12345 Configuration Utility/sdk/bin/go2sync.dllcorrectlongeextensionswassolldas-denn-bitte",
+                "MY-LINK-/Cool 12345 Configuration Utility/sdk/" +
+                    "bin-Iam-bin-sum-another-and-make-long/go2sync-long-textfiles-are-cool.dll",
+                "MY-LINK-//Cool 12345 Configuration Utility/sdk/bin-Iam-bin-sum-another-and-make-long//" +
+                    "go2sync-long-textfiles-are-cool",
+                "MY-LINK-//Cool 12345 Configuration Utility/sdk/bin-Iam-bin-sum-another-and-make-long//" +
+                    "go2sync-long-textfiles-are-cool.correctlongeextensionswassolldas-denn-bitte",
+                "MY-LINK-Iam-bin-sum-another-and-make-long/Cool 12345 Configuration Utility/sdk/bin/" +
+                    "go2sync.dllcorrectlongeextensionswassolldas-denn-bitte",
             )
         Golden.assertMatches(
             "util/path-ellipsis.txt",
@@ -86,7 +93,9 @@ class UtilTest {
     @Test
     fun `date and time formatting converts to the local zone`() {
         val table =
-            listOf("2026-10-12T21:37:46.123456789Z", "2026-01-01T00:00:00+02:00").joinToString("\n") {
+            listOf("2026-10-12T21:37:46.123456789Z", "2026-01-01T00:00:00+02:00").joinToString(
+                "\n"
+            ) {
                 "$it -> ${Util.formatDateTime(it)} | ${Util.formatTime(it)}"
             }
         Golden.assertMatches("util/date-time.txt", table)
@@ -94,7 +103,10 @@ class UtilTest {
 
     @Test
     fun `format path normalizes dot segments`() {
-        assertEquals("/storage/emulated/0/DCIM/", Util.formatPath("/storage/emulated/0/Music/../DCIM/./"))
+        assertEquals(
+            "/storage/emulated/0/DCIM/",
+            Util.formatPath("/storage/emulated/0/Music/../DCIM/./"),
+        )
         assertEquals("/a/b", Util.formatPath("/a//b"))
     }
 
@@ -108,7 +120,10 @@ class UtilTest {
 
     @Test
     fun `local zoned date time is an ISO offset timestamp in UTC`() {
-        assertTrue(Util.getLocalZonedDateTime().matches(Regex("""\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z""")))
+        assertTrue(
+            Util.getLocalZonedDateTime()
+                .matches(Regex("""\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z"""))
+        )
     }
 
     @Test

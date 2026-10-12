@@ -32,7 +32,10 @@ import org.robolectric.annotation.GraphicsMode
 @Config(
     qualifiers = SCREENSHOT_QUALIFIERS,
     shadows =
-        [ShadowEnvironmentWithAllFilesAccess::class, ShadowContentResolverWithStatusListeners::class],
+        [
+            ShadowEnvironmentWithAllFilesAccess::class,
+            ShadowContentResolverWithStatusListeners::class,
+        ],
 )
 class ActivityScreenshotTest(private val screen: Screen, private val dark: Boolean) {
 
