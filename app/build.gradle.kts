@@ -40,6 +40,11 @@ dependencies {
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
     ksp(libs.dagger.compiler)
+
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.junit4)
+    testImplementation(libs.robolectric)
 }
 
 android {
@@ -137,6 +142,17 @@ android {
             // Otherwise libsyncthing.so doesn't appear where it should in installs
             // based on app bundles, and thus nothing works.
             useLegacyPackaging = true
+        }
+    }
+
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and manifest.
+            isIncludeAndroidResources = true
+            all {
+                // Robolectric's SDK 36 image reaches into JDK internals on JDK 21.
+                it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+            }
         }
     }
 
