@@ -1,5 +1,7 @@
 # Plan: safety net before refactoring ("baseline")
 
+**Status: done** on branch `baseline` (2026-10-13). See "Outcome" at the end.
+
 Goal: be able to refactor the app and know immediately when behaviour or UI changes. Everything in
 this plan adds tooling and tests **around** the app; it does not change a single line under
 `app/src/main`.
@@ -112,3 +114,28 @@ are out of scope here.
 1. Coverage report to find gaps before each refactor.
 2. Shrink the detekt baseline and the ktfmt exclusion list as files are refactored.
 3. Extract the run-condition decision into a pure function once the characterization tests exist.
+
+## Outcome
+
+All phases are done; `git diff main -- app/src/main` is empty and the app's runtime classpaths are
+unchanged. Differences from the plan:
+
+- Robolectric needs `--add-opens java.base/jdk.internal.access=ALL-UNNAMED` on JDK 21.
+- Two test-only shadows fill Robolectric 4.17 gaps on SDK 36 (sync status listeners,
+  `isExternalStorageManager`). Screens run against a real `SyncthingService` that is created but not
+  started.
+- Fixtures come from a throwaway Syncthing 2.1.7 built from the submodule, anonymised.
+- detekt's per-source-set tasks see no sources with AGP's built-in Kotlin, so the gate uses the
+  type-resolved `detektDebug` and `detektDebugUnitTest`; the baseline file is
+  `app/detekt-baseline-debug.xml` (80 findings).
+- ktfmt: 33 of 36 Kotlin files in `app/src/main` are on the legacy list. Build scripts are excluded.
+- `compose-ui-test-manifest` is a `testImplementation` dependency, so the APK manifest is unchanged.
+
+Found while characterizing (documented with `// CHARACTERIZATION:`, not fixed):
+
+1. `Util.readableFileSize` / `readableTransferRate` crash with `ArrayIndexOutOfBoundsException`
+   from 1 PiB (1 PiB/s) up: the unit arrays stop at TiB.
+2. `ConfigXml.addFolder` throws `NullPointerException` when `versioning` is null.
+3. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
+4. `ConfigRouter.ignoreDevice/ignoreFolder` do nothing (only log) while Syncthing is not running.
+5. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.

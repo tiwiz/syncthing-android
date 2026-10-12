@@ -6,35 +6,47 @@ zero tolerance, fix the cause, no new suppressions without a written reason.
 ## The gate
 
 ```bash
-IS_COPILOT=true ./gradlew :app:check   # lintDebug + unit tests, no Go build (~5 s when warm)
+IS_COPILOT=true ./gradlew :app:check :app:verifyRoborazziDebug
 ```
 
-It must be green before every commit. `IS_COPILOT=true` skips `:syncthing:buildNative`, which needs
-Go and takes minutes; Java/Kotlin and Lint do not need it. Before a release or any change to the
-native build, run the full build without it (see [AGENTS.md](../AGENTS.md#build--test)).
+`check` runs Android Lint, the unit tests, detekt and ktfmt; `verifyRoborazziDebug` compares the
+screenshots. It must be green before every commit, and CI runs the same command
+(`.github/workflows/check.yaml`). `IS_COPILOT=true` skips `:syncthing:buildNative`, which needs Go
+and takes minutes; Java/Kotlin, tests and Lint do not need it.
 
 ## Tools
 
-| Tool | Status | What it checks | Config |
-|---|---|---|---|
-| Android Lint | Active, `abortOnError = true` | Android correctness, security, performance, accessibility | `app/lint.xml` |
-| detekt 2 + Compose Rules (Nacho Lopez) | Not set up yet | Kotlin smells, complexity, Compose API rules | to add: `config/detekt/detekt.yml` (headroom's) |
-| ktfmt (KotlinLang style) | Not set up yet | Kotlin formatting | to add |
+| Tool | What it checks | Config |
+|---|---|---|
+| Android Lint | Android correctness, security, performance, accessibility (Java and Kotlin) | `app/lint.xml`, `abortOnError = true` |
+| detekt 2.0.0-alpha.6 | Kotlin code smells and complexity | `config/detekt/detekt.yml` (headroom's), on top of the defaults |
+| Compose Rules 0.6.8 | Compose API and state rules, inside detekt | defaults |
+| ktfmt 0.27.0 | Kotlin formatting, KotlinLang style | `app/build.gradle.kts` |
 
-Lint currently reports no issues on the debug variant. CI runs `lint<Type>` before assembling.
+```bash
+IS_COPILOT=true ./gradlew :app:detekt            # detektDebug (app) + detektDebugUnitTest (tests)
+IS_COPILOT=true ./gradlew :app:ktfmtCheckMain :app:ktfmtCheckTest
+IS_COPILOT=true ./gradlew :app:ktfmtFormatTest   # or ktfmtFormatMain for files off the legacy list
+IS_COPILOT=true ./gradlew :app:lintDebug
+```
 
-### Introducing detekt and ktfmt
+detekt runs with type resolution: with AGP's built-in Kotlin the per-source-set tasks see no
+sources. Plain `detekt` is an alias for `detektDebug` + `detektDebugUnitTest`.
 
-Headroom runs detekt, Compose Rules and ktfmt on every module. Here they would hit ~40 existing
-Kotlin files and reformat code that upstream also changes, so they are introduced with a ratchet:
+## The ratchet for existing code
 
-- Scope them to Kotlin sources. Java is left alone.
-- Run ktfmt only on files a change touches, never as a repository-wide reformat.
-- Start detekt from headroom's `config/detekt/detekt.yml`. A baseline for the existing code needs
-  the owner's approval; new code must be clean without it.
+The app code predates detekt and ktfmt and must not be reformatted in bulk (it would only create
+conflicts with upstream). Two lists hold the existing debt; both may only shrink.
 
-Until then, write new Kotlin as if they were on: no wildcard imports, lines up to 120 characters,
-functions under 100 lines, complexity at most 15.
+- `app/detekt-baseline-debug.xml`: 80 detekt findings in `app/src/main`. When you refactor a file,
+  fix its findings and regenerate with `IS_COPILOT=true ./gradlew :app:detektBaselineDebug`; the
+  diff must only remove entries. Test code has no baseline.
+- `config/ktfmt/legacy-files.txt`: 33 Kotlin files in `app/src/main` not yet ktfmt-clean. When you
+  refactor one, remove it from the list and run `ktfmtFormatMain`, in a commit of its own so the
+  reformat does not hide the real change.
+
+New Kotlin files are checked in full. Java is covered by Lint only. Build scripts are not
+formatted.
 
 ## Lint
 
@@ -44,5 +56,5 @@ version notices, scoped storage, the custom trust manager, …), each with a com
 ## Suppressions
 
 Fix the cause first. When a suppression is truly needed, put it on the smallest scope (one
-declaration, at most one file) and write the reason in a comment next to it. Do not add new entries
-to `app/lint.xml`, add baselines, or disable checks without the owner's approval.
+declaration, at most one file) and write the reason in a comment next to it. Do not add entries to
+`app/lint.xml` or the baselines, or disable checks, without the owner's approval.

@@ -36,19 +36,20 @@ Development rules copied from [rock3r/headroom](https://github.com/rock3r/headro
 3. Write the minimum production code to make it pass.
 4. Re-run the targeted test, then the gate.
 
-There is no test infrastructure yet: the first task that needs it sets it up
-([docs/TESTING.md](docs/TESTING.md)).
+Before refactoring, the safety net (characterization tests, golden files, screenshots) must be
+green and must stay green without re-recording ([docs/TESTING.md](docs/TESTING.md)).
 
 ### Zero tolerance for static analysis
 
-`IS_COPILOT=true ./gradlew :app:check` must be green before every commit. Lint fails the build on
-any error (`abortOnError = true`).
+`IS_COPILOT=true ./gradlew :app:check :app:verifyRoborazziDebug` must be green before every commit
+(Lint, unit tests, screenshots, detekt + Compose Rules, ktfmt). CI runs the same command.
 
-- Do not edit `app/lint.xml`, add baselines, or disable checks without the owner's approval.
+- Do not edit `app/lint.xml` or `config/detekt/detekt.yml`, grow the baselines, or disable checks
+  without the owner's approval.
+- Existing app code is under a ratchet: `app/detekt-baseline-debug.xml` and
+  `config/ktfmt/legacy-files.txt` may only shrink ([docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md)).
 - Fix the cause. When a suppression is truly needed, keep it to one declaration or file and
   write down why next to it.
-- detekt + Compose Rules + ktfmt are the target for Kotlin code, not set up yet
-  ([docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md)).
 
 ### Scope discipline
 
@@ -58,7 +59,8 @@ diff against upstream small: no drive-by reformatting, renames or Java→Kotlin 
 ### Secrets
 
 Never commit signing keys, `local.properties`, `keys.json`, real device ids, API keys or
-`config.xml` files from a real device. Release signing reads `SYNCTHING_RELEASE_STORE_FILE`,
+`config.xml` files from a real device. Test fixtures are fake and anonymised
+(`app/src/test/resources/fixtures/README.md`). Release signing reads `SYNCTHING_RELEASE_STORE_FILE`,
 `SIGNING_PASSWORD` and `SYNCTHING_RELEASE_KEY_ALIAS` from `local.properties` or the environment.
 
 ## BUILD & TEST
@@ -71,7 +73,11 @@ version differs from `go_version`, `build-syncthing.py` rebuilds Go from source,
 ```bash
 # Day-to-day (no Go needed, the APK has no native binary)
 IS_COPILOT=true ./gradlew :app:compileDebugKotlin :app:compileDebugJavaWithJavac
-IS_COPILOT=true ./gradlew :app:check            # gate: lintDebug + unit tests
+IS_COPILOT=true ./gradlew :app:check :app:verifyRoborazziDebug   # THE GATE (~2 min warm)
+IS_COPILOT=true ./gradlew :app:testDebugUnitTest --tests '*ConfigXmlTest'   # one test class
+IS_COPILOT=true ./gradlew :app:testDebugUnitTest -Pgolden.record=true       # re-record golden files
+IS_COPILOT=true ./gradlew :app:recordRoborazziDebug     # re-record screenshots (review the diff!)
+IS_COPILOT=true ./gradlew :app:detekt :app:ktfmtCheckMain :app:ktfmtCheckTest
 IS_COPILOT=true ./gradlew :app:lintDebug        # report: app/build/reports/lint-results-debug.html
 
 # Full build with the native binary
@@ -113,13 +119,17 @@ app/                         Android application (only Gradle module with code)
   src/main/res/    XML layouts, strings (values = English, values-* from Weblate)
   src/main/play/   Play Store listing metadata
   src/main/cpp/    empty ndk-build stub so AGP packages the ABIs
+  src/test/        JUnit/Robolectric tests (java/), fixtures + golden files (resources/),
+                   Roborazzi golden screenshots (screenshots/)
   lint.xml         Lint configuration
+  detekt-baseline-debug.xml   existing detekt findings in app code (may only shrink)
 syncthing/                   :syncthing project, build-syncthing.py (Go cross-compile)
   src/github.com/syncthing/syncthing   upstream Syncthing submodule
 gradle/libs.versions.toml    all versions, also read by Python scripts and CI
 scripts/                     SDK setup, Go version bump, debug helpers (Windows .cmd), receiver test app
 wiki/                        upstream user/developer documentation
-docs/                        architecture and development rules (this fork)
+config/detekt/, config/ktfmt/  detekt config (from headroom), ktfmt legacy-file list
+docs/                        architecture, development rules, plans (this fork)
 .github/                     CI (build, sign, release, submodule/Go bumps), Copilot instructions
 ```
 
@@ -149,18 +159,28 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
   signed debug APK (~80 MB, 4 ABIs) is produced. Smoke-tested on a Pixel 8 (Android 17, API 37):
   onboarding completes, keys are generated, the service goes STARTING → ACTIVE, the native process
   runs and the GUI answers on `https://127.0.0.1:8385`, no errors in logcat.
-- No tests, no detekt, no ktfmt yet.
 - Development rules from headroom added in `AGENTS.md` and `docs/`.
+- 2026-10-13, branch `baseline` (PR to `main`): refactoring safety net without touching app code
+  (plan and outcome in [docs/plans/BASELINE.md](docs/plans/BASELINE.md)):
+  58 JUnit/Robolectric characterization tests with golden files, 58 Roborazzi screenshots,
+  detekt + Compose Rules + ktfmt with a ratchet, CI workflow `check.yaml`.
 
 Next steps (to be confirmed with the owner):
 
-1. Add JUnit 4 (+ Robolectric when needed) and the first tests.
-2. Add detekt + Compose Rules + ktfmt for Kotlin with a ratchet.
+1. Coverage report (Kover/JaCoCo) to find gaps before each refactor.
+2. Tests for `RestApi`/`EventProcessor` against a fake HTTP server.
+3. Start refactoring; fix the `CHARACTERIZATION` oddities one PR at a time.
 
 ## HANDOFF
 
+- Work only on `tiwiz/syncthing-android` (branches, PRs, issues). Never touch the upstream repos
+  unless the owner says so. `gh pr create` in a fork may default to the parent: always pass
+  `--repo tiwiz/syncthing-android --base main`.
 - Upstream (`researchxxl/syncthing-android`) does not accept AI-generated contributions or
-  unsolicited PRs. Keep agent work on this fork.
+  unsolicited PRs.
+- Robolectric runs SDK 36 and needs `--add-opens java.base/jdk.internal.access` on JDK 21 (set in
+  `app/build.gradle.kts`). Two test-only shadows in `app/src/test/.../testutil/` fill Robolectric
+  gaps; never change app code to make a test run.
 - To pull upstream changes: `git remote add upstream https://github.com/researchxxl/syncthing-android`
   then merge `upstream/main`. Keep fork-only changes in new files where possible.
 - `IS_COPILOT=true` is just the env flag that skips `:syncthing:buildNative`; it is not tied to
