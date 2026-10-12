@@ -7,6 +7,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.nutomic.syncthingandroid.settings.SettingsActivity
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
+import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,7 +19,12 @@ import org.robolectric.annotation.GraphicsMode
 /** Every settings screen, opened directly through its route, in light and dark theme. */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = SCREENSHOT_QUALIFIERS, shadows = [ShadowEnvironmentWithAllFilesAccess::class])
+@Config(
+    qualifiers = SCREENSHOT_QUALIFIERS,
+    shadows = [ShadowEnvironmentWithAllFilesAccess::class, ShadowUtilDeviceShell::class],
+    // The About screen shells out through Util; instrument it so the shadow applies.
+    instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
+)
 class SettingsScreenshotTest(private val route: String, private val dark: Boolean) {
 
     @Test

@@ -179,8 +179,8 @@ Next steps (to be confirmed with the owner):
 - Upstream (`researchxxl/syncthing-android`) does not accept AI-generated contributions or
   unsolicited PRs.
 - Robolectric runs SDK 36 and needs `--add-opens java.base/jdk.internal.access` on JDK 21 (set in
-  `app/build.gradle.kts`). Two test-only shadows in `app/src/test/.../testutil/` fill Robolectric
-  gaps; never change app code to make a test run.
+  `app/build.gradle.kts`). Test-only shadows in `app/src/test/.../testutil/` fill Robolectric gaps
+  and replace host-dependent shell calls; never change app code to make a test run.
 - To pull upstream changes: `git remote add upstream https://github.com/researchxxl/syncthing-android`
   then merge `upstream/main`. Keep fork-only changes in new files where possible.
 - `IS_COPILOT=true` is just the env flag that skips `:syncthing:buildNative`; it is not tied to

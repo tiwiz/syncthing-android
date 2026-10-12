@@ -76,10 +76,13 @@ Most tests pin what the app does today, not what it should do. Expected output i
 
 ## Test-only shadows
 
-Robolectric 4.17 lacks two things on SDK 36 that the app touches; `testutil/` provides shadows:
+`testutil/` provides shadows for what Robolectric 4.17 lacks on SDK 36, or for host-dependent code:
 
 - `ShadowContentResolverWithStatusListeners`: sync status listeners (`RunConditionMonitor`).
 - `ShadowEnvironmentWithAllFilesAccess`: `Environment.isExternalStorageManager()` (`SyncthingService`).
+- `ShadowUtilDeviceShell`: `Util.runShellCommandGetOutput` answers like an Android shell instead of
+  running the host's `sh` (the About screen shows `ulimit -n` and `du`, which differ per machine).
+  It needs `instrumentedPackages = ["com.nutomic.syncthingandroid.util"]` in `@Config`.
 
 ## Not covered yet
 
