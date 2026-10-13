@@ -211,9 +211,10 @@ Next steps (to be confirmed with the owner):
    `util/` helpers, Dagger, app, receivers, small services (`HelpersTest`, `ServiceHelpersTest`).
    PR #34: `Util` split into the `Util` (shell, shadowed in tests), `TextFormat`, `UiUtil` and
    `OsTrustStore` facades (`UtilShellTest`). PR #35: `FileUtils` split into
-   `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden). Branch
-   `refactor/kotlin-configxml`: `ConfigXml` (+ `ConfigXmlModels`, `ConfigXmlNodes`,
-   `ConfigXmlValues`) and `ConfigRouter` (`ConfigXmlEditTest`, REST routing test).
+   `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden). PR #36:
+   `ConfigXml` (+ `ConfigXmlModels`, `ConfigXmlNodes`, `ConfigXmlValues`) and `ConfigRouter`
+   (`ConfigXmlEditTest`, REST routing test). Branch `refactor/kotlin-constants-tiles`:
+   `Constants` (`ConstantsTest` pins the per-object preference keys) and the two tiles.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

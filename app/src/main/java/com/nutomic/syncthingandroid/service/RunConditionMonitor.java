@@ -669,14 +669,14 @@ public class RunConditionMonitor {
      */
     public Boolean checkObjectSyncConditions(String objectPrefixAndId) {
         // Sync on specific power source?
-        SyncConditionResult scr = checkConditionSyncOnPowerSource(Constants.DYN_PREF_OBJECT_SYNC_ON_POWER_SOURCE(objectPrefixAndId));
+        SyncConditionResult scr = checkConditionSyncOnPowerSource(Constants.dynPrefObjectSyncOnPowerSource(objectPrefixAndId));
         if (!scr.conditionMet) {
             LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): checkConditionSyncOnPowerSource");
             return false;
         }
 
         // Sync on mobile data?
-        scr = checkConditionSyncOnMobileData(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectPrefixAndId));
+        scr = checkConditionSyncOnMobileData(Constants.dynPrefObjectSyncOnMobileData(objectPrefixAndId));
         if (scr.conditionMet) {
             // Mobile data is connected.
             LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): checkConditionSyncOnMobileData");
@@ -684,19 +684,19 @@ public class RunConditionMonitor {
         }
 
         // Sync on WiFi?
-        scr = checkConditionSyncOnWifi(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectPrefixAndId));
+        scr = checkConditionSyncOnWifi(Constants.dynPrefObjectSyncOnWifi(objectPrefixAndId));
         if (scr.conditionMet) {
             // Wifi is connected.
             LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): checkConditionSyncOnWifi");
 
-            scr = checkConditionSyncOnMeteredWifi(Constants.DYN_PREF_OBJECT_SYNC_ON_METERED_WIFI(objectPrefixAndId));
+            scr = checkConditionSyncOnMeteredWifi(Constants.dynPrefObjectSyncOnMeteredWifi(objectPrefixAndId));
             if (scr.conditionMet) {
                 // Wifi type is allowed.
                 LogV("checkObjectSyncConditions(" + objectPrefixAndId + "): checkConditionSyncOnWifi && checkConditionSyncOnMeteredWifi");
 
                 scr = checkConditionSyncOnWhitelistedWifi(
-                    Constants.DYN_PREF_OBJECT_USE_WIFI_SSID_WHITELIST(objectPrefixAndId),
-                    Constants.DYN_PREF_OBJECT_SELECTED_WHITELIST_SSID(objectPrefixAndId)
+                    Constants.dynPrefObjectUseWifiSsidWhitelist(objectPrefixAndId),
+                    Constants.dynPrefObjectSelectedWhitelistSsid(objectPrefixAndId)
                 );
                 if (scr.conditionMet) {
                     // Wifi is whitelisted.

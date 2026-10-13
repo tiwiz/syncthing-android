@@ -625,7 +625,7 @@ class ConfigXml(private val context: Context) {
         val folderAlreadyPresentInConfig =
             root.descendantElements("folder").any {
                 val folderId = it.attrOr("id", "")
-                !TextUtils.isEmpty(folderId) && folderId == Constants.syncthingCameraFolderId
+                !TextUtils.isEmpty(folderId) && folderId == Constants.SYNCTHING_CAMERA_FOLDER_ID
             }
         if (folderAlreadyPresentInConfig) {
             return false
@@ -644,7 +644,7 @@ class ConfigXml(private val context: Context) {
         val folder =
             Folder().apply {
                 minDiskFree = Folder.MinDiskFree()
-                id = Constants.syncthingCameraFolderId
+                id = Constants.SYNCTHING_CAMERA_FOLDER_ID
                 label = context.getString(R.string.default_syncthing_camera_folder_label)
                 path = storageDir.absolutePath
                 versioning =

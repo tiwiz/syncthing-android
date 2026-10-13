@@ -1330,7 +1330,7 @@ public class RestApi {
         // Run folder script set if enabled by user pref.
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         Boolean folderRunScriptEnabled = sharedPreferences.getBoolean(
-            Constants.DYN_PREF_OBJECT_FOLDER_RUN_SCRIPT(folder.id), false
+            Constants.dynPrefObjectFolderRunScript(folder.id), false
         );
         if (folderRunScriptEnabled) {
             Util.runScriptSet(
@@ -1476,7 +1476,7 @@ public class RestApi {
                 for (Folder folder : mConfig.folders) {
                     // LogV("applyCustomRunConditions: Processing config of folder(" + folder.label + ")");
                     Boolean folderCustomSyncConditionsEnabled = sharedPreferences.getBoolean(
-                        Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_FOLDER + folder.id), false
+                        Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_FOLDER + folder.id), false
                     );
                     if (folderCustomSyncConditionsEnabled) {
                         Boolean syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(
@@ -1500,7 +1500,7 @@ public class RestApi {
                 for (Device device : mConfig.devices) {
                     // LogV("applyCustomRunConditions: Processing config of device(" + device.name + ")");
                     Boolean deviceCustomSyncConditionsEnabled = sharedPreferences.getBoolean(
-                        Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_DEVICE + device.deviceID), false
+                        Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_DEVICE + device.deviceID), false
                     );
                     if (deviceCustomSyncConditionsEnabled) {
                         Boolean syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(

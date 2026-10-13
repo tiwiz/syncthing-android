@@ -580,7 +580,7 @@ public class FolderActivity extends SyncthingActivity {
         mFolderPaused.setChecked(mFolder.paused);
         mIgnoreDelete.setChecked(mFolder.ignoreDelete);
         mRunScriptSwitch.setChecked(mPreferences.getBoolean(
-                Constants.DYN_PREF_OBJECT_FOLDER_RUN_SCRIPT(mFolder.id), false
+                Constants.dynPrefObjectFolderRunScript(mFolder.id), false
             ));
         findViewById(R.id.editIgnoresContainer).setVisibility(mIsCreateMode ? View.GONE : View.VISIBLE);
 
@@ -590,7 +590,7 @@ public class FolderActivity extends SyncthingActivity {
             findViewById(R.id.customSyncConditionsContainer).setVisibility(View.GONE);
         } else {
             mCustomSyncConditionsSwitch.setChecked(mPreferences.getBoolean(
-                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_FOLDER + mFolder.id), false
+                Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_FOLDER + mFolder.id), false
             ));
         }
         mCustomSyncConditionsSwitch.setEnabled(!mIsCreateMode);
@@ -676,7 +676,7 @@ public class FolderActivity extends SyncthingActivity {
                 .setMessage(R.string.remove_folder_confirm)
                 .setPositiveButton(android.R.string.yes, (dialogInterface, i) -> {
                     mConfig.removeFolder(getApi(), mFolder.id);
-                    if (mFolder.id.equals(Constants.syncthingCameraFolderId)) {
+                    if (mFolder.id.equals(Constants.SYNCTHING_CAMERA_FOLDER_ID)) {
                         // Remove consent to "Syncthing Camera" feature.
                         SharedPreferences.Editor editor = mPreferences.edit();
                         editor.putBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, false);
@@ -899,7 +899,7 @@ public class FolderActivity extends SyncthingActivity {
 
         SharedPreferences.Editor editor = mPreferences.edit();
         editor.putBoolean(
-            Constants.DYN_PREF_OBJECT_FOLDER_RUN_SCRIPT(mFolder.id),
+            Constants.dynPrefObjectFolderRunScript(mFolder.id),
             mRunScriptSwitch.isChecked()
         );
         editor.apply();
@@ -940,7 +940,7 @@ public class FolderActivity extends SyncthingActivity {
         Log.v(TAG, "onSave: Updating folder with ID = \'" + mFolder.id + "\'");
         editor = mPreferences.edit();
         editor.putBoolean(
-            Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_FOLDER + mFolder.id),
+            Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_FOLDER + mFolder.id),
             mCustomSyncConditionsSwitch.isChecked()
         );
         editor.apply();
