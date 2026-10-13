@@ -60,6 +60,18 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
+
+    // Instrumented tests (app/src/androidTest): the WebView screens with a real WebView.
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.espresso.intents)
+    androidTestImplementation(libs.espresso.web)
+    androidTestImplementation(libs.junit4)
+    androidTestImplementation(libs.mockwebserver)
+    androidTestImplementation(libs.okhttp.tls)
 }
 
 val goldenRecord = providers.gradleProperty("golden.record").getOrElse("false")
@@ -88,6 +100,7 @@ android {
         targetSdk = libs.versions.target.sdk.get().toInt()
         versionCode = libs.versions.version.code.get().toInt()
         versionName = libs.versions.version.name.get()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -114,7 +127,14 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
-            signingConfig = null
+            // Debug APKs are signed by hand (build.cmd); instrumented tests need an installable
+            // APK, so they use the SDK's debug key.
+            signingConfig =
+                signingConfigs.getByName("debug").takeIf {
+                    project.gradle.startParameter.taskNames.any { name ->
+                        name.contains("AndroidTest", ignoreCase = true)
+                    }
+                }
             enableUnitTestCoverage = unitTestCoverage
         }
         getByName("release") {
@@ -164,6 +184,11 @@ android {
             // based on app bundles, and thus nothing works.
             useLegacyPackaging = true
         }
+    }
+
+    sourceSets {
+        // The instrumented tests share the anonymised Syncthing fixtures with the unit tests.
+        getByName("androidTest").resources.directories.add("src/test/resources/fixtures")
     }
 
     testOptions {
@@ -229,11 +254,12 @@ tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtBaseTask>().configureEach {
 }
 
 // The type-resolved detekt tasks run more rules than the plain one: "debug" covers app/src/main,
-// "debugUnitTest" covers app/src/test. Plain `detekt` (which `check` depends on) becomes an
-// alias for the two, so there is a single set of findings.
+// "debugUnitTest" covers app/src/test, "debugAndroidTest" covers app/src/androidTest. Plain
+// `detekt` (which `check` depends on) becomes an alias for the three, so there is a single set of
+// findings.
 tasks.named("detekt") {
     enabled = false
-    dependsOn("detektDebug", "detektDebugUnitTest")
+    dependsOn("detektDebug", "detektDebugUnitTest", "detektDebugAndroidTest")
 }
 
 // Build scripts are shared with upstream; formatting them would only create merge conflicts.
