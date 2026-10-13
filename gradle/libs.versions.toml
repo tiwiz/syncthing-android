@@ -51,6 +51,8 @@ robolectric = "4.17"
 roborazzi = "1.76.0"
 stream = "1.2.2"
 volley = "1.2.1"
+# 1.16+ needs minSdk 24.
+webkit = "1.15.0"
 zhanghai-compose-preference = "2.2.0"
 zxing-android-embedded = "4.3.0"
 # Do not upgrade zxing:core beyond 3.3.0 to ensure Android 6.0 compatibility.
@@ -99,6 +101,7 @@ roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose"
 roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
 stream = { module = "com.annimon:stream", version.ref = "stream" }
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
+webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 zhanghai-compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "zhanghai-compose-preference" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-android-embedded" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
