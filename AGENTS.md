@@ -82,7 +82,7 @@ IS_COPILOT=true ./gradlew :app:detekt :app:ktfmtCheckMain :app:ktfmtCheckTest
 IS_COPILOT=true ./gradlew :app:lintDebug        # report: app/build/reports/lint-results-debug.html
 IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createDebugUnitTestCoverageReport
                                                 # coverage: app/build/reports/coverage/test/debug/index.html
-# Instrumented WebView tests (Espresso-Web), emulator only (AVD pixel_phone, API 35, locally):
+# Instrumented WebView tests (Espresso-Web), emulator only (AVDs pixel_phone API 35, api34_phone API 34):
 emulator -avd pixel_phone -no-window -no-audio &
 ANDROID_SERIAL=emulator-5554 IS_COPILOT=true ./gradlew :app:connectedDebugAndroidTest
 
@@ -201,8 +201,8 @@ Next steps (to be confirmed with the owner):
    pinned a blank web GUI after a refused certificate, fixed in PR #27. No
    pinned bugs left. detekt now sees the app's Java classes (javac output on
    `detektDebug`'s classpath, PR #28): no more "compiler errors found during analysis".
-   Branch `test/small-interactions`: folder type, pull order and sync conditions screens, QR
-   scan, share.
+   PR #29: folder type, pull order and sync conditions screens, QR scan, share. Moving
+   `enableEdgeToEdge()` to `ThemedAppCompatActivity` was tried and dropped (TECH-DEBT.md).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

@@ -146,7 +146,8 @@ class OnboardingActivity : ThemedAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Could move to ThemedAppCompatActivity once every activity uses Compose.
+        // Not in ThemedAppCompatActivity: below Android 15 the View screens keep a coloured status
+        // bar that needs light icons (EdgeToEdgeTest). Move it there once every activity uses Compose.
         enableEdgeToEdge()
         (application as SyncthingApp).component().inject(this)
 
