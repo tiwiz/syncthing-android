@@ -579,19 +579,19 @@ class RestApiTest {
         assertTrue(syncCompleteBroadcasts().isEmpty())
     }
 
-    // CHARACTERIZATION: the action and the permission lost their application id prefix in upstream
-    // 9a3851cc, so receivers registered for the documented
-    // "com.github.catfriend1.syncthingfork.ACTION_NOTIFY_FOLDER_SYNC_COMPLETE" get nothing.
     @Test
-    fun `the sync complete broadcast uses a bare action name`() {
+    fun `the sync complete broadcast uses the application id prefixed action`() {
         val api = loadedApi()
         api.setRemoteIndexUpdated(LAPTOP_ID, "cam-photos", true)
 
         api.setRemoteCompletionInfo(LAPTOP_ID, "cam-photos", 0.0, 100.0)
         awaitMain { syncCompleteBroadcasts().isNotEmpty() }
 
+        // As documented in
+        // wiki/developers/Integrate-your-app-with-Syncthing-receive-folder-sync-status.md
+        // (the debug build adds ".debug" to the application id).
         assertEquals(
-            ".ACTION_NOTIFY_FOLDER_SYNC_COMPLETE",
+            "${context.packageName}.ACTION_NOTIFY_FOLDER_SYNC_COMPLETE",
             syncCompleteBroadcasts().single().action,
         )
     }
