@@ -209,8 +209,9 @@ Next steps (to be confirmed with the owner):
    ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)). PR #31:
    `model/` in Kotlin (`CompletionCacheTest`). PR #32: `http/` (`ApiRequestTest`). PR #33: small
    `util/` helpers, Dagger, app, receivers, small services (`HelpersTest`, `ServiceHelpersTest`).
-   Branch `refactor/kotlin-util`: `Util` split into the `Util` (shell, shadowed in tests),
-   `TextFormat`, `UiUtil` and `OsTrustStore` facades (`UtilShellTest`).
+   PR #34: `Util` split into the `Util` (shell, shadowed in tests), `TextFormat`, `UiUtil` and
+   `OsTrustStore` facades (`UtilShellTest`). Branch `refactor/kotlin-fileutils`: `FileUtils`
+   split into `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

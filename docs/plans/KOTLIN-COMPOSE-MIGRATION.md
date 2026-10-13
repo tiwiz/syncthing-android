@@ -15,9 +15,11 @@ One topic per PR, each with the gate and CI green before merging.
    3. Small helpers: `util/` (`Luhn`, `Compression`, `JobUtils`, `PermissionUtil`,
       `TextWatcherAdapter`), Dagger and the app class, receivers, small services. Done (#33).
    4. `Util`, split by topic into top-level functions with `@file:JvmName` facades: `Util` (shell
-      and processes), `TextFormat`, `UiUtil`, `OsTrustStore`. Done (`refactor/kotlin-util`).
-   5. `FileUtils`, `ConfigXml`, `ConfigRouter`.
-   6. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
+      and processes), `TextFormat`, `UiUtil`, `OsTrustStore`. Done (#34).
+   5. `FileUtils`, split into `FileUtils` (storage paths, MIME table), `SafUtils` (SAF URIs,
+      DocumentFile) and `FileOpener` (open in other apps). Done (`refactor/kotlin-fileutils`).
+   6. `ConfigXml`, `ConfigRouter`.
+   7. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
       `EventProcessor`, `SyncthingRunnable`, `RestApi`, `SyncthingService`), Dagger.
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
    Compose rewrite replaces them.

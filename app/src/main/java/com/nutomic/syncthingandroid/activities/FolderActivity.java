@@ -51,6 +51,7 @@ import com.nutomic.syncthingandroid.service.SyncthingService;
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
 import com.nutomic.syncthingandroid.util.FileUtils;
+import com.nutomic.syncthingandroid.util.SafUtils;
 import com.nutomic.syncthingandroid.util.FileUtils.ExternalStorageDirType;
 import com.nutomic.syncthingandroid.util.TextWatcherAdapter;
 import com.nutomic.syncthingandroid.util.Util;
@@ -411,11 +412,11 @@ public class FolderActivity extends SyncthingActivity {
         // This has to be android.net.Uri as it implements a Parcelable.
         android.net.Uri initialUri = null;
         android.net.Uri externalFilesDirUri = FileUtils.getExternalFilesDirUri(FolderActivity.this, ExternalStorageDirType.INT_MEDIA);
-        if (FileUtils.directoryUriExists(FolderActivity.this, externalFilesDirUri)) {
+        if (SafUtils.directoryUriExists(FolderActivity.this, externalFilesDirUri)) {
             initialUri = externalFilesDirUri;
         } else {
             android.net.Uri internalFilesDirUri = FileUtils.getInternalStorageRootUri();
-            if (FileUtils.directoryUriExists(FolderActivity.this, internalFilesDirUri)) {
+            if (SafUtils.directoryUriExists(FolderActivity.this, internalFilesDirUri)) {
                 initialUri = internalFilesDirUri;
             }
         }
@@ -699,7 +700,7 @@ public class FolderActivity extends SyncthingActivity {
                 return;
             }
             // Get the folder path unix style, e.g. "/storage/0000-0000/DCIM"
-            String targetPath = FileUtils.getAbsolutePathFromSAFUri(FolderActivity.this, mFolderUri);
+            String targetPath = SafUtils.getAbsolutePathFromSAFUri(FolderActivity.this, mFolderUri);
             if (targetPath != null) {
                 targetPath = TextFormat.formatPath(targetPath);
             }
@@ -1008,17 +1009,17 @@ public class FolderActivity extends SyncthingActivity {
         DocumentFile dfFolder = DocumentFile.fromTreeUri(this, uriFolderRoot);
 
         // Create ".stfolder" directory.
-        DocumentFile dfFolderMarkerDir = FileUtils.safCreateDirectory(dfFolder, FOLDER_MARKER_DIR_NAME);
+        DocumentFile dfFolderMarkerDir = SafUtils.safCreateDirectory(dfFolder, FOLDER_MARKER_DIR_NAME);
         if (dfFolderMarkerDir != null) {
             // Create ".stfolder/DO_NOT_DELETE.txt" file.
-            FileUtils.safCreateFile(this, dfFolderMarkerDir, DO_NOT_DELETE_FILE_NAME + ".txt", DO_NOT_DELETE_FILE_NAME);
+            SafUtils.safCreateFile(this, dfFolderMarkerDir, DO_NOT_DELETE_FILE_NAME + ".txt", DO_NOT_DELETE_FILE_NAME);
         }
 
         // Create ".stversions" directory.
-        DocumentFile dfStVersionsDir = FileUtils.safCreateDirectory(dfFolder, Constants.FOLDER_NAME_STVERSIONS);
+        DocumentFile dfStVersionsDir = SafUtils.safCreateDirectory(dfFolder, Constants.FOLDER_NAME_STVERSIONS);
         if (dfStVersionsDir != null) {
             // Create ".stversions/.nomedia" file.
-            FileUtils.safCreateFile(this, dfStVersionsDir, ".nomedia", "");
+            SafUtils.safCreateFile(this, dfStVersionsDir, ".nomedia", "");
         }
     }
 
