@@ -16,6 +16,11 @@ None left to remove. One is kept on purpose:
   `ConfigRouter.getGui` / `updateGui` can throw is any `RuntimeException`, which detekt flags just
   the same. The reason is in its KDoc.
 
+Kept from the Kotlin migration:
+
+- `model/Connections.kt` `connections` (`MemberNameEqualsClassName`): the JSON field Syncthing
+  sends has the class's name.
+
 ## TODOs
 
 | Where | What |

@@ -141,7 +141,7 @@ class RecentChangesActivity : SyncthingActivity(), SyncthingService.OnServiceSta
                 Log.v(TAG, "Querying disk events")
                 api.awaitDiskEvents(DISK_EVENT_LIMIT)?.let { diskEvents ->
                     changes = diskEvents
-                        .toRecentChanges(devices, localDeviceId, getString(R.string.this_device))
+                        .toRecentChanges(devices, checkNotNull(localDeviceId), getString(R.string.this_device))
                 }
             } finally {
                 refreshInFlight = false
@@ -401,6 +401,6 @@ private fun resolveDeviceName(
     thisDeviceLabel: String,
 ): String {
     if (modifiedBy.isEmpty()) return modifiedBy
-    val device = devices.firstOrNull { it.deviceID.startsWith(modifiedBy) } ?: return modifiedBy
+    val device = devices.firstOrNull { checkNotNull(it.deviceID).startsWith(modifiedBy) } ?: return modifiedBy
     return if (device.deviceID == localDeviceId) thisDeviceLabel else device.displayName
 }
