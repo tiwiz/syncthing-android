@@ -28,7 +28,7 @@ SDK 37 image; the app targets 37.
 | Layer | Runner | Examples |
 |---|---|---|
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
-| Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest` |
+| Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest`, `BootReceiverTest`, `AppConfigReceiverTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
 | Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest` |
@@ -141,7 +141,7 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
 Snapshot on 2026-10-13 (lines): 60% overall. `model` 86%, `http` 79%, `recentchanges` 77%,
 `fragments` 71%, `util` 70%, `service` 67% (`RestApi` 77%, `SyncthingRunnable` 73%,
 `SyncthingService` 50%), `settings` 59%, `views` 55%, `onboarding` 51–68%, `activities` 40%;
-`webgui`, `receiver` and `fragments/dialog` close to 0%.
+`webgui` and `fragments/dialog` close to 0%. The receivers are covered since.
 
 ## Not covered yet
 
