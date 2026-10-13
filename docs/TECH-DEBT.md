@@ -5,9 +5,7 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-1. `QuickSettingsTileSchedule.updateTile` returns early when the state does not change. A new tile
-   is already `STATE_INACTIVE`, so it keeps the manifest label "Run for 5 minutes" instead of the
-   configured sync duration until it goes through another state.
+None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
 
 ## detekt suppressions
 
