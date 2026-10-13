@@ -30,6 +30,7 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
+| Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest` |
 
 ```bash
@@ -68,6 +69,20 @@ Volley stack, `SyncthingTrustManager` pinning and loopback rewrite.
   which would otherwise kill `find` processes on the host.
 - Volley still links `org.apache.http`, which Android ships and Robolectric does not; the test
   classpath adds `httpclient` for it.
+
+## The fake native binary
+
+`testutil/FakeSyncthingBinary` points `nativeLibraryDir` at a temporary folder and writes a `/bin/sh`
+script named `libsyncthingnative.so`. It records its arguments and environment, prints the given
+stdout/stderr and exits with the given code. With `serveUntilStopped`, `serve` keeps running until
+`stop()`; `SyncthingServiceLifecycleTest` calls it from `FakeSyncthing.onShutdown`, so the REST
+shutdown ends the process as it would on a device.
+
+- The service polls the GUI with `postDelayed`: wait with a loop that runs the looper clock
+  (`idleFor`), not with `awaitMain`, which does not.
+- Create `FakeSyncthing(…, resetVolley = false)` after the service started polling, and reset the
+  Volley queue yourself before starting the service.
+- `ShadowUtilDeviceShell.netstatOutput` fakes `netstat` for the "GUI port already in use" check.
 
 ## Screenshots
 
@@ -123,13 +138,13 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
   `includeNoLocationClasses`; without it the report is almost empty.
 - Look at the report before refactoring a class: code that no test runs is not protected.
 
-Snapshot on 2026-10-13 (lines): 46% overall. `model` 83%, `util` 69%, `http` 59%, `settings` 57%,
-`onboarding` 50–68%, `service` 45% (`EventProcessor` 82%, `RestApi` 66%), `fragments` 36%,
-`activities` 24%, `views` 11%; `webgui`, `recentchanges` and `fragments/dialog` 0%.
+Snapshot on 2026-10-13 (lines): 60% overall. `model` 86%, `http` 79%, `recentchanges` 77%,
+`fragments` 71%, `util` 70%, `service` 67% (`RestApi` 77%, `SyncthingRunnable` 73%,
+`SyncthingService` 50%), `settings` 59%, `views` 55%, `onboarding` 51–68%, `activities` 40%;
+`webgui`, `receiver` and `fragments/dialog` close to 0%.
 
 ## Not covered yet
 
-- `SyncthingRunnable` (0%) and `SyncthingService` start/stop (6%): they launch the native binary.
 - `FolderPickerActivity` (it lists the real file system, whose paths differ per machine), and the
   WebView screens (`WebGuiActivity`, `WebViewActivity`): Robolectric does not draw web content.
 - Apart from `SettingsNavigationTest`, no test clicks anything.

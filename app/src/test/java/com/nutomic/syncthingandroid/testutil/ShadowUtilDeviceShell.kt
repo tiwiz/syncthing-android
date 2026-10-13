@@ -22,6 +22,9 @@ class ShadowUtilDeviceShell {
             """
                 .trimIndent() + "\n"
 
+        /** What `netstat -t -l -n` prints (`Util.isTcpPortListening`). Tests reset it. */
+        @Volatile var netstatOutput: String = ""
+
         /** What the sync-conflict `find` in `Util.getSyncConflictFiles` prints. Tests reset it. */
         @Volatile var syncConflictFindOutput: String = ""
 
@@ -32,6 +35,7 @@ class ShadowUtilDeviceShell {
                 cmd.contains("find -type f -name") && cmd.contains(".sync-conflict-") ->
                     syncConflictFindOutput
                 cmd.startsWith("/system/bin/logcat ") -> FAKE_LOGCAT
+                cmd.startsWith("netstat ") -> netstatOutput
                 cmd.endsWith("ulimit -n") -> "32768\n"
                 cmd.startsWith("/system/bin/du -sh ") ->
                     "12M\t${cmd.removePrefix("/system/bin/du -sh ")}\n"
