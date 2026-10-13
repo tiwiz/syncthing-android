@@ -18,12 +18,16 @@ class FakeSyncthingBinary(context: Context) {
     private val stdoutFile = File(dir, "stdout")
     private val stderrFile = File(dir, "stderr")
     private val stopFile = File(dir, "stop")
+    private val generatedConfigFile = File(dir, "generated-config.xml")
     private val binary = File(dir, Constants.FILENAME_SYNCTHING_BINARY)
 
     var exitCode: Int = 0
     var stdout: String = ""
     var stderr: String = ""
     var serveUntilStopped: Boolean = false
+
+    /** If set, `generate` writes it as `$STHOMEDIR/config.xml`, like the real binary does. */
+    var generatedConfig: String? = null
 
     /** True once the binary has been started at least once. */
     val started: Boolean
@@ -51,6 +55,13 @@ class FakeSyncthingBinary(context: Context) {
         stderrFile.writeText(stderr)
         argsFile.delete()
         stopFile.delete()
+        val generate =
+            generatedConfig
+                ?.let {
+                    generatedConfigFile.writeText(it)
+                    "if [ \"${'$'}1\" = generate ]; then cp '${generatedConfigFile.path}' \"${'$'}STHOMEDIR/config.xml\"; fi"
+                }
+                .orEmpty()
         val wait =
             if (serveUntilStopped) {
                 "if [ \"${'$'}1\" = serve ]; then while [ ! -f '${stopFile.path}' ]; do sleep 0.05; done; fi"
@@ -64,6 +75,7 @@ class FakeSyncthingBinary(context: Context) {
             env > '${envFile.path}'
             cat '${stdoutFile.path}'
             cat '${stderrFile.path}' >&2
+            $generate
             $wait
             exit $exitCode
             """
