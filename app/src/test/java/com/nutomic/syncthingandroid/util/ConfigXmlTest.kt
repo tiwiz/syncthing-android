@@ -162,18 +162,21 @@ class ConfigXmlTest {
     }
 
     @Test
-    fun `adding a folder without versioning crashes`() {
-        // CHARACTERIZATION: callers always set versioning; ConfigXml dereferences it unchecked.
-        val config = loaded()
-        assertThrows(NullPointerException::class.java) {
+    fun `a folder without versioning is saved like one with versioning off`() {
+        fun saveFolder(versioning: Folder.Versioning?): String {
+            val config = loaded()
             config.addFolder(
                 Folder().apply {
                     id = "x"
                     path = "/x"
-                    versioning = null
+                    this.versioning = versioning
                 }
             )
+            config.saveChanges()
+            return savedFile()
         }
+
+        assertEquals(saveFolder(Folder.Versioning()), saveFolder(null))
     }
 
     @Test

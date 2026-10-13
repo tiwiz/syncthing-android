@@ -696,7 +696,8 @@ public class ConfigXml {
                 Node nodeVersioning = mConfig.createElement("versioning");
                 r.appendChild(nodeVersioning);
                 elementVersioning = (Element) nodeVersioning;
-                if (!TextUtils.isEmpty(folder.versioning.type)) {
+                // A folder without versioning gets an empty node, like versioning type "".
+                if (folder.versioning != null && !TextUtils.isEmpty(folder.versioning.type)) {
                     elementVersioning.setAttribute("type", folder.versioning.type);
                     setConfigElement(elementVersioning, "cleanupIntervalS", Integer.toString(folder.versioning.cleanupIntervalS));
                     setConfigElement(elementVersioning, "fsPath", folder.versioning.fsPath);

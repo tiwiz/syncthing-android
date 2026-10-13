@@ -8,11 +8,10 @@ item is done, delete it here in the same PR.
 Each one is pinned by a test commented `// CHARACTERIZATION:`. Fixing it means changing that test on
 purpose.
 
-1. `ConfigXml.addFolder` throws `NullPointerException` when `versioning` is null.
-2. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
-3. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
+1. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
+2. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
    running.
-4. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+3. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
 
 ## detekt suppressions
 
