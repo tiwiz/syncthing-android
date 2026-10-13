@@ -30,15 +30,16 @@ import me.zhanghai.compose.preference.rememberPreferenceState
 
 private const val TAG = "SettingsUserInterfaceScreen"
 
-fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.UserInterface> {
-        SettingsUserInterfaceScreen()
+        SettingsUserInterfaceScreen(navigator = navigator)
     }
 }
 
 
 @Composable
 fun SettingsUserInterfaceScreen(
+    navigator: Navigator<SettingsRoute>,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -57,6 +58,7 @@ fun SettingsUserInterfaceScreen(
     val startInWebGui = rememberPreferenceState(Constants.PREF_START_INTO_WEB_GUI, false)
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_user_interface),
     ) {

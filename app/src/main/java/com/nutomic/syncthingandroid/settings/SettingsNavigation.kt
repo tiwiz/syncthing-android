@@ -7,7 +7,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.rememberSerializable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -81,12 +80,6 @@ interface Navigator<T: NavKey> {
     fun navigateUp() // added temporarily to finish settings activity and return
 }
 
-// Every settings screen navigates; passing the navigator through each of them would only add noise.
-@Suppress("CompositionLocalAllowlist")
-val LocalSettingsNavigator = staticCompositionLocalOf<Navigator<SettingsRoute>> {
-    error("Navigator not provided")
-}
-
 @Composable
 fun rememberSettingsNavBackStack(startDestination: SettingsRoute): NavBackStack<SettingsRoute> {
     return rememberSerializable(
@@ -105,25 +98,24 @@ fun rememberSettingsNavBackStack(startDestination: SettingsRoute): NavBackStack<
 @Composable
 fun SettingsNavDisplay(
     backStack: NavBackStack<SettingsRoute>,
+    navigator: Navigator<SettingsRoute>,
     modifier: Modifier = Modifier,
 ) {
-    val navigator = LocalSettingsNavigator.current
-
     NavDisplay(
         backStack = backStack,
         onBack = { navigator.navigateBack() },
         entryProvider = entryProvider {
-            settingsRootEntry()
-            settingsRunConditionsEntry()
-            settingsUserInterfaceEntry()
-            settingsBehaviorEntry()
-            settingsSyncthingOptionsEntry()
-            settingsCustomCertificateEntry()
-            settingsImportExportEntry()
-            settingsTroubleshootingEntry()
-            settingsExperimentalEntry()
-            settingsAboutEntry()
-            licensesEntry()
+            settingsRootEntry(navigator)
+            settingsRunConditionsEntry(navigator)
+            settingsUserInterfaceEntry(navigator)
+            settingsBehaviorEntry(navigator)
+            settingsSyncthingOptionsEntry(navigator)
+            settingsCustomCertificateEntry(navigator)
+            settingsImportExportEntry(navigator)
+            settingsTroubleshootingEntry(navigator)
+            settingsExperimentalEntry(navigator)
+            settingsAboutEntry(navigator)
+            licensesEntry(navigator)
         },
         transitionSpec = {
             // Slide in from right when navigating forward

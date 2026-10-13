@@ -36,12 +36,12 @@ import com.nutomic.syncthingandroid.util.isTelevision
 @Composable
 fun SettingsScaffold(
     title: String,
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     description: String? = null,
     content: (LazyListScope.() -> Unit) = {},
 ) {
     val configuration = LocalConfiguration.current
-    val navigator = LocalSettingsNavigator.current
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -96,7 +96,7 @@ fun SettingsScaffold(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = { navigator.navigateBack() }) {
+                        IconButton(onClick = onNavigateBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(id = R.string.back)

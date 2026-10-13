@@ -11,21 +11,25 @@ import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsBehaviorEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsBehaviorEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.Behavior> {
-        SettingsBehaviorScreen()
+        SettingsBehaviorScreen(navigator = navigator)
     }
 }
 
 
 @Composable
-fun SettingsBehaviorScreen(modifier: Modifier = Modifier) {
+fun SettingsBehaviorScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
 
     val autoStart = rememberPreferenceState(Constants.PREF_START_SERVICE_ON_BOOT, false)
     val broadcast = rememberPreferenceState(Constants.PREF_BROADCAST_SERVICE_CONTROL, false)
     val overwrite = rememberPreferenceState(Constants.PREF_ALLOW_OVERWRITE_FILES, false)
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_behaviour),
     ) {

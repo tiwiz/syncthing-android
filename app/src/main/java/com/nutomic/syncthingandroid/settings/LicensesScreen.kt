@@ -26,16 +26,18 @@ import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 
-fun EntryProviderScope<SettingsRoute>.licensesEntry() {
+fun EntryProviderScope<SettingsRoute>.licensesEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.Licenses> {
-        LicensesScreen()
+        LicensesScreen(navigator = navigator)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LicensesScreen(modifier: Modifier = Modifier) {
-    val navigator = LocalSettingsNavigator.current
+fun LicensesScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     ApplicationTheme {

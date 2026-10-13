@@ -15,7 +15,6 @@ Each one has its reason next to it. Remove the suppression when the code no long
 |---|---|---|
 | `settings/SettingsActivity.kt` `LocalSyncthingService` | `CompositionLocalAllowlist` | Pass the service (or a state holder for it) to the screens explicitly, or allow it in `config/detekt/detekt.yml` (needs the owner's approval) |
 | `settings/SettingsActivity.kt` `LocalServiceUpdateTick` | `CompositionLocalAllowlist` | Same as above: expose service state as an observable instead of a tick |
-| `settings/SettingsNavigation.kt` `LocalSettingsNavigator` | `CompositionLocalAllowlist` | Pass navigation callbacks to the screens |
 | `util/CompositionLocals.kt` `LocalActivityScope` | `CompositionLocalAllowlist` | Move the long-running work (config writes, exports) out of composables, e.g. into a ViewModel or the service |
 | `settings/SettingsUserInterfaceScreen.kt` `syncWebGuiTheme` | `TooGenericExceptionCaught` | Catch the specific exceptions `ConfigRouter.getGui` / `updateGui` can throw |
 

@@ -48,19 +48,19 @@ private const val MAX_PEM_BYTES = 64 * 1024
 private const val CUSTOM_CERT_WIKI_PATH =
     "/tips-and-tricks/Use-a-custom-HTTPS-certificate-for-the-Web-GUI.md"
 
-fun EntryProviderScope<SettingsRoute>.settingsCustomCertificateEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsCustomCertificateEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.CustomCertificate> {
-        SettingsCustomCertificateScreen()
+        SettingsCustomCertificateScreen(navigator = navigator)
     }
 }
 
 @Composable
 fun SettingsCustomCertificateScreen(
+    navigator: Navigator<SettingsRoute>,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val navigator = LocalSettingsNavigator.current
     val stService = LocalSyncthingService.current
 
     var certBytes by rememberSaveable { mutableStateOf<ByteArray?>(null) }
@@ -99,6 +99,7 @@ fun SettingsCustomCertificateScreen(
     val canApply = validation?.canApply == true && stService != null && !applying
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         title = stringResource(R.string.webui_custom_cert_title),
         modifier = modifier,
     ) {
