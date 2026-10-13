@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
@@ -18,7 +19,7 @@ fun EntryProviderScope<SettingsRoute>.settingsRootEntry() {
 }
 
 @Composable
-fun SettingsRootScreen() {
+fun SettingsRootScreen(modifier: Modifier = Modifier) {
     val navigator = LocalSettingsNavigator.current
     val stService = LocalSyncthingService.current
     val stServiceTick = LocalServiceUpdateTick.current
@@ -28,6 +29,7 @@ fun SettingsRootScreen() {
     }
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.settings_title),
     ) {
         item {

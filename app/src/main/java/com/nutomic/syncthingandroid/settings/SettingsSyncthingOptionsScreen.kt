@@ -1,15 +1,18 @@
 package com.nutomic.syncthingandroid.settings
 
 import android.content.ClipData
+import android.content.Context
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
@@ -51,6 +55,8 @@ import me.zhanghai.compose.preference.rememberPreferenceState
 import org.mindrot.jbcrypt.BCrypt
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 
 private const val TAG = "SettingsSyncthingOptionsScreen"
 
@@ -88,7 +94,7 @@ private const val BIND_LOCALHOST = "127.0.0.1"
 
 @OptIn(FlowPreview::class)
 @Composable
-fun SettingsSyncthingOptionsScreen() {
+fun SettingsSyncthingOptionsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val stService = LocalSyncthingService.current
@@ -119,7 +125,7 @@ fun SettingsSyncthingOptionsScreen() {
 
     ProvidePreferenceFlow(apiPrefFlow) {
         val deviceName = rememberPreferenceState(Keys.DEVICE_NAME, "")
-        val apiKey by rememberPreferenceState(Keys.API_KEY, "")
+        val apiKey = rememberPreferenceState(Keys.API_KEY, "")
         val usageReporting = rememberPreferenceState(Keys.USAGE_REPORTING, false)
 
         val listenAddresses = rememberPreferenceState(Keys.LISTEN_ADDRESSES, "default")
@@ -140,238 +146,311 @@ fun SettingsSyncthingOptionsScreen() {
 
 
         SettingsScaffold(
+            modifier = modifier,
             title = stringResource(R.string.category_syncthing_options),
             description = stringResource(R.string.category_syncthing_options_summary),
         ) {
-            item {
-                PreferenceCategory(
-                    title = { Text(stringResource(R.string.category_general)) },
-                )
-            }
-            item {
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.device_name)) },
-                    summary = { Text(deviceName.value) },
-                    state = deviceName,
-                    textToValue = { it },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                val apiKeyTitle = stringResource(R.string.syncthing_api_key)
-                Preference(
-                    title = { Text(apiKeyTitle) },
-                    summary = { Text(apiKey) },
-                    modifier = Modifier.semantics(true) {
-                        isSensitiveData = true
-                        password()
-                    },
-                    onClick = {
-                        val clipData = ClipData.newPlainText(apiKeyTitle, apiKey).toClipEntry()
-                        scope.launch {
-                            clipboard.setClipEntry(clipData)
-                            // Android 13+ shows a system confirmation automatically
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                Toast.makeText(
-                                    context,
-                                    R.string.api_key_copied_to_clipboard,
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        }
-                    },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.usage_reporting)) },
-                    state = usageReporting,
-                    enabled = isStServiceActive,
-                )
-            }
-
-            item {
-                PreferenceCategory(
-                    title = { Text(stringResource(R.string.category_connections)) },
-                )
-            }
-            item {
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.listen_address)) },
-                    summary = { Text(listenAddresses.value) },
-                    state = listenAddresses,
-                    textToValue = { it },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.max_recv_kbps)) },
-                    summary = { Text(incomingRateLimit.value.toString()) },
-                    state = incomingRateLimit,
-                    textToValue = {
-                        val newVal = it.toIntOrNull()
-                        if (newVal == null) {
-                            Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
-                            null
-                        } else {
-                            newVal
-                        }
-                    },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.max_send_kbps)) },
-                    summary = { Text(outgoingRateLimit.value.toString()) },
-                    state = outgoingRateLimit,
-                    textToValue = {
-                        val newVal = it.toIntOrNull()
-                        if (newVal == null) {
-                            Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
-                            null
-                        } else {
-                            newVal
-                        }
-                    },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.enable_nat_traversal)) },
-                    state = natTraversal,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.local_announce_enabled)) },
-                    state = localDiscovery,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.global_announce_enabled)) },
-                    state = globalDiscovery,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.enable_relaying)) },
-                    state = relaying,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.global_announce_server)) },
-                    summary = { Text(globalServers.value) },
-                    state = globalServers,
-                    textToValue = { it },
-                    enabled = isStServiceActive,
-                )
-            }
-
-            item {
-                PreferenceCategory(
-                    title = { Text(stringResource(R.string.web_gui_title)) },
-                )
-            }
-            item {
-                val portError = stringResource(R.string.invalid_port_number, 1024, 65535)
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.webui_tcp_port_title)) },
-                    summary = { Text(webGuiPort.value.toString()) },
-                    state = webGuiPort,
-                    textToValue = {
-                        val newValue = it.toIntOrNull()
-                        if (newValue == null || newValue !in 1024..65535) {
-                            Toast.makeText(context, portError, Toast.LENGTH_LONG).show()
-                            null
-                        } else {
-                            newValue
-                        }
-                    },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.webui_remote_access_title)) },
-                    summary = { Text(stringResource(R.string.webui_remote_access_summary)) },
-                    state = webGuiRemoteAccess,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.webui_username_title)) },
-                    summary = { Text(webGuiUsername.value) },
-                    state = webGuiUsername,
-                    textToValue = { it },
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                TextFieldPreference(
-                    title = { Text(stringResource(R.string.webui_password_title)) },
-                    value = webGuiPassword.value,
-                    onValueChange = {
-                        webGuiPassword.value = it
-                        sharedPrefWebGuiPassword.value = it
-                    },
-                    textToValue = { it },
-                    enabled = isStServiceActive,
-                )
-            }
-
-            item {
-                PreferenceCategory(
-                    title = { Text(stringResource(R.string.category_advanced)) },
-                )
-            }
-            item {
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.crash_reporting)) },
-                    state = crashReporting,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                Preference(
-                    title = { Text(stringResource(R.string.webui_custom_cert_title)) },
-                    summary = { Text(stringResource(R.string.webui_custom_cert_summary)) },
-                    onClick = { navigator.navigateTo(SettingsRoute.CustomCertificate) },
-                    // The custom certificate only matters when the GUI is served over HTTPS.
-                    enabled = stService != null && Constants.osSupportsTLS12(),
-                )
-            }
-            item {
-                ClearStVersionPreference(
-                    stService = stService,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                SupportBundlePreference(
-                    stService = stService,
-                    enabled = isStServiceActive,
-                )
-            }
-            item {
-                UndoIgnoredDevicesFoldersPreference(
-                    stService = stService,
-                    enabled = isStServiceActive,
-                )
-            }
+            generalItems(
+                deviceName,
+                apiKey,
+                usageReporting,
+                isStServiceActive,
+                context,
+                clipboard,
+                scope,
+            )
+            connectionItems(
+                listenAddresses,
+                incomingRateLimit,
+                outgoingRateLimit,
+                natTraversal,
+                localDiscovery,
+                globalDiscovery,
+                relaying,
+                globalServers,
+                isStServiceActive,
+                context,
+            )
+            webGuiItems(
+                webGuiPort,
+                webGuiRemoteAccess,
+                webGuiUsername,
+                webGuiPassword,
+                sharedPrefWebGuiPassword,
+                isStServiceActive,
+                context,
+            )
+            advancedItems(crashReporting, stService, isStServiceActive, navigator)
         }
+    }
+}
+
+private fun LazyListScope.generalItems(
+    deviceName: MutableState<String>,
+    apiKey: MutableState<String>,
+    usageReporting: MutableState<Boolean>,
+    isStServiceActive: Boolean,
+    context: Context,
+    clipboard: Clipboard,
+    scope: CoroutineScope,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_general)) },
+        )
+    }
+    item {
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.device_name)) },
+            summary = { Text(deviceName.value) },
+            state = deviceName,
+            textToValue = { it },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        val apiKeyTitle = stringResource(R.string.syncthing_api_key)
+        Preference(
+            title = { Text(apiKeyTitle) },
+            summary = { Text(apiKey.value) },
+            modifier = Modifier.semantics(true) {
+                isSensitiveData = true
+                password()
+            },
+            onClick = {
+                val clipData = ClipData.newPlainText(apiKeyTitle, apiKey.value).toClipEntry()
+                scope.launch {
+                    clipboard.setClipEntry(clipData)
+                    // Android 13+ shows a system confirmation automatically
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                        Toast.makeText(
+                            context,
+                            R.string.api_key_copied_to_clipboard,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.usage_reporting)) },
+            state = usageReporting,
+            enabled = isStServiceActive,
+        )
+    }
+}
+
+private fun LazyListScope.connectionItems(
+    listenAddresses: MutableState<String>,
+    incomingRateLimit: MutableState<Int>,
+    outgoingRateLimit: MutableState<Int>,
+    natTraversal: MutableState<Boolean>,
+    localDiscovery: MutableState<Boolean>,
+    globalDiscovery: MutableState<Boolean>,
+    relaying: MutableState<Boolean>,
+    globalServers: MutableState<String>,
+    isStServiceActive: Boolean,
+    context: Context,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_connections)) },
+        )
+    }
+    item {
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.listen_address)) },
+            summary = { Text(listenAddresses.value) },
+            state = listenAddresses,
+            textToValue = { it },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.max_recv_kbps)) },
+            summary = { Text(incomingRateLimit.value.toString()) },
+            state = incomingRateLimit,
+            textToValue = {
+                val newVal = it.toIntOrNull()
+                if (newVal == null) {
+                    Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
+                    null
+                } else {
+                    newVal
+                }
+            },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.max_send_kbps)) },
+            summary = { Text(outgoingRateLimit.value.toString()) },
+            state = outgoingRateLimit,
+            textToValue = {
+                val newVal = it.toIntOrNull()
+                if (newVal == null) {
+                    Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
+                    null
+                } else {
+                    newVal
+                }
+            },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.enable_nat_traversal)) },
+            state = natTraversal,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.local_announce_enabled)) },
+            state = localDiscovery,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.global_announce_enabled)) },
+            state = globalDiscovery,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.enable_relaying)) },
+            state = relaying,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.global_announce_server)) },
+            summary = { Text(globalServers.value) },
+            state = globalServers,
+            textToValue = { it },
+            enabled = isStServiceActive,
+        )
+    }
+}
+
+private fun LazyListScope.webGuiItems(
+    webGuiPort: MutableState<Int>,
+    webGuiRemoteAccess: MutableState<Boolean>,
+    webGuiUsername: MutableState<String>,
+    webGuiPassword: MutableState<String>,
+    sharedPrefWebGuiPassword: MutableState<String>,
+    isStServiceActive: Boolean,
+    context: Context,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.web_gui_title)) },
+        )
+    }
+    item {
+        val portError = stringResource(R.string.invalid_port_number, 1024, 65535)
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.webui_tcp_port_title)) },
+            summary = { Text(webGuiPort.value.toString()) },
+            state = webGuiPort,
+            textToValue = {
+                val newValue = it.toIntOrNull()
+                if (newValue == null || newValue !in 1024..65535) {
+                    Toast.makeText(context, portError, Toast.LENGTH_LONG).show()
+                    null
+                } else {
+                    newValue
+                }
+            },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.webui_remote_access_title)) },
+            summary = { Text(stringResource(R.string.webui_remote_access_summary)) },
+            state = webGuiRemoteAccess,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.webui_username_title)) },
+            summary = { Text(webGuiUsername.value) },
+            state = webGuiUsername,
+            textToValue = { it },
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.webui_password_title)) },
+            value = webGuiPassword.value,
+            onValueChange = {
+                webGuiPassword.value = it
+                sharedPrefWebGuiPassword.value = it
+            },
+            textToValue = { it },
+            enabled = isStServiceActive,
+        )
+    }
+}
+
+private fun LazyListScope.advancedItems(
+    crashReporting: MutableState<Boolean>,
+    stService: SyncthingService?,
+    isStServiceActive: Boolean,
+    navigator: Navigator<SettingsRoute>,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_advanced)) },
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.crash_reporting)) },
+            state = crashReporting,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        Preference(
+            title = { Text(stringResource(R.string.webui_custom_cert_title)) },
+            summary = { Text(stringResource(R.string.webui_custom_cert_summary)) },
+            onClick = { navigator.navigateTo(SettingsRoute.CustomCertificate) },
+            // The custom certificate only matters when the GUI is served over HTTPS.
+            enabled = stService != null && Constants.osSupportsTLS12(),
+        )
+    }
+    item {
+        ClearStVersionPreference(
+            stService = stService,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        SupportBundlePreference(
+            stService = stService,
+            enabled = isStServiceActive,
+        )
+    }
+    item {
+        UndoIgnoredDevicesFoldersPreference(
+            stService = stService,
+            enabled = isStServiceActive,
+        )
     }
 }
 
@@ -380,6 +459,7 @@ fun SettingsSyncthingOptionsScreen() {
 private fun ClearStVersionPreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
@@ -400,7 +480,7 @@ private fun ClearStVersionPreference(
                 TextButton(
                     onClick = {
                         stService?.api?.let { api ->
-                            scope.launch(Dispatchers.IO) {
+                            scope.launch(ioDispatcher) {
                                 val folders = api.folders
                                 if (clearStVersions(folders)) {
                                     withContext(Dispatchers.Main) {
@@ -435,6 +515,7 @@ private fun ClearStVersionPreference(
 private fun UndoIgnoredDevicesFoldersPreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
@@ -454,7 +535,7 @@ private fun UndoIgnoredDevicesFoldersPreference(
                 TextButton(
                     onClick = {
                         stService?.api?.let { api ->
-                            scope.launch(Dispatchers.IO) {
+                            scope.launch(ioDispatcher) {
                                 api.undoIgnoredDevicesAndFolders()
                                 api.sendConfig()
                                 withContext(Dispatchers.Main) {
@@ -488,6 +569,7 @@ private fun UndoIgnoredDevicesFoldersPreference(
 private fun SupportBundlePreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val scope = LocalActivityScope.current
     var supportBundleState by remember { mutableStateOf(SupportBundleDownloadState.INIT) }
@@ -512,7 +594,7 @@ private fun SupportBundlePreference(
         onClick = {
             stService?.api?.let { api ->
                 supportBundleState = SupportBundleDownloadState.DOWNLOADING
-                scope.launch(Dispatchers.IO) {
+                scope.launch(ioDispatcher) {
                     val deviceName = api.localDevice.displayName
                     val downloadDir = FileUtils.getExternalStorageDownloadsDirectory()
                     val targetFileName = "$downloadDir/syncthing-support-bundle_$deviceName.zip"

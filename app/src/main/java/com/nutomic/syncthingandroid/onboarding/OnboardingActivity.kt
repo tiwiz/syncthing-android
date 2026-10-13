@@ -6,7 +6,6 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -16,7 +15,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
 import java.io.Serializable
 import androidx.lifecycle.lifecycleScope
@@ -26,17 +24,11 @@ import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.service.SyncthingRunnable.ExecutableNotFoundException
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.ConfigXml
-import com.nutomic.syncthingandroid.util.ConfigXml.OpenConfigException
 import com.nutomic.syncthingandroid.util.LocalActivityScope
-import com.nutomic.syncthingandroid.util.PermissionUtil
 import com.nutomic.syncthingandroid.util.Util
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 data class OnboardingUiState(
     val pages: List<OnboardingPage> = emptyList(),
@@ -51,7 +43,11 @@ data class OnboardingUiState(
     val keyGenerationRunning: Boolean = false,
     val keyGenerationFailed: Boolean = false,
     val keyGenerationStatus: String = "",
-) : Serializable
+) : Serializable {
+    private companion object {
+        private const val serialVersionUID = 1L
+    }
+}
 
 class OnboardingActivity : ThemedAppCompatActivity() {
 
@@ -152,7 +148,7 @@ class OnboardingActivity : ThemedAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // TODO: move to ThemedAppCompatActivity when every activity is compose
+        // Could move to ThemedAppCompatActivity once every activity uses Compose.
         enableEdgeToEdge()
         (application as SyncthingApp).component().inject(this)
 
@@ -371,51 +367,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         )
     }
 
-    private fun haveStoragePermission(): Boolean {
-        return PermissionUtil.haveStoragePermission(this)
-    }
-
-    private fun haveIgnoreDozePermission(): Boolean {
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        return pm.isIgnoringBatteryOptimizations(packageName)
-    }
-
-    private fun haveLocationPermission(): Boolean {
-        val coarseLocationGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        val backgroundLocationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        } else { true }
-
-        return coarseLocationGranted && backgroundLocationGranted
-    }
-
-    private fun haveLocalNetworkPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN) {
-            return true
-        }
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_LOCAL_NETWORK
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun haveNotificationPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
-        return ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     private fun requestLocationPermission() {
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
@@ -459,16 +410,7 @@ class OnboardingActivity : ThemedAppCompatActivity() {
             keyGenerationStatus = getString(R.string.web_gui_creating_key),
         )
         lifecycleScope.launch {
-            val errorMessage = withContext(Dispatchers.IO) {
-                try {
-                    ConfigXml(this@OnboardingActivity).generateConfig()
-                    null
-                } catch (e: ExecutableNotFoundException) {
-                    getString(R.string.executable_not_found, e.message)
-                } catch (_: OpenConfigException) {
-                    getString(R.string.config_create_failed)
-                }
-            }
+            val errorMessage = generateConfig()
 
             if (errorMessage != null) {
                 uiState = uiState.copy(
@@ -496,22 +438,5 @@ class OnboardingActivity : ThemedAppCompatActivity() {
                 keyGenerationStatus = getString(R.string.key_generation_success),
             )
         }
-    }
-
-    private fun checkForParseableConfig(): Boolean {
-        val configExists = Constants.getConfigFile(this).exists()
-        if (!configExists) {
-            return false
-        }
-
-        try {
-            val configParseTest = ConfigXml(this)
-            configParseTest.loadConfig()
-            return true
-        } catch (_: OpenConfigException) {
-            Log.d(TAG, "Failed to parse existing config. Will show key generation slide ...")
-        }
-
-        return false
     }
 }

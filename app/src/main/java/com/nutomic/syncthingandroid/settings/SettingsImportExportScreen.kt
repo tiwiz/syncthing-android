@@ -41,6 +41,7 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.util.LocalActivityScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,11 +62,12 @@ fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry() {
 
 
 @Composable
-fun SettingsImportExportScreen() {
+fun SettingsImportExportScreen(modifier: Modifier = Modifier) {
     val defaultBackupPath = "backups/syncthing/config.zip"
     val backupPath = rememberPreferenceState(Constants.PREF_BACKUP_REL_PATH_TO_ZIP,defaultBackupPath)
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_backup),
     ) {
         item {
@@ -202,7 +204,7 @@ private fun PasswordPreference() {
 }
 
 @Composable
-private fun ExportConfigPreference() {
+private fun ExportConfigPreference(ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
     val navigator = LocalSettingsNavigator.current
@@ -224,7 +226,7 @@ private fun ExportConfigPreference() {
                 TextButton(
                     onClick = {
                         stService?.let { service ->
-                            scope.launch(Dispatchers.IO) {
+                            scope.launch(ioDispatcher) {
                                 showAlert = false
                                 service.exportConfig().also { success ->
                                     withContext(Dispatchers.Main) {
@@ -265,7 +267,7 @@ private fun ExportConfigPreference() {
 }
 
 @Composable
-private fun ImportConfigPreference() {
+private fun ImportConfigPreference(ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
     val navigator = LocalSettingsNavigator.current
@@ -288,7 +290,7 @@ private fun ImportConfigPreference() {
                 TextButton(
                     onClick = {
                         stService?.let { service ->
-                            scope.launch(Dispatchers.IO) {
+                            scope.launch(ioDispatcher) {
                                 showAlert = false
                                 service.importConfig().also { success ->
                                     withContext(Dispatchers.Main) {

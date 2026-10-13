@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -61,6 +62,8 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.util.isTelevision
 
 private const val COMPACT_SCREEN_MAX_DP = 360
+private const val LANDSCAPE_ICON_COLUMN_WEIGHT = 2f
+private const val LANDSCAPE_TEXT_COLUMN_WEIGHT = 3f
 private val focusIndicatorStrokeWidth = 3.dp
 private val focusIndicatorGap = 2.dp
 private val focusIndicatorPadding = focusIndicatorStrokeWidth + focusIndicatorGap
@@ -86,12 +89,13 @@ fun OnboardingScaffold(
     pageCount: Int,
     onBack: () -> Unit,
     onNext: () -> Unit,
+    nextLabel: String,
+    modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
     actionFocusRequester: FocusRequester? = null,
     requestTvFocus: Boolean = false,
     canGoBack: Boolean = true,
     backVisible: Boolean = true,
-    nextLabel: String,
     nextEnabled: Boolean = true,
     nextVisible: Boolean = true,
 ) {
@@ -106,7 +110,7 @@ fun OnboardingScaffold(
         focusRequester?.requestFocus()
     }
 
-    Scaffold { paddingValues ->
+    Scaffold(modifier = modifier) { paddingValues ->
         if (config.orientation == Configuration.ORIENTATION_PORTRAIT) {
             PortraitScaffoldContent(
                 paddingValues = paddingValues,
@@ -152,7 +156,7 @@ private fun PortraitScaffoldContent(
     icon: OnboardingIcon,
     title: String,
     description: String,
-    action: @Composable (() -> Unit)? = null,
+    action: @Composable (() -> Unit)?,
     pageIndex: Int,
     pageCount: Int,
     canGoBack: Boolean,
@@ -256,7 +260,7 @@ private fun LandscapeScaffoldContent(
     icon: OnboardingIcon,
     title: String,
     description: String,
-    action: @Composable (() -> Unit)? = null,
+    action: @Composable (() -> Unit)?,
     pageIndex: Int,
     pageCount: Int,
     canGoBack: Boolean,
@@ -289,7 +293,7 @@ private fun LandscapeScaffoldContent(
             .padding(16.dp)
     ) {
         Column(
-            modifier = Modifier.weight(2f).fillMaxHeight(),
+            modifier = Modifier.weight(LANDSCAPE_ICON_COLUMN_WEIGHT).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -330,7 +334,7 @@ private fun LandscapeScaffoldContent(
         Spacer(Modifier.width(16.dp))
 
         Column(
-            modifier = Modifier.weight(3f).fillMaxHeight(),
+            modifier = Modifier.weight(LANDSCAPE_TEXT_COLUMN_WEIGHT).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -465,6 +469,7 @@ private fun PageIndicator(
 fun NextButton(
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     focusRequester: FocusRequester = FocusRequester(),
 ) {
@@ -499,7 +504,7 @@ fun NextButton(
     FocusIndicatorBox(
         focused = focused && enabled,
         shape = focusIndicatorShape,
-        modifier = Modifier
+        modifier = modifier
             .widthIn(min = minWidth, max = 560.dp)
             .fillMaxWidth(),
     ) {
@@ -531,6 +536,7 @@ fun NextButton(
 fun PermissionButton(
     granted: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     focusRequester: FocusRequester = FocusRequester(),
 ) {
     val compactScreen = isCompactOnboardingScreen()
@@ -575,6 +581,7 @@ fun PermissionButton(
     FocusIndicatorBox(
         focused = focused && !granted,
         shape = focusIndicatorShape,
+        modifier = modifier,
     ) {
         Button(
             onClick = onClick,
@@ -640,8 +647,9 @@ private fun FocusIndicatorBox(
     }
 }
 
-// TODO: use window size class when material3.adaptive package is added
+// A window size class would fit better here once the material3.adaptive package is added.
 @Composable
+@ReadOnlyComposable
 private fun isCompactOnboardingScreen(): Boolean {
     val containerSize = LocalWindowInfo.current.containerSize
     val compactScreenMaxSize = COMPACT_SCREEN_MAX_DP.dp

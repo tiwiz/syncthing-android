@@ -25,7 +25,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 
+// The bound service (and a tick that changes when its state does) is activity-wide state that most
+// settings screens read; it is provided once by SettingsActivity rather than passed down every screen.
+@Suppress("CompositionLocalAllowlist")
 val LocalSyncthingService = staticCompositionLocalOf<SyncthingService?> { null }
+
+@Suppress("CompositionLocalAllowlist")
 val LocalServiceUpdateTick = staticCompositionLocalOf { 0 }
 
 class SettingsActivity : SyncthingActivity() {

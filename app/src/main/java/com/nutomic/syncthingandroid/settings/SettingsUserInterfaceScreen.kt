@@ -1,11 +1,13 @@
 package com.nutomic.syncthingandroid.settings
 
+import android.content.Context
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -13,8 +15,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.util.ConfigRouter
 import com.nutomic.syncthingandroid.util.LocalActivityScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
@@ -34,7 +38,10 @@ fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry() {
 
 
 @Composable
-fun SettingsUserInterfaceScreen() {
+fun SettingsUserInterfaceScreen(
+    modifier: Modifier = Modifier,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
     val stService = LocalSyncthingService.current
@@ -42,11 +49,15 @@ fun SettingsUserInterfaceScreen() {
     val themeNames = stringArrayResource(R.array.app_theme_names)
     val themeValues = stringArrayResource(R.array.app_theme_values)
 
-    var theme by rememberPreferenceState(Constants.PREF_APP_THEME, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM.toString())
+    var theme by rememberPreferenceState(
+        Constants.PREF_APP_THEME,
+        AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM.toString(),
+    )
     val expertMode = rememberPreferenceState(Constants.PREF_EXPERT_MODE, false)
     val startInWebGui = rememberPreferenceState(Constants.PREF_START_INTO_WEB_GUI, false)
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_user_interface),
     ) {
         item {
@@ -59,21 +70,9 @@ fun SettingsUserInterfaceScreen() {
                     if (newTheme != theme && newThemeInt != null) {
                         theme = newTheme
                         AppCompatDelegate.setDefaultNightMode(newThemeInt)
-                        scope.launch(Dispatchers.IO) {
+                        scope.launch(ioDispatcher) {
                             withContext(NonCancellable) {
-                                try {
-                                    val config = ConfigRouter(context)
-                                    val restApi = stService?.api
-                                    val gui = config.getGui(restApi)
-                                    gui.theme = when (newTheme) {
-                                        AppCompatDelegate.MODE_NIGHT_YES.toString() -> "dark"
-                                        AppCompatDelegate.MODE_NIGHT_NO.toString() -> "light"
-                                        else -> "default"
-                                    }
-                                    config.updateGui(restApi, gui)
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error updating theme with config router", e)
-                                }
+                                syncWebGuiTheme(context, stService?.api, newTheme)
                             }
                         }
                     }
@@ -96,5 +95,27 @@ fun SettingsUserInterfaceScreen() {
                 state = startInWebGui,
             )
         }
+    }
+}
+
+/**
+ * Applies the app theme to the web GUI too, through config.xml or the REST API.
+ *
+ * It runs fire-and-forget after the app theme has already changed, so whatever goes wrong reading or
+ * writing the config (I/O, parsing, REST) is logged and must not crash the app: hence the broad catch.
+ */
+@Suppress("TooGenericExceptionCaught")
+private fun syncWebGuiTheme(context: Context, restApi: RestApi?, newTheme: String) {
+    try {
+        val config = ConfigRouter(context)
+        val gui = config.getGui(restApi)
+        gui.theme = when (newTheme) {
+            AppCompatDelegate.MODE_NIGHT_YES.toString() -> "dark"
+            AppCompatDelegate.MODE_NIGHT_NO.toString() -> "light"
+            else -> "default"
+        }
+        config.updateGui(restApi, gui)
+    } catch (e: Exception) {
+        Log.e(TAG, "Error updating theme with config router", e)
     }
 }

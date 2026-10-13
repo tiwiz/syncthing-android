@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -15,6 +16,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.util.Util
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.zhanghai.compose.preference.Preference
@@ -30,7 +32,10 @@ fun EntryProviderScope<SettingsRoute>.settingsAboutEntry() {
 
 
 @Composable
-fun SettingsAboutScreen() {
+fun SettingsAboutScreen(
+    modifier: Modifier = Modifier,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val context = LocalContext.current
     val navigator = LocalSettingsNavigator.current
     val uriHandler = LocalUriHandler.current
@@ -46,7 +51,7 @@ fun SettingsAboutScreen() {
             dbSize = loading,
             fileLimit = loading,
         ), stService, stServiceTick) {
-        value = withContext(Dispatchers.IO) {
+        value = withContext(ioDispatcher) {
             AboutState(
                 appVersion = getAppVersion(context) ?: unknown,
                 coreVersion = stService?.api?.version ?: unknown,
@@ -57,6 +62,7 @@ fun SettingsAboutScreen() {
     }
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_about),
     ) {
         item {

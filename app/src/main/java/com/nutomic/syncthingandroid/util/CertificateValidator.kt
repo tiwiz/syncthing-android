@@ -1,18 +1,16 @@
 package com.nutomic.syncthingandroid.util
 
-import com.google.common.io.BaseEncoding
-import java.io.ByteArrayInputStream
 import java.security.KeyFactory
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Signature
 import java.security.SignatureException
 import java.security.cert.CertificateExpiredException
-import java.security.cert.CertificateFactory
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
 import java.text.DateFormat
+import java.util.Locale
 import javax.net.ssl.X509TrustManager
 
 /**
@@ -53,6 +51,8 @@ object CertificateValidator {
         val info: CertInfo?,
     )
 
+    private const val CN_PREFIX = "CN="
+
     private val NONCE = "syncthing-android-cert-key-match-probe".toByteArray()
 
     /**
@@ -68,27 +68,15 @@ object CertificateValidator {
         keySlot: ByteArray,
         osTrustManager: X509TrustManager? = Util.getOsTrustManager(),
     ): ValidationResult {
-        val aIsCert = looksLikeCertificate(certSlot)
-        val bIsCert = looksLikeCertificate(keySlot)
-        val aIsKey = looksLikeKey(certSlot)
-        val bIsKey = looksLikeKey(keySlot)
-
-        val certBytes: ByteArray
-        val keyBytes: ByteArray
-        when {
-            aIsCert && bIsKey -> { certBytes = certSlot; keyBytes = keySlot }
-            bIsCert && aIsKey -> { certBytes = keySlot; keyBytes = certSlot } // swapped
-            aIsCert && bIsCert -> return fail("Both files are certificates — one must be the private key.", certSlot, keySlot)
-            aIsKey && bIsKey -> return fail("Both files are private keys — one must be the certificate.", certSlot, keySlot)
-            !aIsCert && !bIsCert -> return fail("No PEM certificate found in the selected files.", certSlot, keySlot)
-            aIsCert -> { certBytes = certSlot; keyBytes = keySlot }
-            else -> { certBytes = keySlot; keyBytes = certSlot }
+        val (certBytes, keyBytes) = when (val slots = sortSlots(certSlot, keySlot)) {
+            is SlotAssignment.Sorted -> slots.cert to slots.key
+            is SlotAssignment.Invalid -> return fail(slots.message, certSlot, keySlot)
         }
 
         val chain: List<X509Certificate> = try {
             parseChain(certBytes)
-        } catch (e: Exception) {
-            return fail("Could not read the certificate: ${e.message}", certSlot, keySlot)
+        } catch (expected: Exception) {
+            return fail("Could not read the certificate: ${expected.message}", certSlot, keySlot)
         }
         if (chain.isEmpty()) {
             return fail("The certificate file contains no certificates.", certSlot, keySlot)
@@ -115,7 +103,7 @@ object CertificateValidator {
     /** Parses the (currently installed) certificate file for display, or null if unreadable. */
     fun describe(certBytes: ByteArray): CertInfo? = try {
         parseChain(certBytes).firstOrNull()?.let { certInfo(it) }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 
@@ -131,9 +119,9 @@ object CertificateValidator {
     fun leafFingerprint(certPem: ByteArray): String? = try {
         parseChain(certPem).firstOrNull()?.let { leaf ->
             MessageDigest.getInstance("SHA-256").digest(leaf.encoded)
-                .joinToString("") { byte -> "%02x".format(byte) }
+                .joinToString("") { byte -> String.format(Locale.ROOT, "%02x", byte) }
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 
@@ -152,7 +140,7 @@ object CertificateValidator {
         for (i in 0 until chain.size - 1) {
             try {
                 chain[i].verify(chain[i + 1].publicKey)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 return CheckResult(
                     Check.CHAIN, Status.WARN,
                     "Certificates may be out of order or an intermediate is missing."
@@ -177,9 +165,10 @@ object CertificateValidator {
             tm.checkServerTrusted(chain.toTypedArray(), TLS_AUTH_TYPE_UNKNOWN)
             CheckResult(
                 Check.TRUST, Status.PASS,
-                "Trusted by Android (chain validated; the hostname is intentionally not checked for the local connection)."
+                "Trusted by Android (chain validated; the hostname is intentionally not checked " +
+                    "for the local connection)."
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             CheckResult(
                 Check.TRUST, Status.FAIL,
                 "Not trusted by Android — install your root CA on the device and include the full chain."
@@ -191,9 +180,9 @@ object CertificateValidator {
         for (c in chain) {
             try {
                 c.checkValidity()
-            } catch (e: CertificateExpiredException) {
+            } catch (_: CertificateExpiredException) {
                 return CheckResult(Check.VALIDITY, Status.FAIL, "A certificate in the chain has expired.")
-            } catch (e: CertificateNotYetValidException) {
+            } catch (_: CertificateNotYetValidException) {
                 return CheckResult(Check.VALIDITY, Status.FAIL, "A certificate in the chain is not yet valid.")
             }
         }
@@ -239,7 +228,7 @@ object CertificateValidator {
 
         val der = try {
             pemToDer(keyBytes, "PRIVATE KEY")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // The PEM envelope itself is broken, so Syncthing cannot read it either.
             return CheckResult(Check.KEY, Status.FAIL, "The private key could not be decoded.")
         }
@@ -265,11 +254,6 @@ object CertificateValidator {
 
     // --- helpers -------------------------------------------------------------------------------
 
-    private fun parseChain(bytes: ByteArray): List<X509Certificate> {
-        val cf = CertificateFactory.getInstance("X.509")
-        return cf.generateCertificates(ByteArrayInputStream(bytes)).map { it as X509Certificate }
-    }
-
     private fun certInfo(leaf: X509Certificate) = CertInfo(
         subject = shortName(leaf.subjectX500Principal.name),
         issuer = shortName(leaf.issuerX500Principal.name),
@@ -280,7 +264,7 @@ object CertificateValidator {
     private fun isSelfSigned(c: X509Certificate): Boolean = try {
         c.verify(c.publicKey)
         c.subjectX500Principal == c.issuerX500Principal
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 
@@ -310,7 +294,7 @@ object CertificateValidator {
         for (algorithm in listOf("RSA", "EC", "Ed25519")) {
             try {
                 return KeyFactory.getInstance(algorithm).generatePrivate(spec)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Wrong algorithm for this key, or unsupported on this device — try the next.
             }
         }
@@ -350,11 +334,11 @@ object CertificateValidator {
             verifier.initVerify(leaf.publicKey)
             verifier.update(NONCE)
             if (verifier.verify(sig)) KeyMatch.MATCH else KeyMatch.MISMATCH
-        } catch (e: SignatureException) {
+        } catch (_: SignatureException) {
             // Some providers reject a signature made by the wrong key by throwing rather than
             // returning false.
             KeyMatch.MISMATCH
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             KeyMatch.UNKNOWN
         }
     }
@@ -366,30 +350,35 @@ object CertificateValidator {
             else -> upper
         }
 
-    /**
-     * Uses Guava rather than `android.util.Base64` deliberately: it keeps this class free of Android
-     * APIs so it can be unit-tested on the JVM without Robolectric. `java.util.Base64` is not an
-     * option — it needs API 26 and `min-sdk` is 23.
-     */
-    private fun pemToDer(pem: ByteArray, kind: String): ByteArray {
-        val text = String(pem, Charsets.US_ASCII)
-        val begin = "-----BEGIN $kind-----"
-        val end = "-----END $kind-----"
-        val b = text.indexOf(begin)
-        val e = text.indexOf(end)
-        require(b >= 0 && e > b) { "PEM block not found" }
-        val body = text.substring(b + begin.length, e).replace("\\s".toRegex(), "")
-        return BaseEncoding.base64().decode(body)
+    private fun shortName(dn: String): String =
+        dn.split(",").map { it.trim() }.firstOrNull { it.startsWith(CN_PREFIX, true) }
+            ?.substring(CN_PREFIX.length) ?: dn
+
+    private sealed interface SlotAssignment {
+        class Sorted(val cert: ByteArray, val key: ByteArray) : SlotAssignment
+
+        class Invalid(val message: String) : SlotAssignment
     }
 
-    private fun looksLikeCertificate(bytes: ByteArray): Boolean =
-        String(bytes, Charsets.US_ASCII).contains("-----BEGIN CERTIFICATE-----")
-
-    private fun looksLikeKey(bytes: ByteArray): Boolean =
-        String(bytes, Charsets.US_ASCII).contains("PRIVATE KEY-----")
-
-    private fun shortName(dn: String): String =
-        dn.split(",").map { it.trim() }.firstOrNull { it.startsWith("CN=", true) }?.substring(3) ?: dn
+    /** Puts the picked files in certificate, key order, or says why they are not such a pair. */
+    private fun sortSlots(certSlot: ByteArray, keySlot: ByteArray): SlotAssignment {
+        val aIsCert = looksLikeCertificate(certSlot)
+        val bIsCert = looksLikeCertificate(keySlot)
+        val aIsKey = looksLikeKey(certSlot)
+        val bIsKey = looksLikeKey(keySlot)
+        return when {
+            aIsCert && bIsKey -> SlotAssignment.Sorted(certSlot, keySlot)
+            bIsCert && aIsKey -> SlotAssignment.Sorted(keySlot, certSlot) // swapped
+            aIsCert && bIsCert ->
+                SlotAssignment.Invalid("Both files are certificates — one must be the private key.")
+            aIsKey && bIsKey ->
+                SlotAssignment.Invalid("Both files are private keys — one must be the certificate.")
+            !aIsCert && !bIsCert ->
+                SlotAssignment.Invalid("No PEM certificate found in the selected files.")
+            aIsCert -> SlotAssignment.Sorted(certSlot, keySlot)
+            else -> SlotAssignment.Sorted(keySlot, certSlot)
+        }
+    }
 
     private fun fail(message: String, certSlot: ByteArray, keySlot: ByteArray) =
         ValidationResult(message, emptyList(), false, certSlot, keySlot, null)

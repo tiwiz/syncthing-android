@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.nutomic.syncthingandroid.service.Constants
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,13 +31,14 @@ import me.zhanghai.compose.preference.Preferences
 fun createPreferenceFlow(
     sharedPreferences: SharedPreferences,
     scope: CoroutineScope,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): MutableStateFlow<Preferences> =
     MutableStateFlow(sharedPreferences.preferences).also {
 
         // Sync from Flow -> SharedPreferences
         scope.launch(Dispatchers.Main.immediate) {
             it.drop(1).collectLatest { newPrefs ->
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     val newMap = newPrefs.asMap()
                     val diskMap = sharedPreferences.all
 

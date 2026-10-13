@@ -34,7 +34,7 @@ fun EntryProviderScope<SettingsRoute>.licensesEntry() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LicensesScreen() {
+fun LicensesScreen(modifier: Modifier = Modifier) {
     val navigator = LocalSettingsNavigator.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -48,7 +48,7 @@ fun LicensesScreen() {
         val libraries by produceLibraries(librariesContent)
 
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 LargeTopAppBar(
                     title = { Text(stringResource(id = R.string.open_source_licenses_title)) },

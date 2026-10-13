@@ -192,9 +192,6 @@ roborazzi {
 detekt {
     buildUponDefaultConfig.set(true)
     config.setFrom(rootProject.file("config/detekt/detekt.yml"))
-    // Findings in app code that predate detekt (the debug task writes detekt-baseline-debug.xml).
-    // It may only shrink; tests have no baseline.
-    baseline.set(file("detekt-baseline.xml"))
     basePath.set(rootProject.layout.projectDirectory)
     parallel.set(true)
 }
@@ -217,7 +214,7 @@ tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtBaseTask>().configureEach {
 
 // The type-resolved detekt tasks run more rules than the plain one: "debug" covers app/src/main,
 // "debugUnitTest" covers app/src/test. Plain `detekt` (which `check` depends on) becomes an
-// alias for the two, so there is a single set of findings and a single baseline.
+// alias for the two, so there is a single set of findings.
 tasks.named("detekt") {
     enabled = false
     dependsOn("detektDebug", "detektDebugUnitTest")
