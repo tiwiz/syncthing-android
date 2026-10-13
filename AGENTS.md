@@ -200,7 +200,9 @@ Next steps (to be confirmed with the owner):
    instrumented tests (`app/src/androidTest`, Espresso-Web, CI job `Instrumented tests`). They
    pinned a blank web GUI after a refused certificate, fixed in PR #27. No
    pinned bugs left. detekt now sees the app's Java classes (javac output on
-   `detektDebug`'s classpath): no more "compiler errors found during analysis".
+   `detektDebug`'s classpath, PR #28): no more "compiler errors found during analysis".
+   Branch `test/small-interactions`: folder type, pull order and sync conditions screens, QR
+   scan, share.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

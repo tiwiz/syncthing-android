@@ -31,7 +31,7 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest`, `BootReceiverTest`, `AppConfigReceiverTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
-| Screens driven by hand | Robolectric (+ Compose test for onboarding) | `WebGuiActivityTest`, `WebViewActivityTest`, `EditScreensTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
+| Screens driven by hand | Robolectric (+ Compose test for onboarding) | `WebGuiActivityTest`, `WebViewActivityTest`, `EditScreensTest`, `FolderDialogsTest`, `QrScanTest`, `ShareActivityTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
 | Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
 | WebView screens on a device | AndroidJUnitRunner + Espresso-Web, HTTPS MockWebServer | `WebGuiActivityWebTest`, `WebViewActivityWebTest` |
@@ -178,5 +178,5 @@ Snapshot on 2026-10-13 (lines): 66% overall. `receiver` 94%, `model` 87%, `http`
 
 - The web GUI's own JavaScript UI (served by the real Syncthing) is not exercised; the instrumented
   tests use a fake page.
-- Many smaller interactions (folder type, pull order and sync conditions dialogs, share flow
-  confirm, QR scanner) still have no click-through test.
+- The QR scanner's camera preview: Robolectric has no camera, so `QrScanTest` reports a scan to the
+  scanner's callback directly.
