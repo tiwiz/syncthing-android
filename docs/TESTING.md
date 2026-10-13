@@ -30,7 +30,7 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
-| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest` |
+| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest` |
 
 ```bash
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest                         # unit tests only
@@ -75,8 +75,11 @@ Volley stack, `SyncthingTrustManager` pinning and loopback rewrite.
   (`w411dp-h891dp-xxhdpi`, English).
 - Record: `IS_COPILOT=true ./gradlew :app:recordRoborazziDebug`. Compare: `:app:verifyRoborazziDebug`.
   A failed comparison writes `*_actual.png` and `*_compare.png` next to the golden (git-ignored).
-- Screens run with the fixture config and a real `SyncthingService` that was created but not started
-  (`StoppedSyncthingService`), so they show the "Syncthing not running" state.
+- Most screens run with the fixture config and a real `SyncthingService` that was created but not
+  started (`StoppedSyncthingService`), so they show the "Syncthing not running" state.
+- `RunningScreenshotTest` (`screenshots/running/`) shows the main tabs, folder and device screens and
+  some settings with Syncthing running: `RunningSyncthingService` sets the service to ACTIVE with a
+  `RestApi` loaded from `FakeSyncthing`. It pins the time zone to UTC for "last seen" times.
 - Anything non-deterministic is pinned in the test, never in the app: random folder ids, text
   cursors, async loading (`settle()`).
 
@@ -127,4 +130,4 @@ Snapshot on 2026-10-13 (lines): 46% overall. `model` 83%, `util` 69%, `http` 59%
 - `ShareActivity`, `LogActivity`, `FolderPickerActivity`, `PhotoShootActivity`,
   `SyncConditionsActivity`, `WebViewActivity`, `WebGuiActivity`, recent changes and the device id
   dialog have no test at all.
-- Screens are only captured with Syncthing stopped, and no test clicks anything.
+- Apart from `SettingsNavigationTest`, no test clicks anything.
