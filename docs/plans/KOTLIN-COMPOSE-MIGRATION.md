@@ -17,8 +17,9 @@ One topic per PR, each with the gate and CI green before merging.
    4. `Util`, split by topic into top-level functions with `@file:JvmName` facades: `Util` (shell
       and processes), `TextFormat`, `UiUtil`, `OsTrustStore`. Done (#34).
    5. `FileUtils`, split into `FileUtils` (storage paths, MIME table), `SafUtils` (SAF URIs,
-      DocumentFile) and `FileOpener` (open in other apps). Done (`refactor/kotlin-fileutils`).
-   6. `ConfigXml`, `ConfigRouter`.
+      DocumentFile) and `FileOpener` (open in other apps). Done (#35).
+   6. `ConfigXml` (with the model conversions and DOM helpers in their own files) and
+      `ConfigRouter`. Done (`refactor/kotlin-configxml`).
    7. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
       `EventProcessor`, `SyncthingRunnable`, `RestApi`, `SyncthingService`), Dagger.
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the

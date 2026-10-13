@@ -20,6 +20,9 @@ Kept from the Kotlin migration:
 
 - `model/Connections.kt` `connections` (`MemberNameEqualsClassName`): the JSON field Syncthing
   sends has the class's name.
+- `TooManyFunctions` on classes whose public API has one method per config operation:
+  `DaggerComponent` (one `inject` per class), `util/ConfigXml.kt`, `util/ConfigRouter.kt`. Their
+  helpers live in other files; splitting the APIs means changing every caller.
 
 ## TODOs
 

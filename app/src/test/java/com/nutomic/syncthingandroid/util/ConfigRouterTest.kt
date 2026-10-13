@@ -7,12 +7,19 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
+import com.nutomic.syncthingandroid.testutil.FakeSyncthing
+import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
+import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
+import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
+import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.testutil.awaitMain
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.w3c.dom.Element
 
 /** With no running Syncthing (`RestApi == null`) the router reads and writes `config.xml`. */
@@ -100,5 +107,34 @@ class ConfigRouterTest {
 
     private companion object {
         const val STRANGER_ID = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
+    }
+
+    @Test
+    @Config(
+        shadows =
+            [
+                ShadowEnvironmentWithAllFilesAccess::class,
+                ShadowContentResolverWithStatusListeners::class,
+                ShadowUtilDeviceShell::class,
+            ],
+        instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
+    )
+    fun `while Syncthing runs, reads and writes go through the REST API`() {
+        FakeSyncthing(context).use { syncthing ->
+            val api = checkNotNull(RunningSyncthingService.install(syncthing).api)
+            Constants.getConfigFile(context).delete()
+
+            val folder = router.getFolders(api).single()
+            assertEquals("cam-photos", folder.id)
+            assertEquals("127.0.0.1:${syncthing.url.port}", router.getGui(api).address)
+
+            folder.label = "Over REST"
+            router.updateFolder(api, folder)
+            awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+            val posted =
+                syncthing.requests("/rest/system/config", "POST").last().body?.utf8().orEmpty()
+            assertTrue(posted, posted.contains("\"label\":\"Over REST\""))
+        }
     }
 }
