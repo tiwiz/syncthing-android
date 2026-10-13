@@ -7,12 +7,12 @@ import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.lifecycleScope
 import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.activities.SyncthingActivity
@@ -25,13 +25,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 
-// The bound service (and a tick that changes when its state does) is activity-wide state that most
-// settings screens read; it is provided once by SettingsActivity rather than passed down every screen.
-@Suppress("CompositionLocalAllowlist")
-val LocalSyncthingService = staticCompositionLocalOf<SyncthingService?> { null }
+/**
+ * The service SettingsActivity is bound to, if any, and a counter that changes whenever the
+ * service's state does. Both are snapshot state, so screens that read them recompose on changes.
+ */
+@Stable
+class SyncthingServiceState {
+    var service by mutableStateOf<SyncthingService?>(null)
+        internal set
 
-@Suppress("CompositionLocalAllowlist")
-val LocalServiceUpdateTick = staticCompositionLocalOf { 0 }
+    var updateTick by mutableIntStateOf(0)
+        internal set
+}
 
 class SettingsActivity : SyncthingActivity() {
 
@@ -41,12 +46,11 @@ class SettingsActivity : SyncthingActivity() {
     @Inject
     lateinit var notificationHandler: NotificationHandler
 
-    private var syncthingServiceState by mutableStateOf<SyncthingService?>(service)
+    private val serviceState = SyncthingServiceState()
 
-    // The ticker will help update the ui whenever the state of syncthing service updates
-    private var serviceUpdateTick by mutableIntStateOf(0)
+    // The tick updates the UI whenever the state of the Syncthing service changes.
     val stateChangeListener = SyncthingService.OnServiceStateChangeListener {
-        serviceUpdateTick++
+        serviceState.updateTick++
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,13 +87,12 @@ class SettingsActivity : SyncthingActivity() {
             ApplicationTheme {
                 CompositionLocalProvider(
                     LocalActivityScope provides activityScope,
-                    LocalSyncthingService provides syncthingServiceState,
-                    LocalServiceUpdateTick provides serviceUpdateTick,
                 ) {
                     ProvidePreferenceLocals(flow = prefFlow) {
                         SettingsNavDisplay(
                             backStack = backStack,
                             navigator = navigator,
+                            serviceState = serviceState,
                         )
                     }
                 }
@@ -99,27 +102,27 @@ class SettingsActivity : SyncthingActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        syncthingServiceState = this.service
-        syncthingServiceState?.registerOnServiceStateChangeListener(stateChangeListener)
-        serviceUpdateTick++
+        serviceState.service = this.service
+        serviceState.service?.registerOnServiceStateChangeListener(stateChangeListener)
+        serviceState.updateTick++
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
-        syncthingServiceState?.unregisterOnServiceStateChangeListener(stateChangeListener)
+        serviceState.service?.unregisterOnServiceStateChangeListener(stateChangeListener)
         super.onServiceDisconnected(name)
-        syncthingServiceState = null
-        serviceUpdateTick++
+        serviceState.service = null
+        serviceState.updateTick++
     }
 
     override fun onStop() {
-        syncthingServiceState?.let {
+        serviceState.service?.let {
             notificationHandler.updatePersistentNotification(it)
         }
         super.onStop()
     }
 
     override fun onDestroy() {
-        syncthingServiceState?.unregisterOnServiceStateChangeListener(stateChangeListener)
+        serviceState.service?.unregisterOnServiceStateChangeListener(stateChangeListener)
         super.onDestroy()
     }
 

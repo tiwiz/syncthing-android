@@ -186,7 +186,8 @@ Next steps (to be confirmed with the owner):
    ignoring devices/folders while stopped (PR #8), `Compression` default
    (PR #9). No pinned bugs left. Then TECH-DEBT TODOs: empty backup path after import (PR #10),
    WebView proxy bypass through `androidx.webkit` instead of reflection (PR #11),
-   settings navigator as a parameter instead of a CompositionLocal (PR #12).
+   settings navigator as a parameter instead of a CompositionLocal (PR #12), bound
+   service as a `SyncthingServiceState` parameter (PR #13).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

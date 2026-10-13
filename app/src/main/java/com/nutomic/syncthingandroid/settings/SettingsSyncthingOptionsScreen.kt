@@ -60,9 +60,12 @@ import kotlinx.coroutines.CoroutineScope
 
 private const val TAG = "SettingsSyncthingOptionsScreen"
 
-fun EntryProviderScope<SettingsRoute>.settingsSyncthingOptionsEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsSyncthingOptionsEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.SyncthingOptions> {
-        SettingsSyncthingOptionsScreen(navigator = navigator)
+        SettingsSyncthingOptionsScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
@@ -96,12 +99,13 @@ private const val BIND_LOCALHOST = "127.0.0.1"
 @Composable
 fun SettingsSyncthingOptionsScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
-    val stService = LocalSyncthingService.current
-    val stServiceTick = LocalServiceUpdateTick.current
+    val stService = serviceState.service
+    val stServiceTick = serviceState.updateTick
     val scope = LocalActivityScope.current
 
     val sharedPrefWebGuiPassword = rememberPreferenceState(Constants.PREF_WEBUI_PASSWORD, "")

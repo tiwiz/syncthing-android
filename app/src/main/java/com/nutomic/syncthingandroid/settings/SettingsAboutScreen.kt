@@ -24,9 +24,12 @@ import me.zhanghai.compose.preference.Preference
 
 private const val TAG = "SettingsAboutScreen"
 
-fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.About> {
-        SettingsAboutScreen(navigator = navigator)
+        SettingsAboutScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
@@ -34,13 +37,14 @@ fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(navigator: Navigator<Se
 @Composable
 fun SettingsAboutScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val stService = LocalSyncthingService.current
-    val stServiceTick = LocalServiceUpdateTick.current
+    val stService = serviceState.service
+    val stServiceTick = serviceState.updateTick
 
     val loading = stringResource(R.string.state_loading)
     val unknown = stringResource(R.string.state_unknown)
