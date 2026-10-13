@@ -47,9 +47,8 @@ Most tests pin what the app does today, not what it should do. Expected output i
 
 - Re-record after an intended change: `IS_COPILOT=true ./gradlew :app:testDebugUnitTest -Pgolden.record=true`,
   then review `git diff app/src/test/resources/golden`.
-- A test commented `// CHARACTERIZATION:` documents a known oddity or bug (for example
-  `Compression.fromValue` mapping unknown values to `NONE`). Fixing it is a separate change that
-  updates that test on purpose.
+- A test commented `// CHARACTERIZATION:` documents a known oddity or bug (listed in
+  [TECH-DEBT.md](TECH-DEBT.md)). Fixing it is a separate change that updates that test on purpose.
 - Saved `config.xml` files are produced by the JVM's XML transformer, which formats differently from
   Android's. They pin behaviour on the JVM, not byte-for-byte output on a device.
 

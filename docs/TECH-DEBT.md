@@ -5,10 +5,7 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-Each one is pinned by a test commented `// CHARACTERIZATION:`. Fixing it means changing that test on
-purpose.
-
-1. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
 
 ## detekt suppressions
 
