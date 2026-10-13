@@ -647,7 +647,9 @@ private fun FocusIndicatorBox(
     }
 }
 
-// A window size class would fit better here once the material3.adaptive package is added.
+// Compact means a side of at most 360dp (small phones, landscape on small screens). Window size
+// classes are not used on purpose: their compact breakpoints (600dp wide, 480dp high) would make
+// every phone in portrait compact and change the layout.
 @Composable
 @ReadOnlyComposable
 private fun isCompactOnboardingScreen(): Boolean {

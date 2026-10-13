@@ -188,7 +188,8 @@ Next steps (to be confirmed with the owner):
    WebView proxy bypass through `androidx.webkit` instead of reflection (PR #11),
    settings navigator as a parameter instead of a CompositionLocal (PR #12), bound
    service as a `SyncthingServiceState` parameter (PR #13), activity scope as a parameter
-   (PR #14): no CompositionLocal suppressions left.
+   (PR #14): no CompositionLocal suppressions left. Decided (PR #15): the broad catch in
+   `syncWebGuiTheme` stays; onboarding keeps its 360dp compact rule instead of window size classes.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

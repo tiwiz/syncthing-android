@@ -9,15 +9,15 @@ None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it 
 
 ## detekt suppressions
 
-Each one has its reason next to it. Remove the suppression when the code no longer needs it.
+None left to remove. One is kept on purpose:
 
-| Where | Rule | What would remove it |
-|---|---|---|
-| `settings/SettingsUserInterfaceScreen.kt` `syncWebGuiTheme` | `TooGenericExceptionCaught` | Catch the specific exceptions `ConfigRouter.getGui` / `updateGui` can throw |
+- `settings/SettingsUserInterfaceScreen.kt` `syncWebGuiTheme` (`TooGenericExceptionCaught`): the
+  theme sync is fire-and-forget after the app theme already changed, and what
+  `ConfigRouter.getGui` / `updateGui` can throw is any `RuntimeException`, which detekt flags just
+  the same. The reason is in its KDoc.
 
 ## TODOs
 
 | Where | What |
 |---|---|
 | `onboarding/OnboardingActivity.kt` `onCreate` | Move `enableEdgeToEdge()` to `ThemedAppCompatActivity` once every activity uses Compose (was a `TODO:`, rephrased for detekt) |
-| `onboarding/OnboardingScaffold.kt` `isCompactOnboardingScreen` | Use a window size class once `material3.adaptive` is a dependency (was a `TODO:`, rephrased for detekt) |
