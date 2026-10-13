@@ -24,14 +24,15 @@ and takes minutes; Java/Kotlin, tests and Lint do not need it.
 | ktfmt 0.27.0 | Kotlin formatting, KotlinLang style | `app/build.gradle.kts` |
 
 ```bash
-IS_COPILOT=true ./gradlew :app:detekt            # detektDebug (app) + detektDebugUnitTest (tests)
+IS_COPILOT=true ./gradlew :app:detekt            # detektDebug (app), detektDebugUnitTest, detektDebugAndroidTest
 IS_COPILOT=true ./gradlew :app:ktfmtCheckMain :app:ktfmtCheckTest
 IS_COPILOT=true ./gradlew :app:ktfmtFormatTest   # or ktfmtFormatMain for files off the legacy list
 IS_COPILOT=true ./gradlew :app:lintDebug
 ```
 
 detekt runs with type resolution: with AGP's built-in Kotlin the per-source-set tasks see no
-sources. Plain `detekt` is an alias for `detektDebug` + `detektDebugUnitTest`.
+sources. Plain `detekt` is an alias for `detektDebug`, `detektDebugUnitTest` and
+`detektDebugAndroidTest`.
 
 ## detekt: no baseline
 
@@ -39,9 +40,11 @@ All code, app and tests, is detekt-clean and there is no baseline file. The 80 f
 predated detekt were fixed on 2026-10-13. Do not add a baseline: fix new findings, or suppress
 one declaration with a written reason.
 
-detekt's type resolution reports a few hundred "compiler errors found during analysis" (it does
-not see some generated or Java sources with AGP's built-in Kotlin). It is a warning, not a finding,
-and was already there before the cleanup.
+detekt analyses Kotlin sources only. `app/build.gradle.kts` adds the javac output to
+`detektDebug`'s classpath, so references from Kotlin to the app's Java classes resolve. Without it,
+detekt reported 553 "compiler errors found during analysis" and type-resolved rules missed every
+Java type. If that warning comes back, run detekt with `debug.set(true)` to list the unresolved
+references.
 
 ## The ktfmt ratchet for existing code
 

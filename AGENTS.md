@@ -199,7 +199,8 @@ Next steps (to be confirmed with the owner):
    66%). PR #26: Robolectric tests for `WebGuiActivity`/`WebViewActivity` and the first
    instrumented tests (`app/src/androidTest`, Espresso-Web, CI job `Instrumented tests`). They
    pinned a blank web GUI after a refused certificate, fixed in PR #27. No
-   pinned bugs left.
+   pinned bugs left. detekt now sees the app's Java classes (javac output on
+   `detektDebug`'s classpath): no more "compiler errors found during analysis".
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

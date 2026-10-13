@@ -262,6 +262,17 @@ tasks.named("detekt") {
     dependsOn("detektDebug", "detektDebugUnitTest", "detektDebugAndroidTest")
 }
 
+// detekt analyses the Kotlin sources only. Without the javac output on its classpath, every
+// reference from Kotlin to the app's Java classes is unresolved and type-resolved rules go blind.
+// The detekt plugin sets the task's classpath from the variant, after this script runs.
+afterEvaluate {
+    tasks.named<dev.detekt.gradle.Detekt>("detektDebug") {
+        classpath.from(
+            tasks.named<JavaCompile>("compileDebugJavaWithJavac").flatMap { it.destinationDirectory }
+        )
+    }
+}
+
 // Build scripts are shared with upstream; formatting them would only create merge conflicts.
 tasks.matching { it.name == "ktfmtCheckScripts" || it.name == "ktfmtFormatScripts" }.configureEach {
     enabled = false
