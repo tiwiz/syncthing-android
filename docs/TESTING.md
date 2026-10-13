@@ -30,7 +30,7 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
-| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest` |
+| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest` |
 
 ```bash
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest                         # unit tests only
@@ -80,6 +80,9 @@ Volley stack, `SyncthingTrustManager` pinning and loopback rewrite.
 - `RunningScreenshotTest` (`screenshots/running/`) shows the main tabs, folder and device screens and
   some settings with Syncthing running: `RunningSyncthingService` sets the service to ACTIVE with a
   `RestApi` loaded from `FakeSyncthing`. It pins the time zone to UTC for "last seen" times.
+- `OtherScreensScreenshotTest` (`screenshots/other/`): log (fake logcat from the shell shadow), sync
+  conditions, photo shoot, share, recent changes (exact times) and the device id dialog, with
+  Syncthing running.
 - Anything non-deterministic is pinned in the test, never in the app: random folder ids, text
   cursors, async loading (`settle()`).
 
@@ -127,7 +130,6 @@ Snapshot on 2026-10-13 (lines): 46% overall. `model` 83%, `util` 69%, `http` 59%
 ## Not covered yet
 
 - `SyncthingRunnable` (0%) and `SyncthingService` start/stop (6%): they launch the native binary.
-- `ShareActivity`, `LogActivity`, `FolderPickerActivity`, `PhotoShootActivity`,
-  `SyncConditionsActivity`, `WebViewActivity`, `WebGuiActivity`, recent changes and the device id
-  dialog have no test at all.
+- `FolderPickerActivity` (it lists the real file system, whose paths differ per machine), and the
+  WebView screens (`WebGuiActivity`, `WebViewActivity`): Robolectric does not draw web content.
 - Apart from `SettingsNavigationTest`, no test clicks anything.

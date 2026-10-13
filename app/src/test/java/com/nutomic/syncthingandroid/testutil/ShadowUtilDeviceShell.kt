@@ -14,6 +14,14 @@ import org.robolectric.annotation.Implements
 @Implements(Util::class)
 class ShadowUtilDeviceShell {
     companion object {
+        private val FAKE_LOGCAT =
+            """
+            10-13 10:00:00.000 I/SyncthingService(1234): onServiceStateChange: from DISABLED to STARTING
+            10-13 10:00:01.000 I/SyncthingService(1234): Web GUI will be available at https://127.0.0.1:8384
+            10-13 10:00:02.000 I/SyncthingService(1234): onServiceStateChange: from STARTING to ACTIVE
+            """
+                .trimIndent() + "\n"
+
         /** What the sync-conflict `find` in `Util.getSyncConflictFiles` prints. Tests reset it. */
         @Volatile var syncConflictFindOutput: String = ""
 
@@ -23,6 +31,7 @@ class ShadowUtilDeviceShell {
             when {
                 cmd.contains("find -type f -name") && cmd.contains(".sync-conflict-") ->
                     syncConflictFindOutput
+                cmd.startsWith("/system/bin/logcat ") -> FAKE_LOGCAT
                 cmd.endsWith("ulimit -n") -> "32768\n"
                 cmd.startsWith("/system/bin/du -sh ") ->
                     "12M\t${cmd.removePrefix("/system/bin/du -sh ")}\n"
