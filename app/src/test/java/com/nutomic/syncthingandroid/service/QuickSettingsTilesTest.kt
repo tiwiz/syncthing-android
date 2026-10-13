@@ -151,8 +151,8 @@ class QuickSettingsTilesTest {
                 "Schedule disabled/unavailable",
                 "Schedule disabled/unavailable",
                 "Schedule disabled/unavailable",
-                // CHARACTERIZATION: available and inactive, but the label is not set (see below).
-                "null/inactive",
+                // The bound service is DISABLED, so the tile offers a timed run.
+                "Run for 5 minutes/inactive",
             ),
             results,
         )
@@ -170,10 +170,7 @@ class QuickSettingsTilesTest {
         val tile = Robolectric.buildService(QuickSettingsTileSchedule::class.java).create().get()
         tile.onStartListening()
         shadowOf(Looper.getMainLooper()).idle()
-        // CHARACTERIZATION: updateTile returns early when the state does not change, and a new tile
-        // is already INACTIVE, so the label stays the manifest's "Run for 5 minutes" (null here)
-        // instead of the configured 15 minutes until the tile goes through another state.
-        assertEquals("null/inactive", tile.qsTile.summary())
+        assertEquals("Run for 15 minutes/inactive", tile.qsTile.summary())
 
         tile.onClick()
         tile.qsTile.state = Tile.STATE_UNAVAILABLE

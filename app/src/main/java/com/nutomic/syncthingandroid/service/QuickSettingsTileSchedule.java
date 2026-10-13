@@ -140,9 +140,6 @@ public class QuickSettingsTileSchedule extends TileService implements ServiceCon
     private void updateTile(int newState) {
         Tile tile = getQsTile();
         if (tile == null) return;
-        if (newState == tile.getState()) return;
-
-        tile.setState(newState);
 
         String label;
         Resources res = mContext.getResources();
@@ -151,8 +148,12 @@ public class QuickSettingsTileSchedule extends TileService implements ServiceCon
         } else {
             label = res.getString(R.string.qs_schedule_disabled);
         }
-        tile.setLabel(label);
+        // Compare the label too: a new tile starts INACTIVE with the manifest label, which does not
+        // know the configured duration.
+        if (newState == tile.getState() && label.contentEquals(tile.getLabel() == null ? "" : tile.getLabel())) return;
 
+        tile.setState(newState);
+        tile.setLabel(label);
         tile.updateTile();
     }
 
