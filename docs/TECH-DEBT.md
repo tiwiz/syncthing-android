@@ -20,4 +20,4 @@ None left to remove. One is kept on purpose:
 
 | Where | What |
 |---|---|
-| `onboarding/OnboardingActivity.kt` `onCreate` | Move `enableEdgeToEdge()` to `ThemedAppCompatActivity` once every activity uses Compose (was a `TODO:`, rephrased for detekt) |
+| `onboarding/OnboardingActivity.kt` `onCreate` | Move `enableEdgeToEdge()` to `ThemedAppCompatActivity` once every activity uses Compose (was a `TODO:`, rephrased for detekt). Not before: tried on 2026-10-13, on Android 14 it put dark icons on the View screens' blue status bar (main screen); `EdgeToEdgeTest` pins the difference |
