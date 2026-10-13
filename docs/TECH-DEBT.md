@@ -8,10 +8,9 @@ item is done, delete it here in the same PR.
 Each one is pinned by a test commented `// CHARACTERIZATION:`. Fixing it means changing that test on
 purpose.
 
-1. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
-2. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
+1. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
    running.
-3. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+2. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
 
 ## detekt suppressions
 
