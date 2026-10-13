@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -19,7 +18,6 @@ import com.nutomic.syncthingandroid.activities.SyncthingActivity
 import com.nutomic.syncthingandroid.service.NotificationHandler
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.LocalActivityScope
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import me.zhanghai.compose.preference.Preferences
@@ -85,16 +83,13 @@ class SettingsActivity : SyncthingActivity() {
             }
 
             ApplicationTheme {
-                CompositionLocalProvider(
-                    LocalActivityScope provides activityScope,
-                ) {
-                    ProvidePreferenceLocals(flow = prefFlow) {
-                        SettingsNavDisplay(
-                            backStack = backStack,
-                            navigator = navigator,
-                            serviceState = serviceState,
-                        )
-                    }
+                ProvidePreferenceLocals(flow = prefFlow) {
+                    SettingsNavDisplay(
+                        backStack = backStack,
+                        navigator = navigator,
+                        serviceState = serviceState,
+                        activityScope = activityScope,
+                    )
                 }
             }
         }

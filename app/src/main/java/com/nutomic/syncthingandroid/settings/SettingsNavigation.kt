@@ -20,6 +20,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.serialization.NavBackStackSerializer
 import androidx.navigation3.runtime.serialization.NavKeySerializer
 import androidx.navigation3.ui.NavDisplay
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -100,6 +101,7 @@ fun SettingsNavDisplay(
     backStack: NavBackStack<SettingsRoute>,
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
     NavDisplay(
@@ -108,11 +110,11 @@ fun SettingsNavDisplay(
         entryProvider = entryProvider {
             settingsRootEntry(navigator, serviceState)
             settingsRunConditionsEntry(navigator, serviceState)
-            settingsUserInterfaceEntry(navigator, serviceState)
+            settingsUserInterfaceEntry(navigator, serviceState, activityScope)
             settingsBehaviorEntry(navigator)
-            settingsSyncthingOptionsEntry(navigator, serviceState)
+            settingsSyncthingOptionsEntry(navigator, serviceState, activityScope)
             settingsCustomCertificateEntry(navigator, serviceState)
-            settingsImportExportEntry(navigator, serviceState)
+            settingsImportExportEntry(navigator, serviceState, activityScope)
             settingsTroubleshootingEntry(navigator)
             settingsExperimentalEntry(navigator)
             settingsAboutEntry(navigator, serviceState)

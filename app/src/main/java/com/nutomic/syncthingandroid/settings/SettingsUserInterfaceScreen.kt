@@ -17,8 +17,8 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.util.ConfigRouter
-import com.nutomic.syncthingandroid.util.LocalActivityScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
@@ -33,9 +33,14 @@ private const val TAG = "SettingsUserInterfaceScreen"
 fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.UserInterface> {
-        SettingsUserInterfaceScreen(navigator = navigator, serviceState = serviceState)
+        SettingsUserInterfaceScreen(
+            navigator = navigator,
+            serviceState = serviceState,
+            activityScope = activityScope,
+        )
     }
 }
 
@@ -44,11 +49,11 @@ fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(
 fun SettingsUserInterfaceScreen(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val scope = LocalActivityScope.current
     val stService = serviceState.service
 
     val themeNames = stringArrayResource(R.array.app_theme_names)
@@ -76,7 +81,7 @@ fun SettingsUserInterfaceScreen(
                     if (newTheme != theme && newThemeInt != null) {
                         theme = newTheme
                         AppCompatDelegate.setDefaultNightMode(newThemeInt)
-                        scope.launch(ioDispatcher) {
+                        activityScope.launch(ioDispatcher) {
                             withContext(NonCancellable) {
                                 syncWebGuiTheme(context, stService?.api, newTheme)
                             }
