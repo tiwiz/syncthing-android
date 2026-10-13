@@ -215,16 +215,14 @@ class EventProcessorTest {
         assertTrue(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
     }
 
-    // CHARACTERIZATION: the ignored event types fall through into the RemoteIndexUpdated case (its
-    // `break` is commented out), so one carrying device, folder and items counts as an update.
     @Test
-    fun `ignored event types fall through into RemoteIndexUpdated`() {
+    fun `ignored event types do not count as remote index updates`() {
         send(
             """{"id": 1, "type": "RemoteDownloadProgress",
                "data": {"device": "$LAPTOP_ID", "folder": "cam-photos", "items": 3}}"""
         )
 
-        assertTrue(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
+        assertFalse(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
     }
 
     @Test
@@ -272,9 +270,8 @@ class EventProcessorTest {
             """{"id": 2, "type": "FolderErrors", "data": {"folder": "cam-photos", "errors": [
                {"error": "insufficient space in basic /storage", "path": "sub/IMG_2.jpg"}]}}"""
         )
-        // CHARACTERIZATION: FolderErrors keeps the JSON quotes around the path, and both share
-        // one notification id, so the second replaces the first.
-        assertEquals("The SDcard is full. File \"sub/IMG_2.jpg\"", crashTitle())
+        // Both share one notification id, so the second replaces the first.
+        assertEquals("The SDcard is full. File sub/IMG_2.jpg", crashTitle())
     }
 
     @Test
