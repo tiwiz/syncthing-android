@@ -20,8 +20,9 @@ One topic per PR, each with the gate and CI green before merging.
       DocumentFile) and `FileOpener` (open in other apps). Done (#35).
    6. `ConfigXml` (with the model conversions and DOM helpers in their own files) and
       `ConfigRouter`. Done (#36).
-   7. `Constants` and the force/schedule tiles. Done (`refactor/kotlin-constants-tiles`).
-   8. The rest of `service/`: `NotificationHandler`, `RunConditionMonitor`, `EventProcessor`,
+   7. `Constants` and the force/schedule tiles. Done (#37).
+   8. `NotificationHandler`. Done (`refactor/kotlin-notifications`).
+   9. The rest of `service/`: `RunConditionMonitor`, `EventProcessor`,
       `SyncthingRunnable`, `RestApi`, `SyncthingService`.
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
    Compose rewrite replaces them.

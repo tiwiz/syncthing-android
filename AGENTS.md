@@ -213,8 +213,9 @@ Next steps (to be confirmed with the owner):
    `OsTrustStore` facades (`UtilShellTest`). PR #35: `FileUtils` split into
    `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden). PR #36:
    `ConfigXml` (+ `ConfigXmlModels`, `ConfigXmlNodes`, `ConfigXmlValues`) and `ConfigRouter`
-   (`ConfigXmlEditTest`, REST routing test). Branch `refactor/kotlin-constants-tiles`:
-   `Constants` (`ConstantsTest` pins the per-object preference keys) and the two tiles.
+   (`ConfigXmlEditTest`, REST routing test). PR #37: `Constants` (`ConstantsTest` pins
+   the per-object preference keys) and the two tiles. Branch `refactor/kotlin-notifications`:
+   `NotificationHandler` (`NotificationHandlerTest`).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
