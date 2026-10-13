@@ -33,14 +33,21 @@ IS_COPILOT=true ./gradlew :app:lintDebug
 detekt runs with type resolution: with AGP's built-in Kotlin the per-source-set tasks see no
 sources. Plain `detekt` is an alias for `detektDebug` + `detektDebugUnitTest`.
 
-## The ratchet for existing code
+## detekt: no baseline
 
-The app code predates detekt and ktfmt and must not be reformatted in bulk (it would only create
-conflicts with upstream). Two lists hold the existing debt; both may only shrink.
+All code, app and tests, is detekt-clean and there is no baseline file. The 80 findings that
+predated detekt were fixed on 2026-10-13. Do not add a baseline: fix new findings, or suppress
+one declaration with a written reason.
 
-- `app/detekt-baseline-debug.xml`: 80 detekt findings in `app/src/main`. When you refactor a file,
-  fix its findings and regenerate with `IS_COPILOT=true ./gradlew :app:detektBaselineDebug`; the
-  diff must only remove entries. Test code has no baseline.
+detekt's type resolution reports a few hundred "compiler errors found during analysis" (it does
+not see some generated or Java sources with AGP's built-in Kotlin). It is a warning, not a finding,
+and was already there before the cleanup.
+
+## The ktfmt ratchet for existing code
+
+The app code predates ktfmt and must not be reformatted in bulk (it would only create conflicts
+with upstream). One list holds the existing debt and may only shrink.
+
 - `config/ktfmt/legacy-files.txt`: 33 Kotlin files in `app/src/main` not yet ktfmt-clean. When you
   refactor one, remove it from the list and run `ktfmtFormatMain`, in a commit of its own so the
   reformat does not hide the real change.
@@ -57,4 +64,4 @@ version notices, scoped storage, the custom trust manager, …), each with a com
 
 Fix the cause first. When a suppression is truly needed, put it on the smallest scope (one
 declaration, at most one file) and write the reason in a comment next to it. Do not add entries to
-`app/lint.xml` or the baselines, or disable checks, without the owner's approval.
+`app/lint.xml`, add a detekt baseline, grow the ktfmt list, or disable checks, without the owner's approval.

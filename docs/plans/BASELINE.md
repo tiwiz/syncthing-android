@@ -112,7 +112,9 @@ are out of scope here.
 ## Follow-ups (not in this PR)
 
 1. Coverage report to find gaps before each refactor.
-2. Shrink the detekt baseline and the ktfmt exclusion list as files are refactored.
+2. Shrink the detekt baseline and the ktfmt exclusion list as files are refactored. Done for detekt
+   on 2026-10-13: all 80 findings fixed and the baseline file removed (see "Follow-up: detekt
+   cleanup" below).
 3. Extract the run-condition decision into a pure function once the characterization tests exist.
 
 ## Outcome
@@ -139,3 +141,25 @@ Found while characterizing (documented with `// CHARACTERIZATION:`, not fixed):
 3. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
 4. `ConfigRouter.ignoreDevice/ignoreFolder` do nothing (only log) while Syncthing is not running.
 5. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+
+## Follow-up: detekt cleanup (2026-10-13)
+
+The owner asked to fix every detekt finding in app code. All 80 baseline entries are fixed and
+`app/detekt-baseline-debug.xml` is gone. The gate stayed green without re-recording any golden file
+or screenshot. How they were fixed:
+
+- Compose: `modifier` parameters on every public screen/component, `@ReadOnlyComposable` where
+  applicable, parameter order, no `MutableState` parameter (`DrawerContent` takes a value and a
+  callback), `Dispatchers.IO` injected as a default parameter.
+- Long functions split without changing what they emit: the settings screens build their lists from
+  `LazyListScope` section functions; dialogs and rows became private composables.
+- Classes with too many functions: helpers moved to new files (`util/Pem.kt`,
+  `onboarding/OnboardingChecks.kt`, `webgui/WebGuiSupport.kt`,
+  `settings/CustomCertificateComponents.kt`), all ktfmt-clean.
+- Exceptions: catches whose exception is the expected outcome name it `_` (or `expected` when its
+  message is shown). `WebGuiActivity` throws `IllegalStateException` instead of `RuntimeException`.
+- Six justified suppressions, each with its reason next to it: four `CompositionLocalAllowlist`
+  (activity-wide service, tick, navigator and scope), and two `TooGenericExceptionCaught` (the
+  reflective WebView proxy hack and the fire-and-forget web GUI theme sync).
+- Two `TODO:` comments rephrased as notes (the work they describe needs new dependencies).
+

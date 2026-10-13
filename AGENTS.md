@@ -44,9 +44,9 @@ green and must stay green without re-recording ([docs/TESTING.md](docs/TESTING.m
 `IS_COPILOT=true ./gradlew :app:check :app:verifyRoborazziDebug` must be green before every commit
 (Lint, unit tests, screenshots, detekt + Compose Rules, ktfmt). CI runs the same command.
 
-- Do not edit `app/lint.xml` or `config/detekt/detekt.yml`, grow the baselines, or disable checks
-  without the owner's approval.
-- Existing app code is under a ratchet: `app/detekt-baseline-debug.xml` and
+- Do not edit `app/lint.xml` or `config/detekt/detekt.yml`, add a detekt baseline, grow the ktfmt
+  list, or disable checks without the owner's approval.
+- detekt has no baseline: app and test code are clean. Existing app code is under a ktfmt ratchet:
   `config/ktfmt/legacy-files.txt` may only shrink ([docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md)).
 - Fix the cause. When a suppression is truly needed, keep it to one declaration or file and
   write down why next to it.
@@ -122,7 +122,6 @@ app/                         Android application (only Gradle module with code)
   src/test/        JUnit/Robolectric tests (java/), fixtures + golden files (resources/),
                    Roborazzi golden screenshots (screenshots/)
   lint.xml         Lint configuration
-  detekt-baseline-debug.xml   existing detekt findings in app code (may only shrink)
 syncthing/                   :syncthing project, build-syncthing.py (Go cross-compile)
   src/github.com/syncthing/syncthing   upstream Syncthing submodule
 gradle/libs.versions.toml    all versions, also read by Python scripts and CI
@@ -164,6 +163,9 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
   (plan and outcome in [docs/plans/BASELINE.md](docs/plans/BASELINE.md)):
   58 JUnit/Robolectric characterization tests with golden files, 58 Roborazzi screenshots,
   detekt + Compose Rules + ktfmt with a ratchet, CI workflow `check.yaml`.
+- 2026-10-13, same branch: all 80 detekt findings in app code fixed, detekt baseline removed
+  (details at the end of [docs/plans/BASELINE.md](docs/plans/BASELINE.md)). No golden file or
+  screenshot changed.
 
 Next steps (to be confirmed with the owner):
 
