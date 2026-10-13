@@ -166,9 +166,6 @@ class WebGuiActivityWebTest {
         }
     }
 
-    // CHARACTERIZATION: the refused certificate cancels the load; the WebView then reports the
-    // page as finished without an error, so the screen goes blank instead of showing the error
-    // (docs/TECH-DEBT.md).
     @Test
     fun a_server_with_another_certificate_is_refused() {
         val gui = startGui()
@@ -177,12 +174,8 @@ class WebGuiActivityWebTest {
             reportSyncthingActive()
 
             compose.waitUntil(TIMEOUT_MILLIS) {
-                compose
-                    .onAllNodes(hasTextExactly("Waiting for GUI"))
-                    .fetchSemanticsNodes()
-                    .isEmpty()
+                compose.onAllNodes(hasTextExactly(LOAD_FAILED)).fetchSemanticsNodes().isNotEmpty()
             }
-            compose.onNodeWithText(LOAD_FAILED).assertDoesNotExist()
             assertEquals(0, gui.requestCount)
         }
     }

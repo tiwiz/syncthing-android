@@ -236,6 +236,29 @@ class WebGuiActivityTest {
     }
 
     @Test
+    fun `a refused certificate shows the load error`() {
+        launch().use { scenario ->
+            RunningSyncthingService.setState(service, SyncthingService.State.ACTIVE)
+            val webView = scenario.webView()
+            val client = scenario.client()
+            val stranger = HeldCertificate.Builder().commonName("mitm").build().certificate
+            val handler = Shadow.newInstanceOf(SslErrorHandler::class.java)
+
+            client.onReceivedSslError(
+                webView,
+                handler,
+                SslError(SslError.SSL_UNTRUSTED, SslCertificate(stranger), GUI_PAGE),
+            )
+            // Chromium then reports the cancelled load as finished, without onReceivedError.
+            client.onPageFinished(webView, GUI_PAGE)
+
+            compose
+                .onNodeWithText("Couldn't load the Web GUI. Please capture a log and report this.")
+                .assertIsDisplayed()
+        }
+    }
+
+    @Test
     fun `a trusted certificate for another host name is accepted`() {
         val stranger = HeldCertificate.Builder().commonName("user-ca-signed").build()
 
