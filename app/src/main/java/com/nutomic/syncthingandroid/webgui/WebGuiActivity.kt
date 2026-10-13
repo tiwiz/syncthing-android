@@ -305,24 +305,34 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         }
 
         // Otherwise, fall back to pinning against the local instance's self-signed certificate.
-        try {
+        val pinned = try {
             val certificate = extractCertificate(error.certificate)
             val ca = caCertificate
             if (certificate == null || ca == null) {
                 Log.w(TAG, "X509Certificate reference invalid")
-                handler.cancel()
-                return
+                false
+            } else {
+                certificate.verify(ca.publicKey)
+                true
             }
-            certificate.verify(ca.publicKey)
-            handler.proceed()
         } catch (e: ReflectiveOperationException) {
             // Thrown while reflecting the certificate out of SslCertificate.
             Log.w(TAG, e)
-            handler.cancel()
+            false
         } catch (e: GeneralSecurityException) {
             // Thrown by X509Certificate.verify() when the cert is not signed by our CA.
             Log.w(TAG, e)
-            handler.cancel()
+            false
+        }
+        if (pinned) {
+            handler.proceed()
+            return
+        }
+        handler.cancel()
+        // The WebView then reports the page as finished without calling onReceivedError, so show
+        // the load error here, or the screen would stay blank.
+        if (webGuiLoading) {
+            webGuiLoadError = "Untrusted certificate (SSL error ${error.primaryError})"
         }
     }
 

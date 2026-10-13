@@ -196,9 +196,10 @@ Next steps (to be confirmed with the owner):
 4. Test gaps filled (PRs #16–#20): REST client, running-state and remaining screenshots, native
    process and service lifecycle. Coverage 60%. What is left: [docs/TESTING.md](docs/TESTING.md#not-covered-yet).
    2026-10-13, PRs #21–#25: receivers, versioning dialog, edit screens, onboarding, tiles (coverage
-   66%). Branch `test/webview-screens`: Robolectric tests for `WebGuiActivity`/`WebViewActivity`
-   and the first instrumented tests (`app/src/androidTest`, Espresso-Web, CI job `Instrumented
-   tests`). They pinned a new bug (blank web GUI after a refused certificate, in TECH-DEBT.md).
+   66%). PR #26: Robolectric tests for `WebGuiActivity`/`WebViewActivity` and the first
+   instrumented tests (`app/src/androidTest`, Espresso-Web, CI job `Instrumented tests`). They
+   pinned a blank web GUI after a refused certificate, fixed in PR #27. No
+   pinned bugs left.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

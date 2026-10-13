@@ -5,11 +5,7 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
-
-| Bug | Pinned by |
-|---|---|
-| `WebGuiActivity`: when the GUI certificate fails the pinning check, `handleSslError` cancels the load, the WebView reports the page as finished without `onReceivedError`, and the screen goes blank instead of showing the "Couldn't load the Web GUI" message | `WebGuiActivityWebTest.a_server_with_another_certificate_is_refused` (instrumented) |
+None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
 
 ## detekt suppressions
 
