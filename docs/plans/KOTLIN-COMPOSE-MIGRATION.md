@@ -11,10 +11,15 @@ One topic per PR, each with the gate and CI green before merging.
 1. **Java → Kotlin, bottom up.** Same behaviour, the existing tests are the safety net; code
    without tests gets characterization tests first, written against the Java code.
    1. `model/` (Gson POJOs, completion caches). Done (#31).
-   2. `http/` (Volley requests, trust manager). Done (`refactor/kotlin-http`).
-   3. `util/` (small helpers first, then `FileUtils`, `ConfigXml`, `ConfigRouter`).
-   4. `service/` and `receiver/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
+   2. `http/` (Volley requests, trust manager). Done (#32).
+   3. Small helpers: `util/` (`Luhn`, `Compression`, `JobUtils`, `PermissionUtil`,
+      `TextWatcherAdapter`), Dagger and the app class, receivers, small services. Done
+      (`refactor/kotlin-util-small`).
+   4. `util/` big ones: `Util`, `FileUtils`, `ConfigXml`, `ConfigRouter`.
+   5. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
       `EventProcessor`, `SyncthingRunnable`, `RestApi`, `SyncthingService`), Dagger.
+   Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
+   Compose rewrite replaces them.
 2. **Screens → Compose**, smallest first: folder type, pull order and versioning dialogs, sync
    conditions, QR scanner, photo shoot, log, folder picker, share, web page, device, folder, then
    the main screen with its drawer, lists and status tab. Screenshot goldens are re-recorded in
