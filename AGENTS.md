@@ -181,7 +181,8 @@ Next steps (to be confirmed with the owner):
    36 tests, coverage 46%. They pinned 4 more bugs; fixed so far: event polling stopping after
    one failed request (PR #2), startup stuck in `STARTING` after one failed request (PR #3),
    `EventProcessor` quoted path and switch fall-through (PR #4), size
-   formatting crash at 1 PiB (PR #5).
+   formatting crash at 1 PiB (PR #5), `ConfigXml.addFolder` with null
+   versioning (PR #6).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
