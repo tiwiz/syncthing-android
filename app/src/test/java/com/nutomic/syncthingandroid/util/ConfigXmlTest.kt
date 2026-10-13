@@ -14,7 +14,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -199,10 +198,10 @@ class ConfigXmlTest {
         again.saveChanges()
         val remaining = ConfigXml(context).apply { loadConfig() }
         assertEquals(listOf(LOCAL_DEVICE_ID), remaining.getDevices(true).map { it.deviceID })
-        // CHARACTERIZATION: the removed device stays in the <folder> elements it shared, unlike
-        // Syncthing's own REST API, which unshares it.
-        assertTrue(
-            remaining.folders.single().sharedWithDevices.any { it.deviceID == REMOTE_DEVICE_ID }
+        // Like Syncthing, which drops folder devices that no longer exist.
+        assertEquals(
+            emptyList<String>(),
+            remaining.folders.single().sharedWithDevices.map { it.deviceID },
         )
     }
 

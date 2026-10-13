@@ -1002,6 +1002,21 @@ public class ConfigXml {
                 }
             }
         }
+
+        // Unshare the device from every folder, like Syncthing does for devices that no longer exist.
+        NodeList nodeFolders = mConfig.getDocumentElement().getElementsByTagName("folder");
+        for (int i = 0; i < nodeFolders.getLength(); i++) {
+            Element elementFolder = (Element) nodeFolders.item(i);
+            NodeList nodeFolderDevices = elementFolder.getElementsByTagName("device");
+            for (int j = nodeFolderDevices.getLength() - 1; j >= 0; j--) {
+                Element elementDevice = (Element) nodeFolderDevices.item(j);
+                if (deviceID.equals(getAttributeOrDefault(elementDevice, "id", ""))) {
+                    Log.d(TAG, "removeDevice: Unsharing folder " +
+                            getAttributeOrDefault(elementFolder, "id", "") + " from deviceID=" + deviceID);
+                    removeChildElementFromTextNode((Element) elementDevice.getParentNode(), elementDevice);
+                }
+            }
+        }
     }
 
     public Gui getGui() {
