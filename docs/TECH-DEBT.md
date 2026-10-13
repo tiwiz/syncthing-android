@@ -8,13 +8,11 @@ item is done, delete it here in the same PR.
 Each one is pinned by a test commented `// CHARACTERIZATION:`. Fixing it means changing that test on
 purpose.
 
-1. `Util.readableFileSize` / `readableTransferRate` crash with `ArrayIndexOutOfBoundsException`
-   from 1 PiB (1 PiB/s) up: the unit arrays stop at TiB.
-2. `ConfigXml.addFolder` throws `NullPointerException` when `versioning` is null.
-3. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
-4. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
+1. `ConfigXml.addFolder` throws `NullPointerException` when `versioning` is null.
+2. `ConfigXml.removeDevice` leaves the device inside the `<folder>` elements it shared.
+3. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
    running.
-5. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+4. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
 
 ## detekt suppressions
 
