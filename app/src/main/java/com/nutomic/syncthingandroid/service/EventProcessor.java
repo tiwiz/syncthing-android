@@ -87,6 +87,8 @@ public class EventProcessor implements  Runnable, RestApi.OnReceiveEventListener
         mRestApi.getEvents(0, 1, new RestApi.OnReceiveEventListener() {
             @Override
             public void onError() {
+                // Reschedule, or polling stops for good.
+                EventProcessor.this.onError();
             }
 
             @Override

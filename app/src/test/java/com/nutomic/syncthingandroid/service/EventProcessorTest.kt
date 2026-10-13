@@ -128,10 +128,8 @@ class EventProcessorTest {
         assertEquals(4, eventRequests().size)
     }
 
-    // CHARACTERIZATION: run() first asks for the newest event id with a listener whose onError()
-    // is empty, so when that request fails nothing is rescheduled and polling stops for good.
     @Test
-    fun `a failed poll stops polling`() {
+    fun `a failed poll is retried after five seconds`() {
         syncthing.respond("GET", "/rest/events", "boom", code = 500)
         val looper = shadowOf(Looper.getMainLooper())
 
@@ -139,10 +137,10 @@ class EventProcessorTest {
         looper.idleFor(Duration.ofSeconds(5))
         awaitMain { eventRequests().size == 1 }
         drainMain()
-        looper.idleFor(Duration.ofSeconds(30))
-        drainMain()
+        looper.idleFor(Duration.ofSeconds(5))
+        awaitMain(describe = { eventRequests().toString() }) { eventRequests().size == 2 }
 
-        assertEquals(listOf("since=0 limit=1"), eventRequests())
+        assertEquals(listOf("since=0 limit=1", "since=0 limit=1"), eventRequests())
     }
 
     @Test

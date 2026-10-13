@@ -152,7 +152,7 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
 ## STATO ATTUALE
 
-- Branch `main`, in sync with `origin/main` (`tiwiz/syncthing-android`). Version 2.1.7.0,
+- Branch `main` (PR #1 `baseline` merged on 2026-10-13), in sync with `origin/main` (`tiwiz/syncthing-android`). Version 2.1.7.0,
   Syncthing submodule pinned to v2.1.7-rc.1.
 - Recent upstream work: custom HTTPS certificate validation (#356), Android 17 local network and
   cross-profile permissions, Compose migration of onboarding/settings/web GUI/recent changes.
@@ -178,7 +178,8 @@ Next steps (to be confirmed with the owner):
 1. ~~Coverage report~~ done: JaCoCo, opt-in with `-Pcoverage=true`, 37% of lines
    ([docs/TESTING.md](docs/TESTING.md#coverage)).
 2. ~~Tests for `RestApi`/`EventProcessor`~~ done: `FakeSyncthing` (MockWebServer over HTTPS),
-   36 tests, coverage 46%. They found 4 more pinned bugs (TECH-DEBT 6–9).
+   36 tests, coverage 46%. They pinned 4 more bugs; event polling stopping after one failed
+   request is fixed on `fix/event-polling-stops`.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
