@@ -59,9 +59,12 @@ import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.RunConditions> {
-        SettingsRunConditionsScreen(navigator = navigator)
+        SettingsRunConditionsScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
@@ -69,11 +72,12 @@ fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry(navigator: Navi
 @Composable
 fun SettingsRunConditionsScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val stService = LocalSyncthingService.current
+    val stService = serviceState.service
 
     var pendingEvaluation by remember { mutableStateOf(false) }
 

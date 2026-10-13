@@ -30,9 +30,12 @@ import me.zhanghai.compose.preference.rememberPreferenceState
 
 private const val TAG = "SettingsUserInterfaceScreen"
 
-fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.UserInterface> {
-        SettingsUserInterfaceScreen(navigator = navigator)
+        SettingsUserInterfaceScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
@@ -40,12 +43,13 @@ fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(navigator: Navi
 @Composable
 fun SettingsUserInterfaceScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
-    val stService = LocalSyncthingService.current
+    val stService = serviceState.service
 
     val themeNames = stringArrayResource(R.array.app_theme_names)
     val themeValues = stringArrayResource(R.array.app_theme_values)

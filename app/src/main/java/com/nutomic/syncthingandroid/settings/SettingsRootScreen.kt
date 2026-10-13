@@ -12,19 +12,23 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import me.zhanghai.compose.preference.Preference
 
-fun EntryProviderScope<SettingsRoute>.settingsRootEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsRootEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.Root> {
-        SettingsRootScreen(navigator = navigator)
+        SettingsRootScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
 @Composable
 fun SettingsRootScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
 ) {
-    val stService = LocalSyncthingService.current
-    val stServiceTick = LocalServiceUpdateTick.current
+    val stService = serviceState.service
+    val stServiceTick = serviceState.updateTick
 
     val isSyncthingOptionsEnabled by remember(stService, stServiceTick) {
         derivedStateOf { stService != null && stService.currentState == SyncthingService.State.ACTIVE }

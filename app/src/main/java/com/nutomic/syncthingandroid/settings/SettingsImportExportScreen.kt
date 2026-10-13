@@ -54,9 +54,12 @@ import me.zhanghai.compose.preference.TwoTargetPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(navigator: Navigator<SettingsRoute>) {
+fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+) {
     entry<SettingsRoute.ImportExport> {
-        SettingsImportExportScreen(navigator = navigator)
+        SettingsImportExportScreen(navigator = navigator, serviceState = serviceState)
     }
 }
 
@@ -64,6 +67,7 @@ fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(navigator: Navig
 @Composable
 fun SettingsImportExportScreen(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
 ) {
     val defaultBackupPath = "backups/syncthing/config.zip"
@@ -108,10 +112,10 @@ fun SettingsImportExportScreen(
             )
         }
         item {
-            ExportConfigPreference(navigator = navigator)
+            ExportConfigPreference(navigator = navigator, serviceState = serviceState)
         }
         item {
-            ImportConfigPreference(navigator = navigator)
+            ImportConfigPreference(navigator = navigator, serviceState = serviceState)
         }
     }
 }
@@ -210,11 +214,12 @@ private fun PasswordPreference() {
 @Composable
 private fun ExportConfigPreference(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
-    val stService = LocalSyncthingService.current
+    val stService = serviceState.service
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
@@ -275,11 +280,12 @@ private fun ExportConfigPreference(
 @Composable
 private fun ImportConfigPreference(
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
-    val stService = LocalSyncthingService.current
+    val stService = serviceState.service
     val prefs = LocalPreferenceFlow.current
 
     var showAlert by rememberSaveable { mutableStateOf(false) }

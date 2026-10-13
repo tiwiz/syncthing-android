@@ -99,22 +99,23 @@ fun rememberSettingsNavBackStack(startDestination: SettingsRoute): NavBackStack<
 fun SettingsNavDisplay(
     backStack: NavBackStack<SettingsRoute>,
     navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
     modifier: Modifier = Modifier,
 ) {
     NavDisplay(
         backStack = backStack,
         onBack = { navigator.navigateBack() },
         entryProvider = entryProvider {
-            settingsRootEntry(navigator)
-            settingsRunConditionsEntry(navigator)
-            settingsUserInterfaceEntry(navigator)
+            settingsRootEntry(navigator, serviceState)
+            settingsRunConditionsEntry(navigator, serviceState)
+            settingsUserInterfaceEntry(navigator, serviceState)
             settingsBehaviorEntry(navigator)
-            settingsSyncthingOptionsEntry(navigator)
-            settingsCustomCertificateEntry(navigator)
-            settingsImportExportEntry(navigator)
+            settingsSyncthingOptionsEntry(navigator, serviceState)
+            settingsCustomCertificateEntry(navigator, serviceState)
+            settingsImportExportEntry(navigator, serviceState)
             settingsTroubleshootingEntry(navigator)
             settingsExperimentalEntry(navigator)
-            settingsAboutEntry(navigator)
+            settingsAboutEntry(navigator, serviceState)
             licensesEntry(navigator)
         },
         transitionSpec = {
