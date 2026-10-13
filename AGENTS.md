@@ -184,7 +184,7 @@ Next steps (to be confirmed with the owner):
    formatting crash at 1 PiB (PR #5), `ConfigXml.addFolder` with null
    versioning (PR #6), `ConfigXml.removeDevice` unsharing folders (PR #7),
    ignoring devices/folders while stopped (PR #8), `Compression` default
-   (PR #9). No pinned bugs left.
+   (PR #9). No pinned bugs left. Then TECH-DEBT TODOs: empty backup path after import (PR #10).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

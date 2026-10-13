@@ -827,8 +827,8 @@ public class SyncthingService extends Service {
     private final File getBackupZipFile() {
         String defaultPath = "backups/syncthing/config.zip";
         String relPathToZip = mPreferences.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, defaultPath);
-        // NOTE: somehow we get empty string from the prefs, which crashes the app, use default when that happens
-        // TODO: figure out where the empty string is coming from and fix that
+        // Empty when the user clears the field in the settings, or after an import by older versions
+        // (importConfigSharedPrefs restored an unset pref as ""). An empty path would crash.
         if (relPathToZip.isEmpty()) {
             relPathToZip = defaultPath;
         }
@@ -1408,9 +1408,10 @@ public class SyncthingService extends Service {
             if (objectFromInputStream instanceof Map) {
                 sharedPrefsMap = (Map<?, ?>) objectFromInputStream;
 
-                // Store backup folder to restore it back later in the process.
-                String relPathToZip = mPreferences.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "");
-                String backupPassword = mPreferences.getString(Constants.PREF_BACKUP_PASSWORD, "");
+                // Store backup folder to restore it back later in the process. Null when unset, so an
+                // unset pref is not turned into an empty string.
+                String relPathToZip = mPreferences.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null);
+                String backupPassword = mPreferences.getString(Constants.PREF_BACKUP_PASSWORD, null);
 
                 // Prepare a SharedPreferences commit.
                 SharedPreferences.Editor editor = mPreferences.edit();
@@ -1467,8 +1468,17 @@ public class SyncthingService extends Service {
                             break;
                     }
                 }
-                editor.putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, relPathToZip);
-                editor.putString(Constants.PREF_BACKUP_PASSWORD, backupPassword);
+                // This device's values win over the imported ones, including "unset".
+                if (relPathToZip != null) {
+                    editor.putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, relPathToZip);
+                } else {
+                    editor.remove(Constants.PREF_BACKUP_REL_PATH_TO_ZIP);
+                }
+                if (backupPassword != null) {
+                    editor.putString(Constants.PREF_BACKUP_PASSWORD, backupPassword);
+                } else {
+                    editor.remove(Constants.PREF_BACKUP_PASSWORD);
+                }
 
                 /**
                  * If all shared preferences have been added to the commit successfully,

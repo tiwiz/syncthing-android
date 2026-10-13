@@ -26,4 +26,3 @@ Each one has its reason next to it. Remove the suppression when the code no long
 |---|---|
 | `onboarding/OnboardingActivity.kt` `onCreate` | Move `enableEdgeToEdge()` to `ThemedAppCompatActivity` once every activity uses Compose (was a `TODO:`, rephrased for detekt) |
 | `onboarding/OnboardingScaffold.kt` `isCompactOnboardingScreen` | Use a window size class once `material3.adaptive` is a dependency (was a `TODO:`, rephrased for detekt) |
-| `service/SyncthingService.java` `getBackupZipFile` | Find out why `PREF_BACKUP_REL_PATH_TO_ZIP` can be an empty string and fix the cause (Java, so detekt does not see it) |
