@@ -178,8 +178,8 @@ Next steps (to be confirmed with the owner):
 1. ~~Coverage report~~ done: JaCoCo, opt-in with `-Pcoverage=true`, 37% of lines
    ([docs/TESTING.md](docs/TESTING.md#coverage)).
 2. ~~Tests for `RestApi`/`EventProcessor`~~ done: `FakeSyncthing` (MockWebServer over HTTPS),
-   36 tests, coverage 46%. They pinned 4 more bugs; event polling stopping after one failed
-   request is fixed on `fix/event-polling-stops`.
+   36 tests, coverage 46%. They pinned 4 more bugs; fixed so far: event polling stopping after
+   one failed request (PR #2), startup stuck in `STARTING` after one failed request (PR #3).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
