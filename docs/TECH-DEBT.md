@@ -13,7 +13,6 @@ Each one has its reason next to it. Remove the suppression when the code no long
 
 | Where | Rule | What would remove it |
 |---|---|---|
-| `util/CompositionLocals.kt` `LocalActivityScope` | `CompositionLocalAllowlist` | Move the long-running work (config writes, exports) out of composables, e.g. into a ViewModel or the service |
 | `settings/SettingsUserInterfaceScreen.kt` `syncWebGuiTheme` | `TooGenericExceptionCaught` | Catch the specific exceptions `ConfigRouter.getGui` / `updateGui` can throw |
 
 ## TODOs

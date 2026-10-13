@@ -40,8 +40,8 @@ import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.util.LocalActivityScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,9 +57,14 @@ import me.zhanghai.compose.preference.rememberPreferenceState
 fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.ImportExport> {
-        SettingsImportExportScreen(navigator = navigator, serviceState = serviceState)
+        SettingsImportExportScreen(
+            navigator = navigator,
+            serviceState = serviceState,
+            activityScope = activityScope,
+        )
     }
 }
 
@@ -68,6 +73,7 @@ fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(
 fun SettingsImportExportScreen(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
     val defaultBackupPath = "backups/syncthing/config.zip"
@@ -112,10 +118,18 @@ fun SettingsImportExportScreen(
             )
         }
         item {
-            ExportConfigPreference(navigator = navigator, serviceState = serviceState)
+            ExportConfigPreference(
+                navigator = navigator,
+                serviceState = serviceState,
+                scope = activityScope,
+            )
         }
         item {
-            ImportConfigPreference(navigator = navigator, serviceState = serviceState)
+            ImportConfigPreference(
+                navigator = navigator,
+                serviceState = serviceState,
+                scope = activityScope,
+            )
         }
     }
 }
@@ -215,10 +229,10 @@ private fun PasswordPreference() {
 private fun ExportConfigPreference(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val scope = LocalActivityScope.current
     val stService = serviceState.service
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
@@ -281,10 +295,10 @@ private fun ExportConfigPreference(
 private fun ImportConfigPreference(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val scope = LocalActivityScope.current
     val stService = serviceState.service
     val prefs = LocalPreferenceFlow.current
 

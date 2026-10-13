@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -25,7 +24,6 @@ import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.LocalActivityScope
 import com.nutomic.syncthingandroid.util.Util
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -152,8 +150,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         enableEdgeToEdge()
         (application as SyncthingApp).component().inject(this)
 
-        val activityScope = this.lifecycleScope
-
         val isRunningOnTv = Util.isRunningOnTV(this)
         Log.d(TAG, if (isRunningOnTv) "Running on a TV Device" else "Running on a non-TV Device")
 
@@ -221,19 +217,15 @@ class OnboardingActivity : ThemedAppCompatActivity() {
 
         setContent {
             ApplicationTheme {
-                CompositionLocalProvider(
-                    LocalActivityScope provides activityScope,
-                ) {
-                    OnboardingScreen(
-                        uiState = uiState,
-                        onBack = ::handleBack,
-                        onContinue = ::advance,
-                        onFinishOnboarding = ::startApp,
-                        onGrantLocationPermission = ::requestLocationPermission,
-                        onGrantLocalNetworkPermission = ::requestLocalNetworkPermission,
-                        onGrantNotificationPermission = ::requestNotificationPermission,
-                    )
-                }
+                OnboardingScreen(
+                    uiState = uiState,
+                    onBack = ::handleBack,
+                    onContinue = ::advance,
+                    onFinishOnboarding = ::startApp,
+                    onGrantLocationPermission = ::requestLocationPermission,
+                    onGrantLocalNetworkPermission = ::requestLocalNetworkPermission,
+                    onGrantNotificationPermission = ::requestNotificationPermission,
+                )
             }
         }
     }

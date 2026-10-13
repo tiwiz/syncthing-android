@@ -41,7 +41,7 @@ The namespace is inherited from the original app. The application id is
 | `service` | Java | The core: `SyncthingService`, `SyncthingRunnable`, `RestApi`, `EventProcessor`, `RunConditionMonitor`, `NotificationHandler`, Quick Settings tiles, `SyncTriggerJobService`, `Constants`, `AppPrefs` |
 | `http` | Java | Volley requests to the REST API: `ApiRequest`, `GetRequest`, `PostRequest`, `PollWebGuiAvailableTask`, `SyncthingTrustManager` |
 | `model` | Java | Gson POJOs mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
-| `util` | Java + Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`, `PermissionUtil`, `Util`, `JobUtils`, `CertificateValidator.kt`, `CompositionLocals.kt`, `extensions.kt` |
+| `util` | Java + Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`, `PermissionUtil`, `Util`, `JobUtils`, `CertificateValidator.kt`, `extensions.kt` |
 | `activities` | Java (Views) | `MainActivity`, `FolderActivity`, `DeviceActivity`, pickers and dialogs, `ShareActivity`, `PhotoShootActivity`, `QRScannerActivity`, `LogActivity`, `WebViewActivity` |
 | `fragments` | Java + Kotlin | Folder/device lists and status tab (Views), versioning dialogs, `DrawerFragment.kt` and `DeviceIdDialogFragment.kt` (Compose inside `ComposeView`) |
 | `views` | Java | RecyclerView adapters and custom widgets |

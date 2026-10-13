@@ -36,7 +36,6 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.util.FileUtils
-import com.nutomic.syncthingandroid.util.LocalActivityScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,9 +62,14 @@ private const val TAG = "SettingsSyncthingOptionsScreen"
 fun EntryProviderScope<SettingsRoute>.settingsSyncthingOptionsEntry(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.SyncthingOptions> {
-        SettingsSyncthingOptionsScreen(navigator = navigator, serviceState = serviceState)
+        SettingsSyncthingOptionsScreen(
+            navigator = navigator,
+            serviceState = serviceState,
+            activityScope = activityScope,
+        )
     }
 }
 
@@ -100,13 +104,13 @@ private const val BIND_LOCALHOST = "127.0.0.1"
 fun SettingsSyncthingOptionsScreen(
     navigator: Navigator<SettingsRoute>,
     serviceState: SyncthingServiceState,
+    activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val stService = serviceState.service
     val stServiceTick = serviceState.updateTick
-    val scope = LocalActivityScope.current
 
     val sharedPrefWebGuiPassword = rememberPreferenceState(Constants.PREF_WEBUI_PASSWORD, "")
 
@@ -164,7 +168,7 @@ fun SettingsSyncthingOptionsScreen(
                 isStServiceActive,
                 context,
                 clipboard,
-                scope,
+                activityScope,
             )
             connectionItems(
                 listenAddresses,
@@ -187,7 +191,7 @@ fun SettingsSyncthingOptionsScreen(
                 isStServiceActive,
                 context,
             )
-            advancedItems(crashReporting, stService, isStServiceActive, navigator)
+            advancedItems(crashReporting, stService, isStServiceActive, navigator, activityScope)
         }
     }
 }
@@ -419,6 +423,7 @@ private fun LazyListScope.advancedItems(
     stService: SyncthingService?,
     isStServiceActive: Boolean,
     navigator: Navigator<SettingsRoute>,
+    scope: CoroutineScope,
 ) {
     item {
         PreferenceCategory(
@@ -445,18 +450,21 @@ private fun LazyListScope.advancedItems(
         ClearStVersionPreference(
             stService = stService,
             enabled = isStServiceActive,
+            scope = scope,
         )
     }
     item {
         SupportBundlePreference(
             stService = stService,
             enabled = isStServiceActive,
+            scope = scope,
         )
     }
     item {
         UndoIgnoredDevicesFoldersPreference(
             stService = stService,
             enabled = isStServiceActive,
+            scope = scope,
         )
     }
 }
@@ -466,10 +474,10 @@ private fun LazyListScope.advancedItems(
 private fun ClearStVersionPreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val scope = LocalActivityScope.current
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
     Preference(
@@ -522,10 +530,10 @@ private fun ClearStVersionPreference(
 private fun UndoIgnoredDevicesFoldersPreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val scope = LocalActivityScope.current
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
     Preference(
@@ -576,9 +584,9 @@ private fun UndoIgnoredDevicesFoldersPreference(
 private fun SupportBundlePreference(
     stService: SyncthingService?,
     enabled: Boolean,
+    scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    val scope = LocalActivityScope.current
     var supportBundleState by remember { mutableStateOf(SupportBundleDownloadState.INIT) }
     var supportBundleFileName by remember { mutableStateOf("") }
 
