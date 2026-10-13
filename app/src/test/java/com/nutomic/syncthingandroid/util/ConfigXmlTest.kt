@@ -183,7 +183,7 @@ class ConfigXmlTest {
         val config = loaded()
         val laptop = config.getDevices(false).single()
         laptop.name = "work laptop"
-        laptop.addresses = listOf("tcp://192.0.2.20:22000")
+        laptop.addresses = mutableListOf("tcp://192.0.2.20:22000")
         laptop.compression = "always"
         config.updateDevice(laptop)
         config.setDevicePause(REMOTE_DEVICE_ID, true)
@@ -201,7 +201,7 @@ class ConfigXmlTest {
         // Like Syncthing, which drops folder devices that no longer exist.
         assertEquals(
             emptyList<String>(),
-            remaining.folders.single().sharedWithDevices.map { it.deviceID },
+            remaining.folders.single().sharedWithDevices!!.map { it.deviceID },
         )
     }
 

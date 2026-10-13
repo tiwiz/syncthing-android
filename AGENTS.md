@@ -54,8 +54,10 @@ green and must stay green without re-recording ([docs/TESTING.md](docs/TESTING.m
 
 ### Scope discipline
 
-Keep changes to what the task asks for. Unrequested behaviour changes are regressions. Keep the
-diff against upstream small: no drive-by reformatting, renames or Java→Kotlin conversions.
+Keep changes to what the task asks for. Unrequested behaviour changes are regressions. No drive-by
+reformatting or renames. Java→Kotlin and View→Compose conversions happen only as steps of the
+migration plan ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)),
+which the owner started on 2026-10-13; the fork no longer tracks a small diff against upstream.
 
 ### Secrets
 
@@ -142,8 +144,8 @@ docs/                        architecture, development rules, plans (this fork)
 
 Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
-- New code in Kotlin, new UI in Compose + Material 3 (`ApplicationTheme`). Do not convert Java
-  files unless asked.
+- New code in Kotlin, new UI in Compose + Material 3 (`ApplicationTheme`). Java files and View
+  screens are being migrated, one PR per step ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)).
 - English everywhere (code, comments, logs, docs). Unix line endings. Match surrounding style.
 - Config access through `ConfigRouter` (REST when running, `config.xml` when stopped).
 - REST only to `127.0.0.1`; never weaken `ApiRequest`/`SyncthingTrustManager`.
@@ -202,7 +204,10 @@ Next steps (to be confirmed with the owner):
    pinned bugs left. detekt now sees the app's Java classes (javac output on
    `detektDebug`'s classpath, PR #28): no more "compiler errors found during analysis".
    PR #29: folder type, pull order and sync conditions screens, QR scan, share. Moving
-   `enableEdgeToEdge()` to `ThemedAppCompatActivity` was tried and dropped (TECH-DEBT.md).
+   `enableEdgeToEdge()` to `ThemedAppCompatActivity` was tried and dropped (PR #30, TECH-DEBT.md).
+5. 2026-10-13: Kotlin/Compose migration started
+   ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)). Branch
+   `refactor/kotlin-models`: `model/` in Kotlin, completion caches covered by `CompletionCacheTest`.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

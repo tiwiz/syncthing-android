@@ -14,7 +14,7 @@ class DeviceTest {
         Device().apply {
             deviceID = id
             this.name = name
-            this.addresses = addresses
+            this.addresses = addresses?.toMutableList()
         }
 
     // Accepted and rejected forms from Syncthing's lib/protocol/deviceid_test.go.
@@ -59,9 +59,9 @@ class DeviceTest {
 
     @Test
     fun `display name falls back to the first seven characters of the id`() {
-        assertEquals("laptop", device(id = "P56IOI7-MZJNU2Y", name = "laptop").getDisplayName())
-        assertEquals("P56IOI7", device(id = "P56IOI7-MZJNU2Y").getDisplayName())
-        assertEquals("", device().getDisplayName())
+        assertEquals("laptop", device(id = "P56IOI7-MZJNU2Y", name = "laptop").displayName)
+        assertEquals("P56IOI7", device(id = "P56IOI7-MZJNU2Y").displayName)
+        assertEquals("", device().displayName)
     }
 
     @Test

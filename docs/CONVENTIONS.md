@@ -9,8 +9,8 @@ this file says which one wins and why.
 
 - Package root: `com.nutomic.syncthingandroid`. Do not rename packages: the namespace and the
   `SharedPreferences` keys are part of users' config backups and of upstream merges.
-- New code is Kotlin. Do not convert existing Java files unless the task is the conversion: every
-  converted file is a merge conflict with upstream.
+- New code is Kotlin. Existing Java files are converted as steps of
+  [the migration plan](plans/KOTLIN-COMPOSE-MIGRATION.md), with its conversion rules.
 - Code, comments, log messages and docs are in English.
 - Follow the brace and parenthesis style of the surrounding code. Unix line endings only.
 - Keep Android types out of logic that can be pure (parsers, validators, run-condition decisions),

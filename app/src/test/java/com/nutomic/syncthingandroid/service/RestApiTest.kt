@@ -340,7 +340,7 @@ class RestApiTest {
             .getEvents(
                 5,
                 0,
-                eventListener(onEvent = { types += it.type }, onDone = { lastId = it }),
+                eventListener(onEvent = { types += it.type!! }, onDone = { lastId = it }),
             )
         awaitMain { lastId >= 0 }
 

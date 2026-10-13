@@ -77,9 +77,9 @@ class ConfigRouterTest {
         router.ignoreFolder(null, REMOTE_DEVICE_ID, "secret-folder", "Secret")
 
         val remote = ConfigRouter(context).getDevices(null, false).single()
-        assertEquals(listOf("secret-folder"), remote.ignoredFolders.map { it.id })
-        assertEquals("Secret", remote.ignoredFolders.single().label)
-        assertTrue(remote.ignoredFolders.single().time.isNotEmpty())
+        assertEquals(listOf("secret-folder"), remote.ignoredFolders!!.map { it.id })
+        assertEquals("Secret", remote.ignoredFolders!!.single().label)
+        assertTrue(remote.ignoredFolders!!.single().time.isNotEmpty())
     }
 
     @Test
