@@ -15,10 +15,6 @@ purpose.
 4. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
    running.
 5. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
-6. `EventProcessor` `FolderErrors` keeps the JSON quotes around the path in the "SD card full"
-   notification.
-7. `EventProcessor.onEvent`: the ignored event types fall through into the `RemoteIndexUpdated`
-   case (its `break` is commented out).
 
 ## detekt suppressions
 

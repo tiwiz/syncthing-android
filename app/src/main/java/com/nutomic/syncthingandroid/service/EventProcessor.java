@@ -231,6 +231,7 @@ public class EventProcessor implements  Runnable, RestApi.OnReceiveEventListener
                 );
                 break;
                 */
+                break;
             case "RemoteIndexUpdated":
                 onRemoteIndexUpdated(
                         (String) event.data.get("device"),         // deviceId
@@ -363,8 +364,8 @@ public class EventProcessor implements  Runnable, RestApi.OnReceiveEventListener
         for (int i = 0; i < errors.size(); i++) {
             JsonElement error = errors.get(i);
             if (error != null) {
-                String strError = ((JsonObject) error).get("error").toString();
-                String strPath = ((JsonObject) error).get("path").toString();
+                String strError = jsonString(((JsonObject) error).get("error"));
+                String strPath = jsonString(((JsonObject) error).get("path"));
                 if (!TextUtils.isEmpty(strError) &&
                     !TextUtils.isEmpty(strPath) &&
                             strError.contains("insufficient space in basic")) {
@@ -539,6 +540,16 @@ public class EventProcessor implements  Runnable, RestApi.OnReceiveEventListener
                 // Log.v(TAG, "onItemFinished: onDeleteComplete: [ok] file=" + cookie.toString() + ", token=" + Integer.toString(token));
             }
         }
+    }
+
+    /**
+     * Returns the value of a JSON string without its quotes, or null if it is not a string.
+     */
+    private static String jsonString(JsonElement element) {
+        if (element == null || !element.isJsonPrimitive()) {
+            return null;
+        }
+        return element.getAsString();
     }
 
     private <T> void mapNullable(List<T> l, Consumer<T> c) {
