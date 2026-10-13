@@ -22,6 +22,7 @@ Read it at the start of every task and keep it current.
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code, Compose and git rules |
 | [docs/TESTING.md](docs/TESTING.md) | TDD flow, test layers, what to test first |
 | [docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md) | The gate, Lint, planned detekt/ktfmt, suppressions |
+| [docs/TECH-DEBT.md](docs/TECH-DEBT.md) | Things to fix: pinned bugs, detekt suppressions, TODOs |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Upstream rules (commits, DCO, AI policy) |
 | [wiki/developers/](wiki/developers/) | Upstream build guide, sync-status broadcast API |
 
@@ -171,7 +172,7 @@ Next steps (to be confirmed with the owner):
 
 1. Coverage report (Kover/JaCoCo) to find gaps before each refactor.
 2. Tests for `RestApi`/`EventProcessor` against a fake HTTP server.
-3. Start refactoring; fix the `CHARACTERIZATION` oddities one PR at a time.
+3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
 

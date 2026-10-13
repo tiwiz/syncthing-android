@@ -163,3 +163,6 @@ or screenshot. How they were fixed:
   reflective WebView proxy hack and the fire-and-forget web GUI theme sync).
 - Two `TODO:` comments rephrased as notes (the work they describe needs new dependencies).
 
+The suppressions, the TODOs and the characterization bugs are tracked in
+[docs/TECH-DEBT.md](../TECH-DEBT.md).
+
