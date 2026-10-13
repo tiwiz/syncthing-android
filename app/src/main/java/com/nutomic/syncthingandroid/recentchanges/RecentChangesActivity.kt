@@ -27,7 +27,7 @@ import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.FileUtils
+import com.nutomic.syncthingandroid.util.FileOpener
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -160,8 +160,8 @@ class RecentChangesActivity : SyncthingActivity(), SyncthingService.OnServiceSta
         }
         val fullPath = folder.path + File.separator + change.rawPath
         when (change.type) {
-            ChangeType.DIR -> FileUtils.openFolder(this, fullPath)
-            ChangeType.FILE -> FileUtils.openFile(this, fullPath)
+            ChangeType.DIR -> FileOpener.openFolder(this, fullPath)
+            ChangeType.FILE -> FileOpener.openFile(this, fullPath)
             ChangeType.UNKNOWN -> Log.e(TAG, "openChange: unknown type for path=[${change.rawPath}]")
         }
     }

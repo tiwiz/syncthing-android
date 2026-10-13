@@ -23,7 +23,7 @@ import com.nutomic.syncthingandroid.model.FolderStatus;
 import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.service.RestApi;
 import com.nutomic.syncthingandroid.service.SyncthingService;
-import com.nutomic.syncthingandroid.util.FileUtils;
+import com.nutomic.syncthingandroid.util.FileOpener;
 import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.util.Map;
@@ -98,7 +98,7 @@ public class FoldersAdapter extends ArrayAdapter<Folder> {
         holder.directory.setText(getShortPathForUI(folder.path));
         holder.override.setOnClickListener(view -> { onClickOverride(view, folder); });
         holder.revert.setOnClickListener(view -> { onClickRevert(view, folder); });
-        holder.openFolder.setOnClickListener(view -> { FileUtils.openFolder(mContext, folder.path); });
+        holder.openFolder.setOnClickListener(view -> { FileOpener.openFolder(mContext, folder.path); });
 
         // Update folder icon.
         int drawableId = R.drawable.baseline_folder_24;
