@@ -54,7 +54,8 @@ public class Util {
     public static String readableFileSize(Context context, double bytes) {
         final String[] units = context.getResources().getStringArray(R.array.file_size_units);
         if (bytes <= 0) return "0 " + units[0];
-        int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
+        // Sizes past the largest unit stay in it (e.g. "1,024 TB").
+        int digitGroups = Math.min((int) (Math.log10(bytes) / Math.log10(1024)), units.length - 1);
         return new DecimalFormat("#,##0.#")
                 .format(bytes / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
@@ -69,7 +70,8 @@ public class Util {
         final String[] units = context.getResources().getStringArray(R.array.transfer_rate_units);
         long bytes = bits / 8;
         if (bytes <= 0) return "0 " + units[0];
-        int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
+        // Sizes past the largest unit stay in it (e.g. "1,024 TB").
+        int digitGroups = Math.min((int) (Math.log10(bytes) / Math.log10(1024)), units.length - 1);
         return new DecimalFormat("#,##0.#")
                 .format(bytes / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }

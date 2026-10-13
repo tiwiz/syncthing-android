@@ -9,7 +9,6 @@ import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -52,15 +51,14 @@ class UtilTest {
     }
 
     @Test
-    fun `sizes of one PiB and more crash`() {
-        // CHARACTERIZATION: the unit arrays stop at TiB, so 1024^5 bytes and above index past the
-        // end.
-        assertThrows(ArrayIndexOutOfBoundsException::class.java) {
-            Util.readableFileSize(context, 1024.0 * 1024 * 1024 * 1024 * 1024)
-        }
-        assertThrows(ArrayIndexOutOfBoundsException::class.java) {
-            Util.readableTransferRate(context, 8L * 1024 * 1024 * 1024 * 1024 * 1024)
-        }
+    fun `sizes of one PiB and more stay in the largest unit`() {
+        val pib = 1024.0 * 1024 * 1024 * 1024 * 1024
+        assertEquals("1,024 TB", Util.readableFileSize(context, pib))
+        assertEquals("2,048 TB", Util.readableFileSize(context, 2 * pib))
+        assertEquals(
+            "1,024 TB/s",
+            Util.readableTransferRate(context, 8L * 1024 * 1024 * 1024 * 1024 * 1024),
+        )
     }
 
     @Test
