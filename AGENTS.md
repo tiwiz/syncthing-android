@@ -210,8 +210,10 @@ Next steps (to be confirmed with the owner):
    `model/` in Kotlin (`CompletionCacheTest`). PR #32: `http/` (`ApiRequestTest`). PR #33: small
    `util/` helpers, Dagger, app, receivers, small services (`HelpersTest`, `ServiceHelpersTest`).
    PR #34: `Util` split into the `Util` (shell, shadowed in tests), `TextFormat`, `UiUtil` and
-   `OsTrustStore` facades (`UtilShellTest`). Branch `refactor/kotlin-fileutils`: `FileUtils`
-   split into `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden).
+   `OsTrustStore` facades (`UtilShellTest`). PR #35: `FileUtils` split into
+   `FileUtils`, `SafUtils`, `FileOpener` (`FileUtilsStorageTest`, full MIME golden). Branch
+   `refactor/kotlin-configxml`: `ConfigXml` (+ `ConfigXmlModels`, `ConfigXmlNodes`,
+   `ConfigXmlValues`) and `ConfigRouter` (`ConfigXmlEditTest`, REST routing test).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

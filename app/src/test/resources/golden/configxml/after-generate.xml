@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?><configuration version="52">
+        
+    <folder autoNormalize="true" fsWatcherDelayS="10" fsWatcherEnabled="true" fsWatcherTimeoutS="0" id="cam-photos" ignorePerms="false" label="Camera" path="/storage/emulated/0/DCIM/Camera" rescanIntervalS="3600" type="sendonly">
+                
+        <filesystemType>basic</filesystemType>
+                
+        <device id="MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD" introducedBy="">
+                        
+            <encryptionPassword/>
+                    
+        </device>
+                
+        <device id="P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2" introducedBy="">
+                        
+            <encryptionPassword/>
+                    
+        </device>
+                
+        <minDiskFree unit="%">1</minDiskFree>
+                
+        <versioning>
+                        
+            <cleanupIntervalS>3600</cleanupIntervalS>
+                        
+            <fsPath/>
+                        
+            <fsType>basic</fsType>
+                    
+        </versioning>
+                
+        <copiers>0</copiers>
+                
+        <pullerMaxPendingKiB>0</pullerMaxPendingKiB>
+                
+        <hashers>0</hashers>
+                
+        <order>random</order>
+                
+        <ignoreDelete>false</ignoreDelete>
+                
+        <scanProgressIntervalS>0</scanProgressIntervalS>
+                
+        <pullerPauseS>0</pullerPauseS>
+                
+        <pullerDelayS>1</pullerDelayS>
+                
+        <maxConflicts>10</maxConflicts>
+                
+        <disableSparseFiles>false</disableSparseFiles>
+                
+        <paused>false</paused>
+                
+        <markerName>.stfolder</markerName>
+                
+        <copyOwnershipFromParent>false</copyOwnershipFromParent>
+                
+        <modTimeWindowS>0</modTimeWindowS>
+                
+        <maxConcurrentWrites>16</maxConcurrentWrites>
+                
+        <disableFsync>false</disableFsync>
+                
+        <blockPullOrder>standard</blockPullOrder>
+                
+        <copyRangeMethod>standard</copyRangeMethod>
+                
+        <caseSensitiveFS>false</caseSensitiveFS>
+                
+        <junctionsAsDirs>false</junctionsAsDirs>
+                
+        <syncOwnership>false</syncOwnership>
+                
+        <sendOwnership>false</sendOwnership>
+                
+        <syncXattrs>false</syncXattrs>
+                
+        <sendXattrs>false</sendXattrs>
+                
+        <blockIndexing>true</blockIndexing>
+                
+        <xattrFilter>
+                        
+            <maxSingleEntrySize>1024</maxSingleEntrySize>
+                        
+            <maxTotalSize>4096</maxTotalSize>
+                    
+        </xattrFilter>
+            
+    </folder>
+        
+    <device compression="metadata" id="MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD" introducedBy="" introducer="false" name="<device model>" skipIntroductionRemovals="false">
+                
+        <address>dynamic</address>
+                
+        <paused>false</paused>
+                
+        <autoAcceptFolders>false</autoAcceptFolders>
+                
+        <maxSendKbps>0</maxSendKbps>
+                
+        <maxRecvKbps>0</maxRecvKbps>
+                
+        <maxRequestKiB>0</maxRequestKiB>
+                
+        <untrusted>false</untrusted>
+                
+        <remoteGUIPort>0</remoteGUIPort>
+                
+        <numConnections>0</numConnections>
+            
+    </device>
+        
+    <device compression="metadata" id="P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2" introducedBy="" introducer="false" name="laptop" skipIntroductionRemovals="false">
+                
+        <address>dynamic</address>
+                
+        <address>tcp://192.0.2.10:22000</address>
+                
+        <paused>false</paused>
+                
+        <autoAcceptFolders>false</autoAcceptFolders>
+                
+        <maxSendKbps>0</maxSendKbps>
+                
+        <maxRecvKbps>0</maxRecvKbps>
+                
+        <maxRequestKiB>0</maxRequestKiB>
+                
+        <untrusted>false</untrusted>
+                
+        <remoteGUIPort>0</remoteGUIPort>
+                
+        <numConnections>0</numConnections>
+            
+    </device>
+        
+    <gui enabled="true" sendBasicAuthPrompt="false" tls="false">
+                
+        <address>127.0.0.1:8385</address>
+                
+        <metricsWithoutAuth>false</metricsWithoutAuth>
+                
+        <apikey>fixture-api-key</apikey>
+                
+        <theme>default</theme>
+                
+        <sessionCookieDurationS>604800</sessionCookieDurationS>
+                
+        <sessionCookiePath>/</sessionCookiePath>
+            
+        <user>syncthing</user>
+        <password><bcrypt></password>
+    </gui>
+        
+    <ldap/>
+        
+    <options>
+                
+        
+        <globalAnnounceServer>default</globalAnnounceServer>
+                
+        <globalAnnounceEnabled>true</globalAnnounceEnabled>
+                
+        <localAnnounceEnabled>true</localAnnounceEnabled>
+                
+        <localAnnouncePort>21027</localAnnouncePort>
+                
+        <localAnnounceMCAddr>[ff12::8384]:21027</localAnnounceMCAddr>
+                
+        <maxSendKbps>0</maxSendKbps>
+                
+        <maxRecvKbps>0</maxRecvKbps>
+                
+        <reconnectionIntervalS>20</reconnectionIntervalS>
+                
+        <relaysEnabled>true</relaysEnabled>
+                
+        <relayReconnectIntervalM>10</relayReconnectIntervalM>
+                
+        <startBrowser>true</startBrowser>
+                
+        <natEnabled>true</natEnabled>
+                
+        <natLeaseMinutes>60</natLeaseMinutes>
+                
+        <natRenewalMinutes>30</natRenewalMinutes>
+                
+        <natTimeoutSeconds>10</natTimeoutSeconds>
+                
+        <urAccepted>0</urAccepted>
+                
+        <urSeen>0</urSeen>
+                
+        <urUniqueID/>
+                
+        <urURL>https://data.syncthing.net/newdata</urURL>
+                
+        <urInitialDelayS>1800</urInitialDelayS>
+                
+        <autoUpgradeIntervalH>12</autoUpgradeIntervalH>
+                
+        <upgradeToPreReleases>false</upgradeToPreReleases>
+                
+        <keepTemporariesH>24</keepTemporariesH>
+                
+        <progressUpdateIntervalS>5</progressUpdateIntervalS>
+                
+        <limitBandwidthInLan>false</limitBandwidthInLan>
+                
+        <minHomeDiskFree unit="%">1</minHomeDiskFree>
+                
+        <releasesURL>https://upgrades.syncthing.net/meta.json</releasesURL>
+                
+        <overwriteRemoteDeviceNamesOnConnect>false</overwriteRemoteDeviceNamesOnConnect>
+                
+        <tempIndexMinBlocks>10</tempIndexMinBlocks>
+                
+        <unackedNotificationID>authenticationUserAndPassword</unackedNotificationID>
+                
+        <trafficClass>0</trafficClass>
+                
+        <setLowPriority>true</setLowPriority>
+                
+        <maxFolderConcurrency>0</maxFolderConcurrency>
+                
+        <crashReportingURL>https://crash.syncthing.net/newcrash</crashReportingURL>
+                
+        <crashReportingEnabled>true</crashReportingEnabled>
+                
+        <stunKeepaliveStartS>180</stunKeepaliveStartS>
+                
+        <stunKeepaliveMinS>20</stunKeepaliveMinS>
+                
+        <stunServer>default</stunServer>
+                
+        <maxConcurrentIncomingRequestKiB>0</maxConcurrentIncomingRequestKiB>
+                
+        <announceLANAddresses>true</announceLANAddresses>
+                
+        <sendFullIndexOnUpgrade>false</sendFullIndexOnUpgrade>
+                
+        <auditEnabled>false</auditEnabled>
+                
+        <auditFile/>
+                
+        <connectionLimitEnough>0</connectionLimitEnough>
+                
+        <connectionLimitMax>0</connectionLimitMax>
+                
+        <connectionPriorityTcpLan>10</connectionPriorityTcpLan>
+                
+        <connectionPriorityQuicLan>20</connectionPriorityQuicLan>
+                
+        <connectionPriorityTcpWan>30</connectionPriorityTcpWan>
+                
+        <connectionPriorityQuicWan>40</connectionPriorityQuicWan>
+                
+        <connectionPriorityRelay>50</connectionPriorityRelay>
+                
+        <connectionPriorityUpgradeThreshold>0</connectionPriorityUpgradeThreshold>
+            
+        <listenAddress>tcp://:22001</listenAddress>
+        <listenAddress>dynamic+https://relays.syncthing.net/endpoint</listenAddress>
+    </options>
+        
+    <defaults>
+                
+        <folder autoNormalize="true" fsWatcherDelayS="10" fsWatcherEnabled="true" fsWatcherTimeoutS="0" id="" ignorePerms="false" label="" path="" rescanIntervalS="3600" type="sendreceive">
+                        
+            <filesystemType>basic</filesystemType>
+                        
+            <device id="MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD" introducedBy="">
+                                
+                <encryptionPassword/>
+                            
+            </device>
+                        
+            <minDiskFree unit="%">1</minDiskFree>
+                        
+            <versioning type="trashcan">
+                                
+                <cleanupIntervalS>3600</cleanupIntervalS>
+                                
+                <fsPath/>
+                                
+                <fsType>basic</fsType>
+                            
+                <param key="cleanoutDays" val="14"/>
+            </versioning>
+                        
+            <copiers>0</copiers>
+                        
+            <pullerMaxPendingKiB>0</pullerMaxPendingKiB>
+                        
+            <hashers>0</hashers>
+                        
+            <order>random</order>
+                        
+            <ignoreDelete>false</ignoreDelete>
+                        
+            <scanProgressIntervalS>0</scanProgressIntervalS>
+                        
+            <pullerPauseS>0</pullerPauseS>
+                        
+            <pullerDelayS>1</pullerDelayS>
+                        
+            <maxConflicts>10</maxConflicts>
+                        
+            <disableSparseFiles>false</disableSparseFiles>
+                        
+            <paused>false</paused>
+                        
+            <markerName>.stfolder</markerName>
+                        
+            <copyOwnershipFromParent>false</copyOwnershipFromParent>
+                        
+            <modTimeWindowS>0</modTimeWindowS>
+                        
+            <maxConcurrentWrites>16</maxConcurrentWrites>
+                        
+            <disableFsync>false</disableFsync>
+                        
+            <blockPullOrder>standard</blockPullOrder>
+                        
+            <copyRangeMethod>standard</copyRangeMethod>
+                        
+            <caseSensitiveFS>false</caseSensitiveFS>
+                        
+            <junctionsAsDirs>false</junctionsAsDirs>
+                        
+            <syncOwnership>false</syncOwnership>
+                        
+            <sendOwnership>false</sendOwnership>
+                        
+            <syncXattrs>false</syncXattrs>
+                        
+            <sendXattrs>false</sendXattrs>
+                        
+            <blockIndexing>true</blockIndexing>
+                        
+            <xattrFilter>
+                                
+                <maxSingleEntrySize>1024</maxSingleEntrySize>
+                                
+                <maxTotalSize>4096</maxTotalSize>
+                            
+            </xattrFilter>
+                    
+        </folder>
+                
+        <device compression="metadata" id="" introducedBy="" introducer="false" skipIntroductionRemovals="false">
+                        
+            <address>dynamic</address>
+                        
+            <paused>false</paused>
+                        
+            <autoAcceptFolders>false</autoAcceptFolders>
+                        
+            <maxSendKbps>0</maxSendKbps>
+                        
+            <maxRecvKbps>0</maxRecvKbps>
+                        
+            <maxRequestKiB>0</maxRequestKiB>
+                        
+            <untrusted>false</untrusted>
+                        
+            <remoteGUIPort>0</remoteGUIPort>
+                        
+            <numConnections>0</numConnections>
+                    
+        </device>
+                
+        <ignores/>
+            
+    </defaults>
+    
+</configuration>
