@@ -30,6 +30,7 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest`, `BootReceiverTest`, `AppConfigReceiverTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
+| Screens driven by hand | Robolectric (+ Compose test for onboarding) | `EditScreensTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
 | Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest` |
 
@@ -74,7 +75,8 @@ Volley stack, `SyncthingTrustManager` pinning and loopback rewrite.
 
 `testutil/FakeSyncthingBinary` points `nativeLibraryDir` at a temporary folder and writes a `/bin/sh`
 script named `libsyncthingnative.so`. It records its arguments and environment, prints the given
-stdout/stderr and exits with the given code. With `serveUntilStopped`, `serve` keeps running until
+stdout/stderr and exits with the given code. With `generatedConfig`, `generate` writes it as
+`$STHOMEDIR/config.xml` (used by `OnboardingFlowTest`). With `serveUntilStopped`, `serve` keeps running until
 `stop()`; `SyncthingServiceLifecycleTest` calls it from `FakeSyncthing.onShutdown`, so the REST
 shutdown ends the process as it would on a device.
 
@@ -138,14 +140,13 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
   `includeNoLocationClasses`; without it the report is almost empty.
 - Look at the report before refactoring a class: code that no test runs is not protected.
 
-Snapshot on 2026-10-13 (lines): 60% overall. `model` 86%, `http` 79%, `recentchanges` 77%,
-`fragments` 71%, `util` 70%, `service` 67% (`RestApi` 77%, `SyncthingRunnable` 73%,
-`SyncthingService` 50%), `settings` 59%, `views` 55%, `onboarding` 51–68%, `activities` 40%;
-`webgui` and `fragments/dialog` close to 0%. The receivers and the versioning dialogs
-(`VersioningDialogActivityTest`, `VersioningScreenshotTest`) are covered since.
+Snapshot on 2026-10-13 (lines): 66% overall. `receiver` 94%, `model` 87%, `http` 79%,
+`fragments/dialog` 77%, `recentchanges` 77%, `util` 74%, `fragments` 72%, `service` 71%,
+`onboarding` 71–72%, `settings` 59%, `views` 55%, `activities` 51%; `webgui` 10% (WebView).
 
 ## Not covered yet
 
-- `FolderPickerActivity` (it lists the real file system, whose paths differ per machine), and the
-  WebView screens (`WebGuiActivity`, `WebViewActivity`): Robolectric does not draw web content.
-- Apart from `SettingsNavigationTest`, no test clicks anything.
+- The WebView screens (`WebGuiActivity`, `WebViewActivity`): Robolectric does not draw web content;
+  only `WebGuiSupport` is tested.
+- Many smaller interactions (folder type, pull order and sync conditions dialogs, share flow
+  confirm, QR scanner) still have no click-through test.
