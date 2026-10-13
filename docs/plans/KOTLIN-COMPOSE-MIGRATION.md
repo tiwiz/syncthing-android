@@ -10,9 +10,10 @@ One topic per PR, each with the gate and CI green before merging.
 
 1. **Java → Kotlin, bottom up.** Same behaviour, the existing tests are the safety net; code
    without tests gets characterization tests first, written against the Java code.
-   1. `model/` (Gson POJOs, completion caches). Done in the first PR.
-   2. `http/`, `util/` (small helpers first, then `FileUtils`, `ConfigXml`, `ConfigRouter`).
-   3. `service/` and `receiver/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
+   1. `model/` (Gson POJOs, completion caches). Done (#31).
+   2. `http/` (Volley requests, trust manager). Done (`refactor/kotlin-http`).
+   3. `util/` (small helpers first, then `FileUtils`, `ConfigXml`, `ConfigRouter`).
+   4. `service/` and `receiver/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
       `EventProcessor`, `SyncthingRunnable`, `RestApi`, `SyncthingService`), Dagger.
 2. **Screens → Compose**, smallest first: folder type, pull order and versioning dialogs, sync
    conditions, QR scanner, photo shoot, log, folder picker, share, web page, device, folder, then

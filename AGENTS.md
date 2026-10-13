@@ -206,8 +206,9 @@ Next steps (to be confirmed with the owner):
    PR #29: folder type, pull order and sync conditions screens, QR scan, share. Moving
    `enableEdgeToEdge()` to `ThemedAppCompatActivity` was tried and dropped (PR #30, TECH-DEBT.md).
 5. 2026-10-13: Kotlin/Compose migration started
-   ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)). Branch
-   `refactor/kotlin-models`: `model/` in Kotlin, completion caches covered by `CompletionCacheTest`.
+   ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)). PR #31:
+   `model/` in Kotlin (`CompletionCacheTest`). Branch `refactor/kotlin-http`: `http/` in Kotlin
+   (`ApiRequestTest`).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
