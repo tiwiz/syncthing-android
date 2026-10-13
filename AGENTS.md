@@ -207,8 +207,9 @@ Next steps (to be confirmed with the owner):
    `enableEdgeToEdge()` to `ThemedAppCompatActivity` was tried and dropped (PR #30, TECH-DEBT.md).
 5. 2026-10-13: Kotlin/Compose migration started
    ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)). PR #31:
-   `model/` in Kotlin (`CompletionCacheTest`). Branch `refactor/kotlin-http`: `http/` in Kotlin
-   (`ApiRequestTest`).
+   `model/` in Kotlin (`CompletionCacheTest`). PR #32: `http/` (`ApiRequestTest`). Branch
+   `refactor/kotlin-util-small`: small `util/` helpers, Dagger, app, receivers, small services
+   (`HelpersTest`, `ServiceHelpersTest`).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
