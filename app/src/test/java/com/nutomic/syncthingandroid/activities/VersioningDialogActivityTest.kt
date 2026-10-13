@@ -105,15 +105,13 @@ class VersioningDialogActivityTest {
         }
     }
 
-    // CHARACTERIZATION: the spinner compares the choice with the type the dialog was opened with,
-    // not the current one, so going back to the original type is ignored.
     @Test
-    fun `going back to the original type keeps the other one`() {
+    fun `going back to the original type returns the original type`() {
         launch("type" to "none").use {
             it.select(SIMPLE)
             it.select(NONE)
 
-            assertEquals("simple", it.finish()["type"])
+            assertEquals(mapOf("cleanoutDays" to "0", "keep" to "5", "type" to "none"), it.finish())
         }
     }
 

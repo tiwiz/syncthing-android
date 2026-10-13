@@ -77,7 +77,9 @@ public class VersioningDialogActivity extends ThemedAppCompatActivity {
         versioningTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position != mTypes.indexOf(getIntent().getExtras().getString("type"))) {
+                // Compare with the type shown now, not the one the dialog was opened with.
+                String currentType = mCurrentFragment.getArguments().getString("type");
+                if (position != mTypes.indexOf(currentType)) {
                     updateVersioningType(position);
                     updateFragmentView(position);
                 }
