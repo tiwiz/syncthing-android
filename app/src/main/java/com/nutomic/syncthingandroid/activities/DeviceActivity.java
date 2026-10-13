@@ -54,7 +54,7 @@ import com.nutomic.syncthingandroid.service.TestData;
 import com.nutomic.syncthingandroid.util.Compression;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
 import com.nutomic.syncthingandroid.util.TextWatcherAdapter;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.UiUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -280,7 +280,7 @@ public class DeviceActivity extends SyncthingActivity {
         mFoldersContainer = findViewById(R.id.foldersContainer);
         mSyncthingVersionView = findViewById(R.id.syncthingVersion);
 
-        if (Util.isRunningOnTV(this)) {
+        if (UiUtil.isRunningOnTV(this)) {
             mQrButton.setVisibility(View.GONE);
         }
         mQrButton.setOnClickListener(view -> startActivityForResult(QRScannerActivity.intent(DeviceActivity.this), QR_SCAN_REQUEST_CODE));
@@ -411,13 +411,13 @@ public class DeviceActivity extends SyncthingActivity {
         outState.putBoolean("deviceNeedsToUpdate", mDeviceNeedsToUpdate);
 
         outState.putBoolean(IS_SHOWING_DISCARD_DIALOG, mDiscardDialog != null && mDiscardDialog.isShowing());
-        Util.dismissDialogSafe(mDiscardDialog, this);
+        UiUtil.dismissDialogSafe(mDiscardDialog, this);
 
         outState.putBoolean(IS_SHOWING_COMPRESSION_DIALOG, mCompressionDialog != null && mCompressionDialog.isShowing());
-        Util.dismissDialogSafe(mCompressionDialog, this);
+        UiUtil.dismissDialogSafe(mCompressionDialog, this);
 
         outState.putBoolean(IS_SHOWING_DELETE_DIALOG, mDeleteDialog != null && mDeleteDialog.isShowing());
-        Util.dismissDialogSafe(mDeleteDialog, this);
+        UiUtil.dismissDialogSafe(mDeleteDialog, this);
     }
 
     private void updateViewsAndSetListeners() {

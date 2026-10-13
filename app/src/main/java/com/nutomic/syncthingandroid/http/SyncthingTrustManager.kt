@@ -2,7 +2,7 @@ package com.nutomic.syncthingandroid.http
 
 import android.annotation.SuppressLint
 import android.util.Log
-import com.nutomic.syncthingandroid.util.Util
+import com.nutomic.syncthingandroid.util.getOsTrustManager
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -48,7 +48,7 @@ internal class SyncthingTrustManager(private val httpsCertPath: File) : X509Trus
             // Android OS trust store instead of failing the connection outright. Logged at debug
             // level to avoid spamming logcat with the wrapped BAD_SIGNATURE on every request.
             Log.d(TAG, "Pinned certificate did not match, trying Android OS trust store.")
-            val osTrustManager = Util.getOsTrustManager() ?: throw pinFailure
+            val osTrustManager = getOsTrustManager() ?: throw pinFailure
             osTrustManager.checkServerTrusted(certs, authType)
         }
     }

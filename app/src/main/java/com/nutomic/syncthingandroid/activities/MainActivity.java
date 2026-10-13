@@ -56,7 +56,8 @@ import com.nutomic.syncthingandroid.service.SyncthingService;
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
 import com.nutomic.syncthingandroid.util.PermissionUtil;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.UiUtil;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.util.Date;
 import java.util.List;
@@ -208,7 +209,7 @@ public class MainActivity extends SyncthingActivity
         mConfig = new ConfigRouter(MainActivity.this);
         ENABLE_VERBOSE_LOG = AppPrefs.getPrefVerboseLog(mPreferences);
         if (ENABLE_VERBOSE_LOG) {
-            Util.testPathEllipsis();
+            TextFormat.testPathEllipsis();
         }
 
         setContentView(R.layout.activity_main);
@@ -423,8 +424,8 @@ public class MainActivity extends SyncthingActivity
         putFragment.accept(mDeviceListFragment);
         putFragment.accept(mStatusFragment);
 
-        Util.dismissDialogSafe(mRestartDialog, this);
-        Util.dismissDialogSafe(mUsageReportingDialog, this);
+        UiUtil.dismissDialogSafe(mRestartDialog, this);
+        UiUtil.dismissDialogSafe(mUsageReportingDialog, this);
     }
 
     @Override
@@ -591,7 +592,7 @@ public class MainActivity extends SyncthingActivity
                     .inflate(R.layout.dialog_usage_reporting, null);
             TextView tv = v.findViewById(R.id.example);
             tv.setText(report);
-            Util.dismissDialogSafe(mUsageReportingDialog, MainActivity.this);
+            UiUtil.dismissDialogSafe(mUsageReportingDialog, MainActivity.this);
             mUsageReportingDialog = new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.usage_reporting_dialog_title)
                     .setView(v)

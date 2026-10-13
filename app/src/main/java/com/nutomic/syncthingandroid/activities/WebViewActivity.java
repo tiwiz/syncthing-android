@@ -19,7 +19,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 
 import com.nutomic.syncthingandroid.R;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.UiUtil;
 
 /**
  * Holds a WebView that shows the web ui of the local syncthing instance.
@@ -103,7 +103,7 @@ public class WebViewActivity extends SyncthingActivity {
     @SuppressLint("SetJavaScriptEnabled")
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        isRunningOnTV = Util.isRunningOnTV(WebViewActivity.this);
+        isRunningOnTV = UiUtil.isRunningOnTV(WebViewActivity.this);
         setContentView(R.layout.activity_web_gui);
 
         if (!getIntent().hasExtra(EXTRA_WEB_URL)) {
@@ -134,7 +134,7 @@ public class WebViewActivity extends SyncthingActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        Util.dismissDialogSafe(mSecurityNoticeDialog, this);
+        UiUtil.dismissDialogSafe(mSecurityNoticeDialog, this);
     }
 
     @Override

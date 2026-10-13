@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 import com.nutomic.syncthingandroid.R;
 import com.nutomic.syncthingandroid.SyncthingApp;
 import com.nutomic.syncthingandroid.util.FileUtils;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -196,7 +196,7 @@ public class FolderPickerActivity extends SyncthingActivity
             return true;
         } else if (itemId == R.id.select) {
             Intent intent = new Intent()
-                    .putExtra(EXTRA_RESULT_DIRECTORY, Util.formatPath(mLocation.getAbsolutePath()));
+                    .putExtra(EXTRA_RESULT_DIRECTORY, TextFormat.formatPath(mLocation.getAbsolutePath()));
             setResult(Activity.RESULT_OK, intent);
             finish();
             return true;

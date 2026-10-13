@@ -53,6 +53,7 @@ import com.nutomic.syncthingandroid.model.SystemVersion;
 import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.util.FileUtils;
 import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -77,7 +78,7 @@ import java.util.concurrent.Executors;
 import javax.inject.Inject;
 
 import static com.nutomic.syncthingandroid.service.Constants.ENABLE_TEST_DATA;
-import static com.nutomic.syncthingandroid.util.Util.getLocalZonedDateTime;
+import static com.nutomic.syncthingandroid.util.TextFormat.getLocalZonedDateTime;
 
 /**
  * Provides functions to interact with the syncthing REST API.

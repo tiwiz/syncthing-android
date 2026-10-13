@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.onboarding
 
+import com.nutomic.syncthingandroid.util.isRunningOnTV
 import android.Manifest
 import android.content.Intent
 import android.content.SharedPreferences
@@ -24,7 +25,6 @@ import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.Util
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
@@ -151,7 +151,7 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         enableEdgeToEdge()
         (application as SyncthingApp).component().inject(this)
 
-        val isRunningOnTv = Util.isRunningOnTV(this)
+        val isRunningOnTv = isRunningOnTV(this)
         Log.d(TAG, if (isRunningOnTv) "Running on a TV Device" else "Running on a non-TV Device")
 
         val haveStoragePermission = haveStoragePermission()

@@ -1033,7 +1033,7 @@ public class ConfigXml {
             }
         }
         Element elementIgnoredDevice = mConfig.createElement("remoteIgnoredDevice");
-        elementIgnoredDevice.setAttribute("time", Util.getLocalZonedDateTime());
+        elementIgnoredDevice.setAttribute("time", TextFormat.getLocalZonedDateTime());
         elementIgnoredDevice.setAttribute("id", deviceID);
         elementIgnoredDevice.setAttribute("name", deviceName);
         elementIgnoredDevice.setAttribute("address", deviceAddress);
@@ -1065,7 +1065,7 @@ public class ConfigXml {
                 }
             }
             Element elementIgnoredFolder = mConfig.createElement("ignoredFolder");
-            elementIgnoredFolder.setAttribute("time", Util.getLocalZonedDateTime());
+            elementIgnoredFolder.setAttribute("time", TextFormat.getLocalZonedDateTime());
             elementIgnoredFolder.setAttribute("id", folderID);
             elementIgnoredFolder.setAttribute("label", folderLabel);
             elementDevice.appendChild(elementIgnoredFolder);

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.core.content.edit
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.service.Constants
@@ -66,10 +67,9 @@ class AppConfigReceiver : BroadcastReceiver() {
                 .getBoolean(Constants.PREF_BROADCAST_SERVICE_CONTROL, false)
 
         fun setPrefBtnStateForceStartStopAndNotify(context: Context, newState: Int) {
-            PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, newState)
-                .apply()
+            PreferenceManager.getDefaultSharedPreferences(context).edit {
+                putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, newState)
+            }
             // Notify RunConditionMonitor that the button's state changed.
             LocalBroadcastManager.getInstance(context)
                 .sendBroadcast(Intent(ACTION_UPDATE_SHOULDRUN_DECISION))

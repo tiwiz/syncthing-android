@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
@@ -14,6 +13,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.nutomic.syncthingandroid.R
 
 object PermissionUtil {
@@ -43,7 +43,7 @@ object PermissionUtil {
         }
         val intent =
             Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                .setData(Uri.parse("package:" + activity.packageName))
+                .setData("package:${activity.packageName}".toUri())
         try {
             if (intent.resolveActivity(activity.packageManager) != null) {
                 // Launch "Allow all files access?" dialog.

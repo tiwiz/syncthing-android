@@ -29,7 +29,7 @@ import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.service.RestApi;
 import com.nutomic.syncthingandroid.service.SyncthingService;
 import com.nutomic.syncthingandroid.settings.SettingsActivity;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.TextFormat;
 import com.nutomic.syncthingandroid.views.SegmentedButton;
 import com.nutomic.syncthingandroid.views.SegmentedButton.OnClickListenerSegmentedButton;
 
@@ -305,7 +305,7 @@ public class StatusFragment extends ListFragment implements SyncthingService.OnS
         int announceConnected =
                 announceTotal - Optional.fromNullable(systemStatus.discoveryErrors).transform(Map::size).or(0);
         synchronized (mStatusHolderLock) {
-            mRamUsage = Util.readableFileSize(mActivity, systemStatus.sys);
+            mRamUsage = TextFormat.readableFileSize(mActivity, systemStatus.sys);
             mAnnounceServer = (announceTotal == 0) ?
                     "" :
                     String.format(Locale.getDefault(), "%1$d/%2$d", announceConnected, announceTotal);
@@ -336,10 +336,10 @@ public class StatusFragment extends ListFragment implements SyncthingService.OnS
              * "Hide" rates on the UI if they are lower than 1 KByte/sec. We don't like to
              * bother the user looking at discovery or index exchange traffic.
              */
-            mDownload = (total.inBits / 8 < 1024) ? "0 B/s" : Util.readableTransferRate(mActivity, total.inBits);
-            mDownload += " (" + Util.readableFileSize(mActivity, total.inBytesTotal) + ")";
-            mUpload = (total.outBits / 8 < 1024) ? "0 B/s" : Util.readableTransferRate(mActivity, total.outBits);
-            mUpload += " (" + Util.readableFileSize(mActivity, total.outBytesTotal) + ")";
+            mDownload = (total.inBits / 8 < 1024) ? "0 B/s" : TextFormat.readableTransferRate(mActivity, total.inBits);
+            mDownload += " (" + TextFormat.readableFileSize(mActivity, total.inBytesTotal) + ")";
+            mUpload = (total.outBits / 8 < 1024) ? "0 B/s" : TextFormat.readableTransferRate(mActivity, total.outBits);
+            mUpload += " (" + TextFormat.readableFileSize(mActivity, total.outBytesTotal) + ")";
         }
         updateStatus();
     }
