@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.webgui
 
+import com.nutomic.syncthingandroid.util.isRunningOnTV
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
@@ -32,7 +33,6 @@ import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.ConfigXml
-import com.nutomic.syncthingandroid.util.Util
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
@@ -272,7 +272,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
             return false
         }
 
-        if (!Util.isRunningOnTV(this)) {
+        if (!isRunningOnTV(this)) {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, uri))
             } catch (_: ActivityNotFoundException) {

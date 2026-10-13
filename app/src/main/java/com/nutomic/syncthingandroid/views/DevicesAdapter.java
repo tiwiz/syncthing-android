@@ -25,7 +25,7 @@ import com.nutomic.syncthingandroid.model.Folder;
 import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.service.RestApi;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.util.List;
 
@@ -111,7 +111,7 @@ public class DevicesAdapter extends ArrayAdapter<Device> {
         final String TIMESTAMP_NEVER_SEEN = "1970-01-01T00:00:00Z";
         holder.lastSeen.setText(mContext.getString(R.string.device_last_seen,
                 TextUtils.isEmpty(deviceLastSeen) || deviceLastSeen.equals(TIMESTAMP_NEVER_SEEN) ?
-                        mContext.getString(R.string.device_last_seen_never) : Util.formatDateTime(deviceLastSeen))
+                        mContext.getString(R.string.device_last_seen_never) : TextFormat.formatDateTime(deviceLastSeen))
         );
 
         List<Folder> sharedFolders = mConfigRouter.getSharedFolders(device.deviceID);
@@ -152,11 +152,11 @@ public class DevicesAdapter extends ArrayAdapter<Device> {
             String bandwidthUpDownText = "\u21f5 ";     // down+up arrow
             bandwidthUpDownText += mContext.getString(R.string.download_title);
             bandwidthUpDownText += " \u02c5 ";          // down arrow
-            bandwidthUpDownText += Util.readableTransferRate(getContext(), conn.inBits);
+            bandwidthUpDownText += TextFormat.readableTransferRate(getContext(), conn.inBits);
             bandwidthUpDownText += " \u2022 ";          // dot
             bandwidthUpDownText += mContext.getString(R.string.upload_title);
             bandwidthUpDownText += " \u02c4 ";          // up arrow
-            bandwidthUpDownText += Util.readableTransferRate(getContext(), conn.outBits);
+            bandwidthUpDownText += TextFormat.readableTransferRate(getContext(), conn.outBits);
             holder.bandwidthUpDown.setText(bandwidthUpDownText);
             holder.rateInOutView.setVisibility(VISIBLE);
 
@@ -182,7 +182,7 @@ public class DevicesAdapter extends ArrayAdapter<Device> {
                 holder.status.setText(
                         mContext.getString(R.string.device_syncing_percent_bytes,
                                 completion,
-                                Util.readableFileSize(getContext(), needBytes)
+                                TextFormat.readableFileSize(getContext(), needBytes)
                         )
                 );
                 holder.status.setTextColor(ContextCompat.getColor(getContext(), R.color.text_blue));
@@ -199,7 +199,7 @@ public class DevicesAdapter extends ArrayAdapter<Device> {
         } else {
             holder.status.setText(
                     mContext.getString(R.string.device_disconnected_not_synced,
-                            Util.readableFileSize(getContext(), needBytes)
+                            TextFormat.readableFileSize(getContext(), needBytes)
                     )
             );
         }

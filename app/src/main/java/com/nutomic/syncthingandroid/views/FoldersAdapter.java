@@ -24,7 +24,7 @@ import com.nutomic.syncthingandroid.service.Constants;
 import com.nutomic.syncthingandroid.service.RestApi;
 import com.nutomic.syncthingandroid.service.SyncthingService;
 import com.nutomic.syncthingandroid.util.FileUtils;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.util.Map;
 
@@ -243,8 +243,8 @@ public class FoldersAdapter extends ArrayAdapter<Folder> {
                 .getQuantityString(R.plurals.files, (int) folderStatus.inSyncFiles, folderStatus.inSyncFiles, folderStatus.globalFiles);
         itemsAndSize += " \u2022 ";
         itemsAndSize += mContext.getString(R.string.folder_size_format,
-                Util.readableFileSize(mContext, folderStatus.inSyncBytes),
-                Util.readableFileSize(mContext, folderStatus.globalBytes));
+                TextFormat.readableFileSize(mContext, folderStatus.inSyncBytes),
+                TextFormat.readableFileSize(mContext, folderStatus.globalBytes));
         holder.items.setText(itemsAndSize);
 
         setTextOrHide(holder.invalid, folderStatus.invalid);
@@ -293,12 +293,12 @@ public class FoldersAdapter extends ArrayAdapter<Folder> {
                 // !?
                 finishedItemText += " \u2049";
         }
-        finishedItemText += " " + Util.getPathEllipsis(cachedFolderStatus.lastItemFinishedItem);
+        finishedItemText += " " + TextFormat.getPathEllipsis(cachedFolderStatus.lastItemFinishedItem);
         itemView.setText(finishedItemText);
         itemView.setVisibility(VISIBLE);
 
         String finishedTimeText = "\u21cc\u231a";
-        finishedTimeText += Util.formatTime(cachedFolderStatus.lastItemFinishedTime);
+        finishedTimeText += TextFormat.formatTime(cachedFolderStatus.lastItemFinishedTime);
         timeView.setText(finishedTimeText);
         timeView.setVisibility(VISIBLE);
     }
@@ -316,7 +316,7 @@ public class FoldersAdapter extends ArrayAdapter<Folder> {
         String shortenedPath = path.replaceFirst("/storage/emulated/0", "[int]");
         shortenedPath = shortenedPath.replaceFirst("/storage/[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}", "[ext]");
         shortenedPath = shortenedPath.replaceFirst("/" + mContext.getPackageName(), "/[app]");
-        return "\u2756 " + Util.getPathEllipsis(shortenedPath);
+        return "\u2756 " + TextFormat.getPathEllipsis(shortenedPath);
     }
 
     private void onClickOverride(View view, Folder folder) {

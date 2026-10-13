@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.settings
 
+import com.nutomic.syncthingandroid.util.runShellCommandGetOutput
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -15,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.util.Util
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -143,15 +143,15 @@ private fun getOpenFileLimit(): String? {
     else
         "ulimit -n"
 
-    val result = Util.runShellCommandGetOutput(shellCommand)
-    return if (result.isNullOrBlank()) null else result.trim()
+    val result = runShellCommandGetOutput(shellCommand)
+    return if (result.isBlank()) null else result.trim()
 }
 
 private fun getDatabaseSize(context: Context): String? {
     val dbPath = Constants.getIndexDbFolder(context).absolutePath
-    val result = Util.runShellCommandGetOutput("/system/bin/du -sh $dbPath")
+    val result = runShellCommandGetOutput("/system/bin/du -sh $dbPath")
 
-    if (result.isNullOrBlank()) {
+    if (result.isBlank()) {
         return null
     }
 

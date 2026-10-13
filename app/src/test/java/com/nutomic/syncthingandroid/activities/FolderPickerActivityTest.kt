@@ -116,7 +116,7 @@ class FolderPickerActivityTest {
             scenario.onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.select)) }
 
             assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
-            // Util.formatPath: a URI path, so a folder ends with a slash.
+            // formatPath: a URI path, so a folder ends with a slash.
             assertEquals(
                 File(root, "Music").absolutePath + "/",
                 scenario.result.resultData.getStringExtra(

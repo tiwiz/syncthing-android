@@ -19,7 +19,7 @@ import javax.net.ssl.X509TrustManager
  *
  * The decisive check is [Check.TRUST]: it mirrors [com.nutomic.syncthingandroid.http.SyncthingTrustManager]
  * exactly (self-signed pin OR a chain that validates against the Android OS trust store via
- * [Util.getOsTrustManager]). If that passes, the app will be able to talk to Syncthing once the cert
+ * [getOsTrustManager]). If that passes, the app will be able to talk to Syncthing once the cert
  * is installed. The private-key match is best-effort: Syncthing's own `tls.LoadX509KeyPair` at the
  * post-replace restart is the authoritative arbiter, with automatic rollback on failure.
  */
@@ -66,7 +66,7 @@ object CertificateValidator {
     fun validate(
         certSlot: ByteArray,
         keySlot: ByteArray,
-        osTrustManager: X509TrustManager? = Util.getOsTrustManager(),
+        osTrustManager: X509TrustManager? = getOsTrustManager(),
     ): ValidationResult {
         val (certBytes, keyBytes) = when (val slots = sortSlots(certSlot, keySlot)) {
             is SlotAssignment.Sorted -> slots.cert to slots.key

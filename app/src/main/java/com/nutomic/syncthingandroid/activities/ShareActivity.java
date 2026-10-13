@@ -35,7 +35,8 @@ import com.nutomic.syncthingandroid.service.SyncthingService;
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder;
 import com.nutomic.syncthingandroid.util.ConfigRouter;
 import com.nutomic.syncthingandroid.util.ConfigXml.OpenConfigException;
-import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.UiUtil;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -256,7 +257,7 @@ public class ShareActivity extends SyncthingActivity
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == FolderPickerActivity.DIRECTORY_REQUEST_CODE && resultCode == RESULT_OK) {
             Folder selectedFolder = (Folder) mFoldersSpinner.getSelectedItem();
-            String folderDirectory = Util.formatPath(selectedFolder.path);
+            String folderDirectory = TextFormat.formatPath(selectedFolder.path);
             String subDirectory = data.getStringExtra(FolderPickerActivity.EXTRA_RESULT_DIRECTORY);
             //Remove the parent directory from the string, so it is only the Sub directory that is displayed to the user.
             subDirectory = subDirectory.replace(folderDirectory, "");
@@ -451,7 +452,7 @@ public class ShareActivity extends SyncthingActivity
             if (shareActivity == null || shareActivity.isFinishing()) {
                 return;
             }
-            Util.dismissDialogSafe(mProgress, shareActivity);
+            UiUtil.dismissDialogSafe(mProgress, shareActivity);
 
             if (isError) {
                 Toast.makeText(shareActivity, shareActivity.getString(R.string.copy_exception),

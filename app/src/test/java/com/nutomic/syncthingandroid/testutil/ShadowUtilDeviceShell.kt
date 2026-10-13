@@ -1,6 +1,5 @@
 package com.nutomic.syncthingandroid.testutil
 
-import com.nutomic.syncthingandroid.util.Util
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
 
@@ -11,7 +10,7 @@ import org.robolectric.annotation.Implements
  */
 // Robolectric instantiates shadow classes, so this cannot be an object.
 @Suppress("UtilityClassWithPublicConstructor")
-@Implements(Util::class)
+@Implements(className = "com.nutomic.syncthingandroid.util.Util")
 class ShadowUtilDeviceShell {
     companion object {
         private val FAKE_LOGCAT =

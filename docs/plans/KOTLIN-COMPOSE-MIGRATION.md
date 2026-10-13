@@ -13,10 +13,11 @@ One topic per PR, each with the gate and CI green before merging.
    1. `model/` (Gson POJOs, completion caches). Done (#31).
    2. `http/` (Volley requests, trust manager). Done (#32).
    3. Small helpers: `util/` (`Luhn`, `Compression`, `JobUtils`, `PermissionUtil`,
-      `TextWatcherAdapter`), Dagger and the app class, receivers, small services. Done
-      (`refactor/kotlin-util-small`).
-   4. `util/` big ones: `Util`, `FileUtils`, `ConfigXml`, `ConfigRouter`.
-   5. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
+      `TextWatcherAdapter`), Dagger and the app class, receivers, small services. Done (#33).
+   4. `Util`, split by topic into top-level functions with `@file:JvmName` facades: `Util` (shell
+      and processes), `TextFormat`, `UiUtil`, `OsTrustStore`. Done (`refactor/kotlin-util`).
+   5. `FileUtils`, `ConfigXml`, `ConfigRouter`.
+   6. `service/` (`Constants`, tiles, `NotificationHandler`, `RunConditionMonitor`,
       `EventProcessor`, `SyncthingRunnable`, `RestApi`, `SyncthingService`), Dagger.
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
    Compose rewrite replaces them.
@@ -38,6 +39,10 @@ One topic per PR, each with the gate and CI green before merging.
 - detekt applies in full to converted code. Where Java would throw on a null, `!!` becomes
   `checkNotNull(...)` (same place, `IllegalStateException` instead of `NullPointerException`;
   nothing in the app catches either), or `orEmpty()` where null was already ruled out.
+- Static helpers that Robolectric shadows stay top-level functions in a `@file:JvmName` facade,
+  never an `object`: calls into an object go through its instance, so a static shadow would be
+  skipped (and `Util` would run `ps`/`kill` on the test host). Shadows name the facade with
+  `@Implements(className = ...)`.
 - Kotlin `Map<String, Any?>` reaches Java as `Map<String, ? extends Object>`; add
   `@JvmSuppressWildcards` while Java callers remain.
 - Big classes that hit `TooManyFunctions`/`LargeClass` are split where that is natural; otherwise

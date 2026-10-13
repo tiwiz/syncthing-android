@@ -42,10 +42,8 @@ class UtilTest {
         val sizes = listOf(-1.0, 0.0, 1.0, 1023.0, 1024.0, 1536.0, 1048576.0, 5.5e9, 3.2e12, 1.1e15)
         val rates = listOf(-8L, 0L, 7L, 8L, 8_192L, 1_000_000L, 800_000_000L, 80_000_000_000L)
         val table = buildString {
-            sizes.forEach { appendLine("size $it -> ${Util.readableFileSize(context, it)}") }
-            rates.forEach {
-                appendLine("rate $it bits -> ${Util.readableTransferRate(context, it)}")
-            }
+            sizes.forEach { appendLine("size $it -> ${readableFileSize(context, it)}") }
+            rates.forEach { appendLine("rate $it bits -> ${readableTransferRate(context, it)}") }
         }
         Golden.assertMatches("util/readable-sizes.txt", table)
     }
@@ -53,17 +51,17 @@ class UtilTest {
     @Test
     fun `sizes of one PiB and more stay in the largest unit`() {
         val pib = 1024.0 * 1024 * 1024 * 1024 * 1024
-        assertEquals("1,024 TB", Util.readableFileSize(context, pib))
-        assertEquals("2,048 TB", Util.readableFileSize(context, 2 * pib))
+        assertEquals("1,024 TB", readableFileSize(context, pib))
+        assertEquals("2,048 TB", readableFileSize(context, 2 * pib))
         assertEquals(
             "1,024 TB/s",
-            Util.readableTransferRate(context, 8L * 1024 * 1024 * 1024 * 1024 * 1024),
+            readableTransferRate(context, 8L * 1024 * 1024 * 1024 * 1024 * 1024),
         )
     }
 
     @Test
     fun `path ellipsis`() {
-        // Same inputs as the app's own Util.testPathEllipsis().
+        // Same inputs as the app's own testPathEllipsis().
         val inputs =
             listOf(
                 "",
@@ -84,7 +82,7 @@ class UtilTest {
             )
         Golden.assertMatches(
             "util/path-ellipsis.txt",
-            inputs.joinToString("\n") { "[$it] -> [${Util.getPathEllipsis(it)}]" },
+            inputs.joinToString("\n") { "[$it] -> [${getPathEllipsis(it)}]" },
         )
     }
 
@@ -94,7 +92,7 @@ class UtilTest {
             listOf("2026-10-12T21:37:46.123456789Z", "2026-01-01T00:00:00+02:00").joinToString(
                 "\n"
             ) {
-                "$it -> ${Util.formatDateTime(it)} | ${Util.formatTime(it)}"
+                "$it -> ${formatDateTime(it)} | ${formatTime(it)}"
             }
         Golden.assertMatches("util/date-time.txt", table)
     }
@@ -103,29 +101,42 @@ class UtilTest {
     fun `format path normalizes dot segments`() {
         assertEquals(
             "/storage/emulated/0/DCIM/",
-            Util.formatPath("/storage/emulated/0/Music/../DCIM/./"),
+            formatPath("/storage/emulated/0/Music/../DCIM/./"),
         )
-        assertEquals("/a/b", Util.formatPath("/a//b"))
+        assertEquals("/a/b", formatPath("/a//b"))
     }
 
     @Test
     fun `contains ignore case`() {
-        assertTrue(Util.containsIgnoreCase("Syncthing", "THING"))
-        assertTrue(Util.containsIgnoreCase("Syncthing", ""))
-        assertFalse(Util.containsIgnoreCase("Sync", "Syncthing"))
-        assertFalse(Util.containsIgnoreCase("Syncthing", "x"))
+        assertTrue(containsIgnoreCase("Syncthing", "THING"))
+        assertTrue(containsIgnoreCase("Syncthing", ""))
+        assertFalse(containsIgnoreCase("Sync", "Syncthing"))
+        assertFalse(containsIgnoreCase("Syncthing", "x"))
     }
 
     @Test
     fun `local zoned date time is an ISO offset timestamp in UTC`() {
         assertTrue(
-            Util.getLocalZonedDateTime()
-                .matches(Regex("""\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z"""))
+            getLocalZonedDateTime().matches(Regex("""\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z"""))
         )
     }
 
     @Test
     fun `not running on a TV by default`() {
-        assertFalse(Util.isRunningOnTV(context))
+        assertFalse(isRunningOnTV(context))
+    }
+
+    // The real shell, on the host: these commands behave the same in sh on Linux and macOS.
+
+    @Test
+    fun `a shell command reports its exit code`() {
+        assertEquals(0, runShellCommand("true\n"))
+        assertEquals(3, runShellCommand("exit 3\n"))
+    }
+
+    @Test
+    fun `a shell command's output is captured line by line`() {
+        assertEquals("a\nb\n", runShellCommandGetOutput("echo a; echo b\n"))
+        assertEquals("", runShellCommandGetOutput("exit 2\n"))
     }
 }

@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.http
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.NetworkResponse
 import com.android.volley.RequestQueue
@@ -54,7 +55,7 @@ sealed class ApiRequest(
                 }
 
     internal fun buildUri(params: Map<String, String>): Uri {
-        val uriBuilder = Uri.parse(url.toString()).buildUpon().path(path)
+        val uriBuilder = url.toString().toUri().buildUpon().path(path)
         for ((key, value) in params) {
             uriBuilder.appendQueryParameter(key, value)
         }

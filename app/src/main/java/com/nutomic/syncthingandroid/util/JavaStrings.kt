@@ -7,3 +7,10 @@ package com.nutomic.syncthingandroid.util
  */
 fun String.splitLikeJava(delimiter: String): List<String> =
     if (!contains(delimiter)) listOf(this) else split(delimiter).dropLastWhile { it.isEmpty() }
+
+/**
+ * Java's `String.split(regex)`: the string itself when [regex] does not match, otherwise the parts
+ * without the trailing empty ones (a leading empty part stays, as in Java).
+ */
+fun String.splitLikeJava(regex: Regex): List<String> =
+    if (!regex.containsMatchIn(this)) listOf(this) else split(regex).dropLastWhile { it.isEmpty() }

@@ -54,6 +54,8 @@ import com.nutomic.syncthingandroid.util.FileUtils;
 import com.nutomic.syncthingandroid.util.FileUtils.ExternalStorageDirType;
 import com.nutomic.syncthingandroid.util.TextWatcherAdapter;
 import com.nutomic.syncthingandroid.util.Util;
+import com.nutomic.syncthingandroid.util.UiUtil;
+import com.nutomic.syncthingandroid.util.TextFormat;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -531,10 +533,10 @@ public class FolderActivity extends SyncthingActivity {
         outState.putParcelable("mFolderUri", mFolderUri);
 
         outState.putBoolean(IS_SHOWING_DELETE_DIALOG, mDeleteDialog != null && mDeleteDialog.isShowing());
-        Util.dismissDialogSafe(mDeleteDialog, this);
+        UiUtil.dismissDialogSafe(mDeleteDialog, this);
 
         outState.putBoolean(IS_SHOW_DISCARD_DIALOG, mDiscardDialog != null && mDiscardDialog.isShowing());
-        Util.dismissDialogSafe(mDiscardDialog, this);
+        UiUtil.dismissDialogSafe(mDiscardDialog, this);
     }
 
     /**
@@ -699,7 +701,7 @@ public class FolderActivity extends SyncthingActivity {
             // Get the folder path unix style, e.g. "/storage/0000-0000/DCIM"
             String targetPath = FileUtils.getAbsolutePathFromSAFUri(FolderActivity.this, mFolderUri);
             if (targetPath != null) {
-                targetPath = Util.formatPath(targetPath);
+                targetPath = TextFormat.formatPath(targetPath);
             }
             if (targetPath == null || TextUtils.isEmpty(targetPath) || (targetPath.equals(File.separator))) {
                 mFolder.path = "";
