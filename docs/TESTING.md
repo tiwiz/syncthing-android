@@ -22,7 +22,8 @@ IS_COPILOT=true ./gradlew :app:check :app:verifyRoborazziDebug   # the gate (~2 
 
 ## Test layers
 
-All tests live in `app/src/test` and run on the JVM. Robolectric runs SDK 36, because 4.17 has no
+Almost all tests live in `app/src/test` and run on the JVM; only the WebView screens also have
+instrumented tests (below). Robolectric runs SDK 36, because 4.17 has no
 SDK 37 image; the app targets 37.
 
 | Layer | Runner | Examples |
@@ -30,9 +31,10 @@ SDK 37 image; the app targets 37.
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest`, `BootReceiverTest`, `AppConfigReceiverTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
-| Screens driven by hand | Robolectric (+ Compose test for onboarding) | `EditScreensTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
+| Screens driven by hand | Robolectric (+ Compose test for onboarding) | `WebGuiActivityTest`, `WebViewActivityTest`, `EditScreensTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
 | Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
-| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest` |
+| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
+| WebView screens on a device | AndroidJUnitRunner + Espresso-Web, HTTPS MockWebServer | `WebGuiActivityWebTest`, `WebViewActivityWebTest` |
 
 ```bash
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest                         # unit tests only
@@ -40,7 +42,33 @@ IS_COPILOT=true ./gradlew :app:testDebugUnitTest --tests '*ConfigXmlTest' # one 
 IS_COPILOT=true ./gradlew :app:verifyRoborazziDebug                      # tests + compare screenshots
 ```
 
-There are no instrumented tests (`src/androidTest`).
+## Instrumented tests (WebView)
+
+Robolectric's `ShadowWebView` records what the activities ask of the WebView (URL, headers, client
+callbacks), so `WebGuiActivityTest` and `WebViewActivityTest` call the `WebViewClient` callbacks by
+hand. Real page loads, certificate handling by Chromium, links and history run on a device in
+`app/src/androidTest` with Espresso-Web:
+
+```bash
+# On an emulator only: the run installs the debug app and uninstalls it afterwards, with its data.
+emulator -avd <avd> -no-window -no-audio &      # API 35 google_apis x86_64 in CI
+adb shell settings put global window_animation_scale 0     # also transition_/animator_duration_scale
+ANDROID_SERIAL=emulator-5554 IS_COPILOT=true ./gradlew :app:connectedDebugAndroidTest
+```
+
+- CI runs them in the `Instrumented tests` job of `check.yaml` (android-emulator-runner).
+- Always set `ANDROID_SERIAL` when a phone is plugged in, or Gradle runs (and uninstalls) on it too.
+- The debug APK is signed with the SDK debug key only when an `AndroidTest` task is requested.
+- Pages come from an HTTPS `MockWebServer` on 127.0.0.1 with a self-signed certificate
+  (`WebTestSupport.kt`). For the web GUI, the test writes the fixture `config.xml` with the
+  server's port and pins its certificate in `https-cert.pem`. Syncthing is kept from starting
+  (force stop; without the storage permission the service stops itself anyway), and the test
+  reports the service ACTIVE through `onServiceStateChange`, as `RunningSyncthingService` does.
+- Espresso does not wait for network loads: wrap checks in `eventually { }`.
+- Click links with a real tap (`onView(withId(...)).perform(click())`), not `webClick()`: Chromium
+  skips history entries left without a user gesture, so back would close the screen.
+- `app/src/androidTest/AndroidManifest.xml` removes `androidx.startup.InitializationProvider` from
+  the test APK: its classes are only in the app APK, and the crash dialog stole the window focus.
 
 ## Characterization tests and golden files
 
@@ -100,6 +128,8 @@ shutdown ends the process as it would on a device.
 - `OtherScreensScreenshotTest` (`screenshots/other/`): log (fake logcat from the shell shadow), sync
   conditions, photo shoot, share, recent changes (exact times) and the device id dialog, with
   Syncthing running.
+- `WebGuiScreenshotTest` (`screenshots/webgui/`): the web GUI screen's load error. The loading
+  spinner never stops moving, and web content is left to the instrumented tests.
 - Anything non-deterministic is pinned in the test, never in the app: random folder ids, text
   cursors, async loading (`settle()`).
 
@@ -146,7 +176,7 @@ Snapshot on 2026-10-13 (lines): 66% overall. `receiver` 94%, `model` 87%, `http`
 
 ## Not covered yet
 
-- The WebView screens (`WebGuiActivity`, `WebViewActivity`): Robolectric does not draw web content;
-  only `WebGuiSupport` is tested.
+- The web GUI's own JavaScript UI (served by the real Syncthing) is not exercised; the instrumented
+  tests use a fake page.
 - Many smaller interactions (folder type, pull order and sync conditions dialogs, share flow
   confirm, QR scanner) still have no click-through test.

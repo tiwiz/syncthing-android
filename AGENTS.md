@@ -82,6 +82,9 @@ IS_COPILOT=true ./gradlew :app:detekt :app:ktfmtCheckMain :app:ktfmtCheckTest
 IS_COPILOT=true ./gradlew :app:lintDebug        # report: app/build/reports/lint-results-debug.html
 IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createDebugUnitTestCoverageReport
                                                 # coverage: app/build/reports/coverage/test/debug/index.html
+# Instrumented WebView tests (Espresso-Web), emulator only (AVD pixel_phone, API 35, locally):
+emulator -avd pixel_phone -no-window -no-audio &
+ANDROID_SERIAL=emulator-5554 IS_COPILOT=true ./gradlew :app:connectedDebugAndroidTest
 
 # Full build with the native binary
 git submodule update --init --recursive         # Syncthing sources
@@ -192,6 +195,10 @@ Next steps (to be confirmed with the owner):
    `syncWebGuiTheme` stays; onboarding keeps its 360dp compact rule instead of window size classes.
 4. Test gaps filled (PRs #16–#20): REST client, running-state and remaining screenshots, native
    process and service lifecycle. Coverage 60%. What is left: [docs/TESTING.md](docs/TESTING.md#not-covered-yet).
+   2026-10-13, PRs #21–#25: receivers, versioning dialog, edit screens, onboarding, tiles (coverage
+   66%). Branch `test/webview-screens`: Robolectric tests for `WebGuiActivity`/`WebViewActivity`
+   and the first instrumented tests (`app/src/androidTest`, Espresso-Web, CI job `Instrumented
+   tests`). They pinned a new bug (blank web GUI after a refused certificate, in TECH-DEBT.md).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
@@ -218,3 +225,5 @@ Next steps (to be confirmed with the owner):
   when the port is taken (`webui_tcp_port_unavailable`).
 - The sync-complete broadcast only reaches packages hard-coded in `RestApi.sendBroadcastToApps`.
 - Import/export zips include `SharedPreferences`; key renames break old backups.
+- `connectedDebugAndroidTest` installs and then uninstalls the debug app with its data: with a phone
+  plugged in, always set `ANDROID_SERIAL` to the emulator. Disable animations on the emulator.
