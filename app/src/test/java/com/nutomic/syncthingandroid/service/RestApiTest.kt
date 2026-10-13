@@ -1,8 +1,11 @@
 package com.nutomic.syncthingandroid.service
 
+import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
@@ -16,6 +19,7 @@ import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.Fixtures
 import com.nutomic.syncthingandroid.testutil.Golden
+import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
@@ -42,7 +46,12 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(
     qualifiers = "en-rUS",
-    shadows = [ShadowEnvironmentWithAllFilesAccess::class, ShadowUtilDeviceShell::class],
+    shadows =
+        [
+            ShadowEnvironmentWithAllFilesAccess::class,
+            ShadowUtilDeviceShell::class,
+            ShadowContentResolverWithStatusListeners::class,
+        ],
     instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
 )
 class RestApiTest {
@@ -63,6 +72,7 @@ class RestApiTest {
     @After
     fun tearDown() {
         syncthing.close()
+        ShadowUtilDeviceShell.syncConflictFindOutput = ""
     }
 
     private fun newApi(url: URL = syncthing.url): RestApi =
@@ -488,6 +498,108 @@ class RestApiTest {
         assertEquals("Camera", api.getFolderByID("cam-photos").label)
         assertNull(api.getFolderByID("missing"))
     }
+
+    @Test
+    fun `custom sync conditions pause the folders and devices whose conditions are not met`() {
+        val api = loadedApi()
+        prefs
+            .edit()
+            .putBoolean(
+                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS("sc_folder_cam-photos"),
+                true,
+            )
+            .putBoolean(
+                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS("sc_device_$LAPTOP_ID"),
+                true,
+            )
+            .commit()
+        // No network: neither wi-fi nor mobile data conditions can be met.
+        shadowOf(context.getSystemService(ConnectivityManager::class.java))
+            .setActiveNetworkInfo(null)
+
+        api.applyCustomRunConditions(RunConditionMonitor(context, {}, {}))
+        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+        val config = postedConfig()
+        assertTrue(config.getAsJsonArray("folders").single().asJsonObject["paused"].asBoolean)
+        val paused =
+            config.getAsJsonArray("devices").associate {
+                it.asJsonObject["deviceID"].asString to it.asJsonObject["paused"].asBoolean
+            }
+        assertEquals(mapOf(LOCAL_ID to false, LAPTOP_ID to true), paused)
+    }
+
+    @Test
+    fun `custom sync conditions change nothing for objects without them`() {
+        val api = loadedApi()
+        shadowOf(context.getSystemService(ConnectivityManager::class.java))
+            .setActiveNetworkInfo(null)
+
+        api.applyCustomRunConditions(RunConditionMonitor(context, {}, {}))
+        drainMain()
+
+        assertTrue(syncthing.requests("/rest/system/config", "POST").isEmpty())
+    }
+
+    @Test
+    fun `a folder finishing on a remote device records conflicts and notifies other apps`() {
+        val api = loadedApi()
+        ShadowUtilDeviceShell.syncConflictFindOutput =
+            "IMG_1.sync-conflict-20260101-120000-P56IOI7.jpg\nsub/b.sync-conflict-20260101-120000-P56IOI7.txt"
+        api.setRemoteIndexUpdated(LAPTOP_ID, "cam-photos", true)
+
+        api.setRemoteCompletionInfo(LAPTOP_ID, "cam-photos", 0.0, 100.0)
+        awaitMain { syncCompleteBroadcasts().isNotEmpty() }
+
+        assertEquals(
+            listOf(
+                "IMG_1.sync-conflict-20260101-120000-P56IOI7.jpg",
+                "sub/b.sync-conflict-20260101-120000-P56IOI7.txt",
+            ),
+            api.getFolderStatus("cam-photos").value.discoveredConflictFiles.toList(),
+        )
+        val intent = syncCompleteBroadcasts().single()
+        assertEquals("org.decsync.cc", intent.`package`)
+        assertEquals(LAPTOP_ID, intent.getStringExtra("deviceId"))
+        assertEquals("cam-photos", intent.getStringExtra("folderId"))
+        assertEquals("Camera", intent.getStringExtra("folderLabel"))
+        assertEquals("/storage/emulated/0/DCIM/Camera", intent.getStringExtra("folderPath"))
+        assertEquals("idle", intent.getStringExtra("folderState"))
+        // The remote index flag is consumed, so the next 100% does not notify again.
+        assertFalse(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
+    }
+
+    @Test
+    fun `a folder reaching 100 percent without remote changes notifies nobody`() {
+        val api = loadedApi()
+
+        api.setRemoteCompletionInfo(LAPTOP_ID, "cam-photos", 0.0, 100.0)
+        drainMain()
+
+        assertTrue(syncCompleteBroadcasts().isEmpty())
+    }
+
+    // CHARACTERIZATION: the action and the permission lost their application id prefix in upstream
+    // 9a3851cc, so receivers registered for the documented
+    // "com.github.catfriend1.syncthingfork.ACTION_NOTIFY_FOLDER_SYNC_COMPLETE" get nothing.
+    @Test
+    fun `the sync complete broadcast uses a bare action name`() {
+        val api = loadedApi()
+        api.setRemoteIndexUpdated(LAPTOP_ID, "cam-photos", true)
+
+        api.setRemoteCompletionInfo(LAPTOP_ID, "cam-photos", 0.0, 100.0)
+        awaitMain { syncCompleteBroadcasts().isNotEmpty() }
+
+        assertEquals(
+            ".ACTION_NOTIFY_FOLDER_SYNC_COMPLETE",
+            syncCompleteBroadcasts().single().action,
+        )
+    }
+
+    private fun syncCompleteBroadcasts(): List<Intent> =
+        shadowOf(context as Application).broadcastIntents.filter {
+            it.action?.endsWith("ACTION_NOTIFY_FOLDER_SYNC_COMPLETE") == true
+        }
 
     private fun eventListener(
         onError: () -> Unit = {},

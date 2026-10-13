@@ -124,7 +124,6 @@ Snapshot on 2026-10-13 (lines): 46% overall. `model` 83%, `util` 69%, `http` 59%
 ## Not covered yet
 
 - `SyncthingRunnable` (0%) and `SyncthingService` start/stop (6%): they launch the native binary.
-- In `RestApi`: `applyCustomRunConditions`, the sync-complete broadcast and the conflict-file scan.
 - `ShareActivity`, `LogActivity`, `FolderPickerActivity`, `PhotoShootActivity`,
   `SyncConditionsActivity`, `WebViewActivity`, `WebGuiActivity`, recent changes and the device id
   dialog have no test at all.

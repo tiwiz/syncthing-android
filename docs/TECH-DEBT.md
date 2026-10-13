@@ -5,7 +5,10 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
+1. `RestApi` sends the folder-sync-complete broadcast with action `.ACTION_NOTIFY_FOLDER_SYNC_COMPLETE`
+   and permission `.permission.RECEIVE_SYNC_STATUS`: upstream 9a3851cc dropped the application id
+   prefix, so apps registered for the documented
+   `com.github.catfriend1.syncthingfork.ACTION_NOTIFY_FOLDER_SYNC_COMPLETE` receive nothing.
 
 ## detekt suppressions
 

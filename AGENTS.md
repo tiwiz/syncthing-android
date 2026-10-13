@@ -190,6 +190,7 @@ Next steps (to be confirmed with the owner):
    service as a `SyncthingServiceState` parameter (PR #13), activity scope as a parameter
    (PR #14): no CompositionLocal suppressions left. Decided (PR #15): the broad catch in
    `syncWebGuiTheme` stays; onboarding keeps its 360dp compact rule instead of window size classes.
+4. Fill the test gaps listed in [docs/TESTING.md](docs/TESTING.md#not-covered-yet) (in progress).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
