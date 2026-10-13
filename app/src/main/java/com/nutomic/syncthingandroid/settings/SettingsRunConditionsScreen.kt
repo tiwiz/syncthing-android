@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
@@ -25,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,32 +67,33 @@ fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry() {
 
 
 @Composable
-fun SettingsRunConditionsScreen() {
+fun SettingsRunConditionsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val stService = LocalSyncthingService.current
 
     var pendingEvaluation by remember { mutableStateOf(false) }
 
-    var runOnWifi by rememberPreferenceState(Constants.PREF_RUN_ON_WIFI, true)
-    var runOnMeteredWifi by rememberPreferenceState(Constants.PREF_RUN_ON_METERED_WIFI, false)
-    var runOnSpecifiedSsid by rememberPreferenceState(Constants.PREF_USE_WIFI_SSID_WHITELIST, false)
+    val runOnWifi = rememberPreferenceState(Constants.PREF_RUN_ON_WIFI, true)
+    val runOnMeteredWifi = rememberPreferenceState(Constants.PREF_RUN_ON_METERED_WIFI, false)
+    val runOnSpecifiedSsid = rememberPreferenceState(Constants.PREF_USE_WIFI_SSID_WHITELIST, false)
 
-    var runOnMobileData by rememberPreferenceState(Constants.PREF_RUN_ON_MOBILE_DATA, false)
-    var runOnRoaming by rememberPreferenceState(Constants.PREF_RUN_ON_ROAMING, false)
+    val runOnMobileData = rememberPreferenceState(Constants.PREF_RUN_ON_MOBILE_DATA, false)
+    val runOnRoaming = rememberPreferenceState(Constants.PREF_RUN_ON_ROAMING, false)
 
     val powerSourceNames = stringArrayResource(R.array.power_source_entries)
     val powerSourceValues = stringArrayResource(R.array.power_source_values)
-    var powerSource by rememberPreferenceState(Constants.PREF_POWER_SOURCE, powerSourceValues[0])
+    val powerSource = rememberPreferenceState(Constants.PREF_POWER_SOURCE, powerSourceValues[0])
 
-    var respectBatterySaving by rememberPreferenceState(Constants.PREF_RESPECT_BATTERY_SAVING, true)
-    var respectMasterSync by rememberPreferenceState(Constants.PREF_RESPECT_MASTER_SYNC, false)
-    var flightMode by rememberPreferenceState(Constants.PREF_RUN_IN_FLIGHT_MODE, false)
+    val respectBatterySaving = rememberPreferenceState(Constants.PREF_RESPECT_BATTERY_SAVING, true)
+    val respectMasterSync = rememberPreferenceState(Constants.PREF_RESPECT_MASTER_SYNC, false)
+    val flightMode = rememberPreferenceState(Constants.PREF_RUN_IN_FLIGHT_MODE, false)
 
-    var runScheduled by rememberPreferenceState(Constants.PREF_RUN_ON_TIME_SCHEDULE, false)
-    var syncDuration by rememberPreferenceState(Constants.PREF_SYNC_DURATION_MINUTES, "5")
-    var sleepInterval by rememberPreferenceState(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")
+    val runScheduled = rememberPreferenceState(Constants.PREF_RUN_ON_TIME_SCHEDULE, false)
+    val syncDuration = rememberPreferenceState(Constants.PREF_SYNC_DURATION_MINUTES, "5")
+    val sleepInterval = rememberPreferenceState(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")
 
+    val markPending = { pendingEvaluation = true }
 
     DisposableEffect(lifecycleOwner, stService) {
         val observer = LifecycleEventObserver { _, event ->
@@ -113,199 +116,242 @@ fun SettingsRunConditionsScreen() {
 
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.run_conditions_title),
         description = stringResource(R.string.run_conditions_summary),
     ) {
-        item {
-            PreferenceCategory(
-                title = { Text(stringResource(R.string.category_wifi)) },
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_wifi_summary)) },
-                value = runOnWifi,
-                onValueChange = {
-                    runOnWifi = it
-                    pendingEvaluation = true
-                }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_metered_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_metered_wifi_summary)) },
-                value = runOnMeteredWifi,
-                onValueChange = {
-                    runOnMeteredWifi = it
-                    pendingEvaluation = true
-                },
-                enabled = runOnWifi,
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_whitelisted_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_whitelisted_wifi_summary)) },
-                value = runOnSpecifiedSsid,
-                onValueChange = {
-                    runOnSpecifiedSsid = it
-                    pendingEvaluation = true
-                },
-                enabled = runOnWifi,
-            )
-        }
-        item {
-            WifiSsidPreference(
-                enabled = runOnWifi && runOnSpecifiedSsid,
-                setPendingEvaluation = {
-                    pendingEvaluation = true
-                }
-            )
-        }
+        wifiItems(runOnWifi, runOnMeteredWifi, runOnSpecifiedSsid, markPending)
+        mobileDataItems(runOnMobileData, runOnRoaming, markPending)
+        batteryItems(
+            powerSourceNames,
+            powerSourceValues,
+            powerSource,
+            respectBatterySaving,
+            respectMasterSync,
+            flightMode,
+            markPending,
+        )
+        scheduleItems(context, runScheduled, syncDuration, sleepInterval, markPending)
+    }
+}
 
-        item {
-            PreferenceCategory(
-                title = { Text(stringResource(R.string.category_mobile_data)) }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_mobile_data_title)) },
-                summary = { Text(stringResource(R.string.run_on_mobile_data_summary)) },
-                value = runOnMobileData,
-                onValueChange = {
-                    runOnMobileData = it
-                    pendingEvaluation = true
-                }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_roaming_title)) },
-                summary = { Text(stringResource(R.string.run_on_roaming_summary)) },
-                value = runOnRoaming,
-                onValueChange = {
-                    runOnRoaming = it
-                    pendingEvaluation = true
-                },
-                enabled = runOnMobileData,
-            )
-        }
+private fun LazyListScope.wifiItems(
+    runOnWifi: MutableState<Boolean>,
+    runOnMeteredWifi: MutableState<Boolean>,
+    runOnSpecifiedSsid: MutableState<Boolean>,
+    markPending: () -> Unit,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_wifi)) },
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_wifi_title)) },
+            summary = { Text(stringResource(R.string.run_on_wifi_summary)) },
+            value = runOnWifi.value,
+            onValueChange = {
+                runOnWifi.value = it
+                markPending()
+            }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_metered_wifi_title)) },
+            summary = { Text(stringResource(R.string.run_on_metered_wifi_summary)) },
+            value = runOnMeteredWifi.value,
+            onValueChange = {
+                runOnMeteredWifi.value = it
+                markPending()
+            },
+            enabled = runOnWifi.value,
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_whitelisted_wifi_title)) },
+            summary = { Text(stringResource(R.string.run_on_whitelisted_wifi_summary)) },
+            value = runOnSpecifiedSsid.value,
+            onValueChange = {
+                runOnSpecifiedSsid.value = it
+                markPending()
+            },
+            enabled = runOnWifi.value,
+        )
+    }
+    item {
+        WifiSsidPreference(
+            enabled = runOnWifi.value && runOnSpecifiedSsid.value,
+            setPendingEvaluation = markPending,
+        )
+    }
+}
 
-        item {
-            PreferenceCategory(
-                title = { Text(stringResource(R.string.category_battery)) },
-            )
-        }
-        item {
-            ListPreference(
-                title = { Text(stringResource(R.string.power_source_title)) },
-                summary = { Text(powerSourceNames[powerSourceValues.indexOf(powerSource)]) },
-                value = powerSource,
-                onValueChange = {
-                    powerSource = it
-                    pendingEvaluation = true
-                },
-                values = powerSourceValues.toList(),
-                valueToText = { value ->
-                    AnnotatedString(powerSourceNames[powerSourceValues.indexOf(value)])
-                }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.respect_battery_saving_title)) },
-                summary = { Text(stringResource(R.string.respect_battery_saving_summary)) },
-                value = respectBatterySaving,
-                onValueChange = {
-                    respectBatterySaving = it
-                    pendingEvaluation = true
-                }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.respect_master_sync_title)) },
-                summary = { Text(stringResource(R.string.respect_master_sync_summary)) },
-                value = respectMasterSync,
-                onValueChange = {
-                    respectMasterSync = it
-                    pendingEvaluation = true
-                }
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_in_flight_mode_title)) },
-                summary = { Text(stringResource(R.string.run_in_flight_mode_summary)) },
-                value = flightMode,
-                onValueChange = {
-                    flightMode = it
-                    pendingEvaluation = true
-                }
-            )
-        }
+private fun LazyListScope.mobileDataItems(
+    runOnMobileData: MutableState<Boolean>,
+    runOnRoaming: MutableState<Boolean>,
+    markPending: () -> Unit,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_mobile_data)) }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_mobile_data_title)) },
+            summary = { Text(stringResource(R.string.run_on_mobile_data_summary)) },
+            value = runOnMobileData.value,
+            onValueChange = {
+                runOnMobileData.value = it
+                markPending()
+            }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_roaming_title)) },
+            summary = { Text(stringResource(R.string.run_on_roaming_summary)) },
+            value = runOnRoaming.value,
+            onValueChange = {
+                runOnRoaming.value = it
+                markPending()
+            },
+            enabled = runOnMobileData.value,
+        )
+    }
+}
 
-        item {
-            PreferenceCategory(
-                title = { Text(stringResource(R.string.category_schedule)) },
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_time_schedule_title)) },
-                summary = { Text(stringResource(R.string.run_on_time_schedule_summary)) },
-                value = runScheduled,
-                onValueChange = {
-                    runScheduled = it
-                    pendingEvaluation = true
+private fun LazyListScope.batteryItems(
+    powerSourceNames: Array<String>,
+    powerSourceValues: Array<String>,
+    powerSource: MutableState<String>,
+    respectBatterySaving: MutableState<Boolean>,
+    respectMasterSync: MutableState<Boolean>,
+    flightMode: MutableState<Boolean>,
+    markPending: () -> Unit,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_battery)) },
+        )
+    }
+    item {
+        ListPreference(
+            title = { Text(stringResource(R.string.power_source_title)) },
+            summary = { Text(powerSourceNames[powerSourceValues.indexOf(powerSource.value)]) },
+            value = powerSource.value,
+            onValueChange = {
+                powerSource.value = it
+                markPending()
+            },
+            values = powerSourceValues.toList(),
+            valueToText = { value ->
+                AnnotatedString(powerSourceNames[powerSourceValues.indexOf(value)])
+            }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.respect_battery_saving_title)) },
+            summary = { Text(stringResource(R.string.respect_battery_saving_summary)) },
+            value = respectBatterySaving.value,
+            onValueChange = {
+                respectBatterySaving.value = it
+                markPending()
+            }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.respect_master_sync_title)) },
+            summary = { Text(stringResource(R.string.respect_master_sync_summary)) },
+            value = respectMasterSync.value,
+            onValueChange = {
+                respectMasterSync.value = it
+                markPending()
+            }
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_in_flight_mode_title)) },
+            summary = { Text(stringResource(R.string.run_in_flight_mode_summary)) },
+            value = flightMode.value,
+            onValueChange = {
+                flightMode.value = it
+                markPending()
+            }
+        )
+    }
+}
+
+private fun LazyListScope.scheduleItems(
+    context: Context,
+    runScheduled: MutableState<Boolean>,
+    syncDuration: MutableState<String>,
+    sleepInterval: MutableState<String>,
+    markPending: () -> Unit,
+) {
+    item {
+        PreferenceCategory(
+            title = { Text(stringResource(R.string.category_schedule)) },
+        )
+    }
+    item {
+        SwitchPreference(
+            title = { Text(stringResource(R.string.run_on_time_schedule_title)) },
+            summary = { Text(stringResource(R.string.run_on_time_schedule_summary)) },
+            value = runScheduled.value,
+            onValueChange = {
+                runScheduled.value = it
+                markPending()
+            }
+        )
+    }
+    item {
+        val syncDurationError = stringResource(R.string.invalid_integer_value, 1, 1440/* 24h */)
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.sync_duration_minutes_title)) },
+            summary = { Text(stringResource(R.string.sync_duration_minutes_summary, syncDuration.value)) },
+            value = syncDuration.value,
+            onValueChange = {
+                syncDuration.value = it
+                markPending()
+            },
+            textToValue = { text ->
+                val mins = text.toIntOrNull()
+                if (mins == null || mins !in 1..1440) {
+                    Toast.makeText(context, syncDurationError, Toast.LENGTH_LONG).show()
+                    null
+                } else {
+                    text
                 }
-            )
-        }
-        item {
-            val syncDurationError = stringResource(R.string.invalid_integer_value, 1, 1440/* 24h */)
-            TextFieldPreference(
-                title = { Text(stringResource(R.string.sync_duration_minutes_title)) },
-                summary = { Text(stringResource(R.string.sync_duration_minutes_summary, syncDuration)) },
-                value = syncDuration,
-                onValueChange = {
-                    syncDuration = it
-                    pendingEvaluation = true
-                },
-                textToValue = { text ->
-                    val mins = text.toIntOrNull()
-                    if (mins == null || mins !in 1..1440) {
-                        Toast.makeText(context, syncDurationError, Toast.LENGTH_LONG).show()
-                        null
-                    } else {
-                        text
-                    }
+            }
+        )
+    }
+    item {
+        val sleepIntervalError = stringResource(R.string.invalid_integer_value, 1, 30240/* 3w */)
+        TextFieldPreference(
+            title = { Text(stringResource(R.string.sleep_interval_minutes_title)) },
+            summary = { Text(stringResource(R.string.sync_duration_minutes_summary, sleepInterval.value)) },
+            value = sleepInterval.value,
+            onValueChange = {
+                sleepInterval.value = it
+                markPending()
+            },
+            textToValue = { text ->
+                val mins = text.toIntOrNull()
+                if (mins == null || mins !in 1..30240) {
+                    Toast.makeText(context, sleepIntervalError, Toast.LENGTH_LONG).show()
+                    null
+                } else {
+                    text
                 }
-            )
-        }
-        item {
-            val sleepIntervalError = stringResource(R.string.invalid_integer_value, 1, 30240/* 3w */)
-            TextFieldPreference(
-                title = { Text(stringResource(R.string.sleep_interval_minutes_title)) },
-                summary = { Text(stringResource(R.string.sync_duration_minutes_summary, sleepInterval)) },
-                value = sleepInterval,
-                onValueChange = {
-                    sleepInterval = it
-                    pendingEvaluation = true
-                },
-                textToValue = { text ->
-                    val mins = text.toIntOrNull()
-                    if (mins == null || mins !in 1..30240) {
-                        Toast.makeText(context, sleepIntervalError, Toast.LENGTH_LONG).show()
-                        null
-                    } else {
-                        text
-                    }
-                }
-            )
-        }
+            }
+        )
     }
 }
 
@@ -393,61 +439,75 @@ private fun WifiSsidPreference(
         }
     )
     if (showSelectionAlert) {
-        var dialogValue by rememberSaveable { mutableStateOf(specifiedSsids) }
-        val onOk = {
-            specifiedSsids = dialogValue
-            showSelectionAlert = false
-            setPendingEvaluation()
-        }
-        AlertDialog(
-            onDismissRequest = { showSelectionAlert = false },
-            title = { Text(stringResource(R.string.specify_wifi_ssid_whitelist)) },
-            text = {
-                val lazyListState = rememberLazyListState()
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    state = lazyListState,
-                ) {
-                    items(knownSsids.toList()) { itemValue ->
-                        val checked = itemValue in dialogValue
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .toggleable(checked, true, Role.Checkbox) {
-                                        dialogValue =
-                                            if (it) dialogValue + itemValue else dialogValue - itemValue
-                                    }
-                                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(checked = checked, onCheckedChange = null)
-                            Spacer(modifier = Modifier.width(24.dp))
-                            Text(
-                                text = AnnotatedString(
-                                    itemValue.replace("^\"".toRegex(), "")
-                                        .replace("\"$".toRegex(), "")
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                    }
-                }
+        SsidSelectionDialog(
+            knownSsids = knownSsids,
+            selectedSsids = specifiedSsids,
+            onConfirm = { selection ->
+                specifiedSsids = selection
+                showSelectionAlert = false
+                setPendingEvaluation()
             },
-            confirmButton = {
-                TextButton(onClick = onOk) {
-                    Text(text = stringResource(android.R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSelectionAlert = false }) {
-                    Text(text = stringResource(android.R.string.cancel))
-                }
-            },
+            onDismiss = { showSelectionAlert = false },
         )
     }
+}
+
+@Composable
+private fun SsidSelectionDialog(
+    knownSsids: Set<String>,
+    selectedSsids: Set<String>,
+    onConfirm: (Set<String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var dialogValue by rememberSaveable { mutableStateOf(selectedSsids) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.specify_wifi_ssid_whitelist)) },
+        text = {
+            val lazyListState = rememberLazyListState()
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                state = lazyListState,
+            ) {
+                items(knownSsids.toList()) { itemValue ->
+                    val checked = itemValue in dialogValue
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .toggleable(checked, true, Role.Checkbox) {
+                                    dialogValue =
+                                        if (it) dialogValue + itemValue else dialogValue - itemValue
+                                }
+                                .padding(horizontal = 24.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = checked, onCheckedChange = null)
+                        Spacer(modifier = Modifier.width(24.dp))
+                        Text(
+                            text = AnnotatedString(
+                                itemValue.replace("^\"".toRegex(), "")
+                                    .replace("\"$".toRegex(), "")
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(dialogValue) }) {
+                Text(text = stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        },
+    )
 }
 
 @Suppress("DEPRECATION")

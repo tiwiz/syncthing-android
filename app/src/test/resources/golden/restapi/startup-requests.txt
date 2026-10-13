@@ -1,0 +1,10 @@
+GET /rest/cluster/pending/devices
+GET /rest/cluster/pending/folders
+GET /rest/db/completion?device=MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD&folder=cam-photos
+GET /rest/db/completion?device=P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2&folder=cam-photos
+GET /rest/stats/device
+GET /rest/system/config
+GET /rest/system/connections
+GET /rest/system/loglevels
+GET /rest/system/status
+GET /rest/system/version

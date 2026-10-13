@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktfmt)
 }
 
 dependencies {
@@ -40,7 +43,28 @@ dependencies {
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
     ksp(libs.dagger.compiler)
+
+    detektPlugins(libs.compose.rules.detekt)
+
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
+    // Volley still references org.apache.http, which Android ships but Robolectric's image lacks.
+    testImplementation(libs.httpclient)
+    testImplementation(libs.junit4)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.okhttp.tls)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
 }
+
+val goldenRecord = providers.gradleProperty("golden.record").getOrElse("false")
+// -Pcoverage=true instruments debug unit tests for createDebugUnitTestCoverageReport. Off by
+// default so the gate runs the same bytecode as the app.
+val unitTestCoverage = providers.gradleProperty("coverage").getOrElse("false").toBoolean()
 
 android {
     compileSdk = libs.versions.compile.sdk.get().toInt()
@@ -90,6 +114,7 @@ android {
             isJniDebuggable = true
             isMinifyEnabled = false
             signingConfig = null
+            enableUnitTestCoverage = unitTestCoverage
         }
         getByName("release") {
             isMinifyEnabled = false
@@ -140,6 +165,28 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and manifest.
+            isIncludeAndroidResources = true
+            all {
+                // Robolectric's SDK 36 image reaches into JDK internals on JDK 21.
+                it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+                // -Pgolden.record=true rewrites the golden files of characterization tests.
+                it.systemProperty("golden.record", goldenRecord)
+                // Draw Compose with the hardware renderer so screenshots match the device.
+                it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+                if (unitTestCoverage) {
+                    // Robolectric loads app classes through its own class loader.
+                    it.extensions.configure<JacocoTaskExtension> {
+                        isIncludeNoLocationClasses = true
+                        excludes = listOf("jdk.internal.*")
+                    }
+                }
+            }
+        }
+    }
+
     lint {
         abortOnError = true
         targetSdk = libs.versions.target.sdk.get().toInt()
@@ -150,6 +197,47 @@ android {
         includeInBundle = false
     }
 
+}
+
+roborazzi {
+    // Golden screenshots are committed next to the tests.
+    outputDir.set(file("src/test/screenshots"))
+}
+
+detekt {
+    buildUponDefaultConfig.set(true)
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    basePath.set(rootProject.layout.projectDirectory)
+    parallel.set(true)
+}
+
+ktfmt {
+    kotlinLangStyle()
+}
+
+// Kotlin files in app/src/main that predate ktfmt. A file leaves the list when it is first
+// refactored; every other Kotlin file, and every new one, must be ktfmt-clean.
+val ktfmtLegacyFiles: List<String> =
+    rootProject.file("config/ktfmt/legacy-files.txt").readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+
+tasks.withType<com.ncorti.ktfmt.gradle.tasks.KtfmtBaseTask>().configureEach {
+    // Patterns are relative to the source root (app/src/main/java).
+    exclude(ktfmtLegacyFiles.map { it.removePrefix("app/src/main/java/") })
+}
+
+// The type-resolved detekt tasks run more rules than the plain one: "debug" covers app/src/main,
+// "debugUnitTest" covers app/src/test. Plain `detekt` (which `check` depends on) becomes an
+// alias for the two, so there is a single set of findings.
+tasks.named("detekt") {
+    enabled = false
+    dependsOn("detektDebug", "detektDebugUnitTest")
+}
+
+// Build scripts are shared with upstream; formatting them would only create merge conflicts.
+tasks.matching { it.name == "ktfmtCheckScripts" || it.name == "ktfmtFormatScripts" }.configureEach {
+    enabled = false
 }
 
 abstract class ValidateAppVersionCode : DefaultTask() {

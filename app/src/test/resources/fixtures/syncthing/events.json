@@ -1,0 +1,939 @@
+[
+  {
+    "id": 1,
+    "globalID": 1,
+    "time": "2026-10-13T00:01:32.426101428+02:00",
+    "type": "Starting",
+    "data": {
+      "home": "/data/user/0/com.github.catfriend1.syncthingfork/files",
+      "myID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD"
+    }
+  },
+  {
+    "id": 2,
+    "globalID": 2,
+    "time": "2026-10-13T00:01:32.428139403+02:00",
+    "type": "ListenAddressesChanged",
+    "data": {
+      "address": {
+        "Scheme": "tcp",
+        "Opaque": "",
+        "User": null,
+        "Host": "0.0.0.0:22000",
+        "Path": "",
+        "Fragment": "",
+        "RawQuery": "",
+        "RawPath": "",
+        "RawFragment": "",
+        "ForceQuery": false,
+        "OmitHost": false
+      },
+      "lan": [
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "0.0.0.0:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "192.0.2.76:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "[fdac:9c08:ca65:89f:9e7b:efff:febf:c6e4]:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "[fd7a:115c:a1e0::5d2d:d463]:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        }
+      ],
+      "wan": [
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "0.0.0.0:0",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "tcp",
+          "Opaque": "",
+          "User": null,
+          "Host": "0.0.0.0:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        }
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "globalID": 3,
+    "time": "2026-10-13T00:01:32.428760084+02:00",
+    "type": "ListenAddressesChanged",
+    "data": {
+      "address": {
+        "Scheme": "quic",
+        "Opaque": "",
+        "User": null,
+        "Host": "0.0.0.0:22000",
+        "Path": "",
+        "Fragment": "",
+        "RawQuery": "",
+        "RawPath": "",
+        "RawFragment": "",
+        "ForceQuery": false,
+        "OmitHost": false
+      },
+      "lan": [
+        {
+          "Scheme": "quic",
+          "Opaque": "",
+          "User": null,
+          "Host": "0.0.0.0:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "quic",
+          "Opaque": "",
+          "User": null,
+          "Host": "192.0.2.76:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "quic",
+          "Opaque": "",
+          "User": null,
+          "Host": "[fdac:9c08:ca65:89f:9e7b:efff:febf:c6e4]:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        },
+        {
+          "Scheme": "quic",
+          "Opaque": "",
+          "User": null,
+          "Host": "[fd7a:115c:a1e0::5d2d:d463]:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        }
+      ],
+      "wan": [
+        {
+          "Scheme": "quic",
+          "Opaque": "",
+          "User": null,
+          "Host": "0.0.0.0:22000",
+          "Path": "",
+          "Fragment": "",
+          "RawQuery": "",
+          "RawPath": "",
+          "RawFragment": "",
+          "ForceQuery": false,
+          "OmitHost": false
+        }
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "globalID": 4,
+    "time": "2026-10-13T00:01:32.430404014+02:00",
+    "type": "StartupComplete",
+    "data": {
+      "myID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD"
+    }
+  },
+  {
+    "id": 5,
+    "globalID": 5,
+    "time": "2026-10-13T00:01:32.431694335+02:00",
+    "type": "DeviceDiscovered",
+    "data": {
+      "addrs": [
+        "tcp://192.0.2.176:22000",
+        "tcp://192.0.2.176:22000",
+        "tcp://[fdac:9c08:ca65:89f:be24:11ff:fe26:2715]:22000",
+        "relay://203.0.113.6:22067/?id=IJJ6PZH-WLHGRPZ-YFTE4VL-BXVGPSX-BSFV57J-5MOGLDD-M2Z64KH-PKI2EQI",
+        "quic://192.0.2.176:22000",
+        "quic://192.0.2.176:22000",
+        "quic://[fdac:9c08:ca65:89f:be24:11ff:fe26:2715]:22000",
+        "quic://198.51.100.238:22000"
+      ],
+      "device": "B53EEZU-EX76N5D-KIZHSZC-XFUDUBO-LQM5GXS-DB3Z5NH-N5ESLFH-AJ62XAE"
+    }
+  },
+  {
+    "id": 6,
+    "globalID": 6,
+    "time": "2026-10-13T00:01:43.750787636+02:00",
+    "type": "ConfigSaved",
+    "data": {
+      "version": 52,
+      "folders": [],
+      "devices": [
+        {
+          "deviceID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+          "name": "android-phone",
+          "addresses": [
+            "dynamic"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        },
+        {
+          "deviceID": "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2",
+          "name": "laptop",
+          "addresses": [
+            "dynamic",
+            "tcp://192.0.2.10:22000"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        }
+      ],
+      "gui": {
+        "enabled": true,
+        "address": "127.0.0.1:8384",
+        "unixSocketPermissions": "",
+        "user": "",
+        "password": "",
+        "authMode": "static",
+        "metricsWithoutAuth": false,
+        "useTLS": false,
+        "apiKey": "fixture-api-key",
+        "insecureAdminAccess": false,
+        "theme": "default",
+        "insecureSkipHostcheck": false,
+        "insecureAllowFrameLoading": false,
+        "sendBasicAuthPrompt": false,
+        "sessionCookieDurationS": 604800,
+        "sessionCookiePath": "/"
+      },
+      "ldap": {
+        "address": "",
+        "bindDN": "",
+        "transport": "plain",
+        "insecureSkipVerify": false,
+        "searchBaseDN": "",
+        "searchFilter": ""
+      },
+      "options": {
+        "listenAddresses": [
+          "default"
+        ],
+        "globalAnnounceServers": [
+          "default"
+        ],
+        "globalAnnounceEnabled": true,
+        "localAnnounceEnabled": true,
+        "localAnnouncePort": 21027,
+        "localAnnounceMCAddr": "[ff12::8384]:21027",
+        "maxSendKbps": 0,
+        "maxRecvKbps": 0,
+        "reconnectionIntervalS": 20,
+        "relaysEnabled": true,
+        "relayReconnectIntervalM": 10,
+        "startBrowser": true,
+        "natEnabled": true,
+        "natLeaseMinutes": 60,
+        "natRenewalMinutes": 30,
+        "natTimeoutSeconds": 10,
+        "urAccepted": 0,
+        "urSeen": 0,
+        "urUniqueId": "",
+        "urURL": "https://data.syncthing.net/newdata",
+        "urInitialDelayS": 1800,
+        "autoUpgradeIntervalH": 12,
+        "upgradeToPreReleases": false,
+        "keepTemporariesH": 24,
+        "progressUpdateIntervalS": 5,
+        "limitBandwidthInLan": false,
+        "minHomeDiskFree": {
+          "value": 1,
+          "unit": "%"
+        },
+        "releasesURL": "https://upgrades.syncthing.net/meta.json",
+        "alwaysLocalNets": [],
+        "overwriteRemoteDeviceNamesOnConnect": false,
+        "tempIndexMinBlocks": 10,
+        "unackedNotificationIDs": [
+          "authenticationUserAndPassword"
+        ],
+        "trafficClass": 0,
+        "setLowPriority": true,
+        "maxFolderConcurrency": 0,
+        "crURL": "https://crash.syncthing.net/newcrash",
+        "crashReportingEnabled": true,
+        "stunKeepaliveStartS": 180,
+        "stunKeepaliveMinS": 20,
+        "stunServers": [
+          "default"
+        ],
+        "maxConcurrentIncomingRequestKiB": 0,
+        "announceLANAddresses": true,
+        "sendFullIndexOnUpgrade": false,
+        "featureFlags": [],
+        "auditEnabled": false,
+        "auditFile": "",
+        "connectionLimitEnough": 0,
+        "connectionLimitMax": 0,
+        "connectionPriorityTcpLan": 10,
+        "connectionPriorityQuicLan": 20,
+        "connectionPriorityTcpWan": 30,
+        "connectionPriorityQuicWan": 40,
+        "connectionPriorityRelay": 50,
+        "connectionPriorityUpgradeThreshold": 0
+      },
+      "remoteIgnoredDevices": [],
+      "defaults": {
+        "folder": {
+          "id": "",
+          "label": "",
+          "filesystemType": "basic",
+          "path": "",
+          "type": "sendreceive",
+          "devices": [
+            {
+              "deviceID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+              "introducedBy": "",
+              "encryptionPassword": ""
+            }
+          ],
+          "group": "",
+          "rescanIntervalS": 3600,
+          "fsWatcherEnabled": true,
+          "fsWatcherDelayS": 10,
+          "fsWatcherTimeoutS": 0,
+          "ignorePerms": false,
+          "autoNormalize": true,
+          "minDiskFree": {
+            "value": 1,
+            "unit": "%"
+          },
+          "versioning": {
+            "type": "",
+            "params": {},
+            "cleanupIntervalS": 3600,
+            "fsPath": "",
+            "fsType": "basic"
+          },
+          "copiers": 0,
+          "pullerMaxPendingKiB": 0,
+          "hashers": 0,
+          "order": "random",
+          "ignoreDelete": false,
+          "scanProgressIntervalS": 0,
+          "pullerPauseS": 0,
+          "pullerDelayS": 1,
+          "maxConflicts": 10,
+          "disableSparseFiles": false,
+          "paused": false,
+          "markerName": ".stfolder",
+          "copyOwnershipFromParent": false,
+          "modTimeWindowS": 0,
+          "maxConcurrentWrites": 16,
+          "disableFsync": false,
+          "blockPullOrder": "standard",
+          "copyRangeMethod": "standard",
+          "caseSensitiveFS": false,
+          "junctionsAsDirs": false,
+          "syncOwnership": false,
+          "sendOwnership": false,
+          "syncXattrs": false,
+          "sendXattrs": false,
+          "blockIndexing": true,
+          "xattrFilter": {
+            "entries": [],
+            "maxSingleEntrySize": 1024,
+            "maxTotalSize": 4096
+          }
+        },
+        "device": {
+          "deviceID": "",
+          "name": "",
+          "addresses": [
+            "dynamic"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        },
+        "ignores": {
+          "lines": []
+        }
+      }
+    }
+  },
+  {
+    "id": 7,
+    "globalID": 7,
+    "time": "2026-10-13T00:01:43.774221556+02:00",
+    "type": "StateChanged",
+    "data": {
+      "folder": "cam-photos",
+      "from": "idle",
+      "to": "starting"
+    }
+  },
+  {
+    "id": 8,
+    "globalID": 8,
+    "time": "2026-10-13T00:01:43.783263097+02:00",
+    "type": "StateChanged",
+    "data": {
+      "duration": 0.783229294,
+      "folder": "cam-photos",
+      "from": "starting",
+      "to": "idle"
+    }
+  },
+  {
+    "id": 9,
+    "globalID": 9,
+    "time": "2026-10-13T00:01:43.783539879+02:00",
+    "type": "StateChanged",
+    "data": {
+      "duration": 0.783513898,
+      "folder": "cam-photos",
+      "from": "idle",
+      "to": "scan-waiting"
+    }
+  },
+  {
+    "id": 10,
+    "globalID": 10,
+    "time": "2026-10-13T00:01:43.783604972+02:00",
+    "type": "StateChanged",
+    "data": {
+      "duration": 0.783577314,
+      "folder": "cam-photos",
+      "from": "scan-waiting",
+      "to": "scanning"
+    }
+  },
+  {
+    "id": 11,
+    "globalID": 11,
+    "time": "2026-10-13T00:01:43.785351149+02:00",
+    "type": "FolderScanProgress",
+    "data": {
+      "current": 3,
+      "folder": "cam-photos",
+      "rate": 0,
+      "total": 4
+    }
+  },
+  {
+    "id": 12,
+    "globalID": 12,
+    "time": "2026-10-13T00:01:43.789218901+02:00",
+    "type": "LocalIndexUpdated",
+    "data": {
+      "filenames": [
+        "a.txt"
+      ],
+      "folder": "cam-photos",
+      "items": 1,
+      "sequence": 1,
+      "version": 1
+    }
+  },
+  {
+    "id": 13,
+    "globalID": 14,
+    "time": "2026-10-13T00:01:43.79115826+02:00",
+    "type": "StateChanged",
+    "data": {
+      "duration": 0.791132,
+      "folder": "cam-photos",
+      "from": "scanning",
+      "to": "idle"
+    }
+  },
+  {
+    "id": 14,
+    "globalID": 15,
+    "time": "2026-10-13T00:01:43.843468988+02:00",
+    "type": "ConfigSaved",
+    "data": {
+      "version": 52,
+      "folders": [
+        {
+          "id": "cam-photos",
+          "label": "Camera",
+          "filesystemType": "basic",
+          "path": "/storage/emulated/0/DCIM/Camera",
+          "type": "sendonly",
+          "devices": [
+            {
+              "deviceID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+              "introducedBy": "",
+              "encryptionPassword": ""
+            },
+            {
+              "deviceID": "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2",
+              "introducedBy": "",
+              "encryptionPassword": ""
+            }
+          ],
+          "group": "",
+          "rescanIntervalS": 3600,
+          "fsWatcherEnabled": true,
+          "fsWatcherDelayS": 10,
+          "fsWatcherTimeoutS": 0,
+          "ignorePerms": false,
+          "autoNormalize": true,
+          "minDiskFree": {
+            "value": 1,
+            "unit": "%"
+          },
+          "versioning": {
+            "type": "",
+            "params": {},
+            "cleanupIntervalS": 3600,
+            "fsPath": "",
+            "fsType": "basic"
+          },
+          "copiers": 0,
+          "pullerMaxPendingKiB": 0,
+          "hashers": 0,
+          "order": "random",
+          "ignoreDelete": false,
+          "scanProgressIntervalS": 0,
+          "pullerPauseS": 0,
+          "pullerDelayS": 1,
+          "maxConflicts": 10,
+          "disableSparseFiles": false,
+          "paused": false,
+          "markerName": ".stfolder",
+          "copyOwnershipFromParent": false,
+          "modTimeWindowS": 0,
+          "maxConcurrentWrites": 16,
+          "disableFsync": false,
+          "blockPullOrder": "standard",
+          "copyRangeMethod": "standard",
+          "caseSensitiveFS": false,
+          "junctionsAsDirs": false,
+          "syncOwnership": false,
+          "sendOwnership": false,
+          "syncXattrs": false,
+          "sendXattrs": false,
+          "blockIndexing": true,
+          "xattrFilter": {
+            "entries": [],
+            "maxSingleEntrySize": 1024,
+            "maxTotalSize": 4096
+          }
+        }
+      ],
+      "devices": [
+        {
+          "deviceID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+          "name": "android-phone",
+          "addresses": [
+            "dynamic"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        },
+        {
+          "deviceID": "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2",
+          "name": "laptop",
+          "addresses": [
+            "dynamic",
+            "tcp://192.0.2.10:22000"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        }
+      ],
+      "gui": {
+        "enabled": true,
+        "address": "127.0.0.1:8384",
+        "unixSocketPermissions": "",
+        "user": "",
+        "password": "",
+        "authMode": "static",
+        "metricsWithoutAuth": false,
+        "useTLS": false,
+        "apiKey": "fixture-api-key",
+        "insecureAdminAccess": false,
+        "theme": "default",
+        "insecureSkipHostcheck": false,
+        "insecureAllowFrameLoading": false,
+        "sendBasicAuthPrompt": false,
+        "sessionCookieDurationS": 604800,
+        "sessionCookiePath": "/"
+      },
+      "ldap": {
+        "address": "",
+        "bindDN": "",
+        "transport": "plain",
+        "insecureSkipVerify": false,
+        "searchBaseDN": "",
+        "searchFilter": ""
+      },
+      "options": {
+        "listenAddresses": [
+          "default"
+        ],
+        "globalAnnounceServers": [
+          "default"
+        ],
+        "globalAnnounceEnabled": true,
+        "localAnnounceEnabled": true,
+        "localAnnouncePort": 21027,
+        "localAnnounceMCAddr": "[ff12::8384]:21027",
+        "maxSendKbps": 0,
+        "maxRecvKbps": 0,
+        "reconnectionIntervalS": 20,
+        "relaysEnabled": true,
+        "relayReconnectIntervalM": 10,
+        "startBrowser": true,
+        "natEnabled": true,
+        "natLeaseMinutes": 60,
+        "natRenewalMinutes": 30,
+        "natTimeoutSeconds": 10,
+        "urAccepted": 0,
+        "urSeen": 0,
+        "urUniqueId": "",
+        "urURL": "https://data.syncthing.net/newdata",
+        "urInitialDelayS": 1800,
+        "autoUpgradeIntervalH": 12,
+        "upgradeToPreReleases": false,
+        "keepTemporariesH": 24,
+        "progressUpdateIntervalS": 5,
+        "limitBandwidthInLan": false,
+        "minHomeDiskFree": {
+          "value": 1,
+          "unit": "%"
+        },
+        "releasesURL": "https://upgrades.syncthing.net/meta.json",
+        "alwaysLocalNets": [],
+        "overwriteRemoteDeviceNamesOnConnect": false,
+        "tempIndexMinBlocks": 10,
+        "unackedNotificationIDs": [
+          "authenticationUserAndPassword"
+        ],
+        "trafficClass": 0,
+        "setLowPriority": true,
+        "maxFolderConcurrency": 0,
+        "crURL": "https://crash.syncthing.net/newcrash",
+        "crashReportingEnabled": true,
+        "stunKeepaliveStartS": 180,
+        "stunKeepaliveMinS": 20,
+        "stunServers": [
+          "default"
+        ],
+        "maxConcurrentIncomingRequestKiB": 0,
+        "announceLANAddresses": true,
+        "sendFullIndexOnUpgrade": false,
+        "featureFlags": [],
+        "auditEnabled": false,
+        "auditFile": "",
+        "connectionLimitEnough": 0,
+        "connectionLimitMax": 0,
+        "connectionPriorityTcpLan": 10,
+        "connectionPriorityQuicLan": 20,
+        "connectionPriorityTcpWan": 30,
+        "connectionPriorityQuicWan": 40,
+        "connectionPriorityRelay": 50,
+        "connectionPriorityUpgradeThreshold": 0
+      },
+      "remoteIgnoredDevices": [],
+      "defaults": {
+        "folder": {
+          "id": "",
+          "label": "",
+          "filesystemType": "basic",
+          "path": "",
+          "type": "sendreceive",
+          "devices": [
+            {
+              "deviceID": "MFZWI3D-BONSGYC-YLTMRWG-C43ENR5-QXGZDMM-FZWI3DP-BONSGYY-LTMRWAD",
+              "introducedBy": "",
+              "encryptionPassword": ""
+            }
+          ],
+          "group": "",
+          "rescanIntervalS": 3600,
+          "fsWatcherEnabled": true,
+          "fsWatcherDelayS": 10,
+          "fsWatcherTimeoutS": 0,
+          "ignorePerms": false,
+          "autoNormalize": true,
+          "minDiskFree": {
+            "value": 1,
+            "unit": "%"
+          },
+          "versioning": {
+            "type": "",
+            "params": {},
+            "cleanupIntervalS": 3600,
+            "fsPath": "",
+            "fsType": "basic"
+          },
+          "copiers": 0,
+          "pullerMaxPendingKiB": 0,
+          "hashers": 0,
+          "order": "random",
+          "ignoreDelete": false,
+          "scanProgressIntervalS": 0,
+          "pullerPauseS": 0,
+          "pullerDelayS": 1,
+          "maxConflicts": 10,
+          "disableSparseFiles": false,
+          "paused": false,
+          "markerName": ".stfolder",
+          "copyOwnershipFromParent": false,
+          "modTimeWindowS": 0,
+          "maxConcurrentWrites": 16,
+          "disableFsync": false,
+          "blockPullOrder": "standard",
+          "copyRangeMethod": "standard",
+          "caseSensitiveFS": false,
+          "junctionsAsDirs": false,
+          "syncOwnership": false,
+          "sendOwnership": false,
+          "syncXattrs": false,
+          "sendXattrs": false,
+          "blockIndexing": true,
+          "xattrFilter": {
+            "entries": [],
+            "maxSingleEntrySize": 1024,
+            "maxTotalSize": 4096
+          }
+        },
+        "device": {
+          "deviceID": "",
+          "name": "",
+          "addresses": [
+            "dynamic"
+          ],
+          "compression": "metadata",
+          "certName": "",
+          "introducer": false,
+          "skipIntroductionRemovals": false,
+          "introducedBy": "",
+          "paused": false,
+          "allowedNetworks": [],
+          "autoAcceptFolders": false,
+          "maxSendKbps": 0,
+          "maxRecvKbps": 0,
+          "ignoredFolders": [],
+          "maxRequestKiB": 0,
+          "untrusted": false,
+          "remoteGUIPort": 0,
+          "numConnections": 0,
+          "group": ""
+        },
+        "ignores": {
+          "lines": []
+        }
+      }
+    }
+  },
+  {
+    "id": 15,
+    "globalID": 16,
+    "time": "2026-10-13T00:01:44.433551403+02:00",
+    "type": "FolderSummary",
+    "data": {
+      "folder": "cam-photos",
+      "summary": {
+        "errors": 0,
+        "pullErrors": 0,
+        "invalid": "",
+        "globalFiles": 1,
+        "globalDirectories": 0,
+        "globalSymlinks": 0,
+        "globalDeleted": 0,
+        "globalBytes": 3,
+        "globalTotalItems": 1,
+        "localFiles": 1,
+        "localDirectories": 0,
+        "localSymlinks": 0,
+        "localDeleted": 0,
+        "localBytes": 3,
+        "localTotalItems": 1,
+        "needFiles": 0,
+        "needDirectories": 0,
+        "needSymlinks": 0,
+        "needDeletes": 0,
+        "needBytes": 0,
+        "needTotalItems": 0,
+        "receiveOnlyChangedFiles": 0,
+        "receiveOnlyChangedDirectories": 0,
+        "receiveOnlyChangedSymlinks": 0,
+        "receiveOnlyChangedDeletes": 0,
+        "receiveOnlyChangedBytes": 0,
+        "receiveOnlyTotalItems": 0,
+        "inSyncFiles": 1,
+        "inSyncBytes": 3,
+        "state": "idle",
+        "stateChanged": "2026-10-13T00:01:43+02:00",
+        "error": "",
+        "version": 1,
+        "sequence": 1,
+        "remoteSequence": {},
+        "ignorePatterns": false,
+        "watchError": ""
+      }
+    }
+  },
+  {
+    "id": 16,
+    "globalID": 17,
+    "time": "2026-10-13T00:01:44.434439926+02:00",
+    "type": "FolderCompletion",
+    "data": {
+      "completion": 0,
+      "device": "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2",
+      "folder": "cam-photos",
+      "globalBytes": 3,
+      "globalItems": 1,
+      "needBytes": 3,
+      "needDeletes": 0,
+      "needItems": 1,
+      "remoteState": "unknown",
+      "sequence": 0
+    }
+  }
+]

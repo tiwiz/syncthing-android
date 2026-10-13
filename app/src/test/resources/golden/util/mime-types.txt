@@ -1,0 +1,14 @@
+[jpg] -> image/jpeg
+[JPG] -> image/jpeg
+[jpeg] -> image/jpeg
+[png] -> image/png
+[mp4] -> video/mp4
+[mkv] -> video/x-matroska
+[pdf] -> application/pdf
+[txt] -> text/plain
+[md] -> 
+[apk] -> application/vnd.android.package-archive
+[zip] -> application/zip
+[7z] -> application/x-7z-compressed
+[] -> 
+[unknownext] ->

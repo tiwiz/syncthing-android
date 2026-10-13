@@ -81,6 +81,8 @@ interface Navigator<T: NavKey> {
     fun navigateUp() // added temporarily to finish settings activity and return
 }
 
+// Every settings screen navigates; passing the navigator through each of them would only add noise.
+@Suppress("CompositionLocalAllowlist")
 val LocalSettingsNavigator = staticCompositionLocalOf<Navigator<SettingsRoute>> {
     error("Navigator not provided")
 }
@@ -102,7 +104,8 @@ fun rememberSettingsNavBackStack(startDestination: SettingsRoute): NavBackStack<
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsNavDisplay(
-    backStack: NavBackStack<SettingsRoute>
+    backStack: NavBackStack<SettingsRoute>,
+    modifier: Modifier = Modifier,
 ) {
     val navigator = LocalSettingsNavigator.current
 
@@ -134,10 +137,10 @@ fun SettingsNavDisplay(
         },
         predictivePopTransitionSpec = {
             // Slide in from left when navigating back
-            slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { it })
+            slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
         },
-        modifier = Modifier.onKeyEvent { keyEvent ->
+        modifier = modifier.onKeyEvent { keyEvent ->
             if (keyEvent.key == Key.DirectionLeft
                 && keyEvent.type == KeyEventType.KeyDown) {
                 navigator.navigateBack()

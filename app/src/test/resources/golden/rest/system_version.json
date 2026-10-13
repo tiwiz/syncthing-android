@@ -1,0 +1,7 @@
+{
+  "arch": "amd64",
+  "codename": "Hafnium Hornet",
+  "longVersion": "syncthing unknown-dev \"Hafnium Hornet\" (go1.27.1 linux-amd64) unknown@unknown 1970-01-01 00:00:00 UTC [modernc-sqlite, stnoupgrade]",
+  "os": "linux",
+  "version": "unknown-dev"
+}

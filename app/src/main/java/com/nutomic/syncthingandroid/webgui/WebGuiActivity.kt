@@ -7,14 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.Proxy
 import android.net.Uri
-import android.net.http.SslCertificate
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Parcelable
 import android.util.ArrayMap
-import android.util.Base64
 import android.util.Log
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
@@ -124,7 +122,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        config = loadConfiguration()
+        config = loadConfiguration(this)
         webGuiUrl = toLoopback(config.webGuiUrl)
         if (!loadCaCertificate()) {
             return
@@ -137,7 +135,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
                     error = webGuiLoadError,
                     onNavigateBack = { finish() },
                     webViewFactory = { context ->
-                        createWebView(context).also {
+                        createWebView(context, webViewClient).also {
                             webView = it
                             // The WebView is created lazily during composition, which may run
                             // after the service already reported ACTIVE. Attempt the load here so
@@ -184,43 +182,6 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         webView?.destroy()
         webView = null
         super.onDestroy()
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun createWebView(context: Context): WebView = WebView(context).apply {
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        // The GUI is served over the network from the local Syncthing instance; it never needs
-        // to read local files, so deny file/content access to limit exfiltration if compromised.
-        settings.allowFileAccess = false
-        settings.allowContentAccess = false
-        webViewClient = this@WebGuiActivity.webViewClient
-        clearCache(true)
-    }
-
-    private fun loadConfiguration(): ConfigXml = ConfigXml(this).apply {
-        try {
-            loadConfig()
-        } catch (e: ConfigXml.OpenConfigException) {
-            throw RuntimeException(e.message, e)
-        }
-    }
-
-    /**
-     * Rewrites the host of the given URL to 127.0.0.1, preserving the scheme and port. The port
-     * comes from the configured GUI listen address; falls back to the default web GUI port.
-     *
-     * Forcing loopback is intentional and security-relevant (mirrors ApiRequest.forceLoopbackHost):
-     * the GUI address is only ever 127.0.0.1 or 0.0.0.0 (the latter includes loopback), so the
-     * instance is always reachable here; it keeps the API key off any routable interface; and it is
-     * the precondition that makes proceeding past SSL_IDMISMATCH (see handleSslError) and trusting
-     * user-installed CAs (loopback domain-config in network_security_config.xml) safe — on loopback
-     * there is no MITM surface. Do not connect to the configured address directly: 0.0.0.0 is not a
-     * valid destination (modern WebView blocks it) and a routable address would break the trust model.
-     */
-    private fun toLoopback(url: URL): URL {
-        val port = if (url.port != -1) url.port else Constants.DEFAULT_WEBGUI_TCP_PORT
-        return URL(url.protocol, "127.0.0.1", port, url.file)
     }
 
     private fun loadCaCertificate(): Boolean {
@@ -282,16 +243,10 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
             0,
             WEB_VIEW_PROXY_EXCLUSIONS,
         )
-        currentWebView.loadUrl(webGuiUrl.toString(), createAuthHeaders())
-    }
-
-    private fun createAuthHeaders(): Map<String, String> {
-        val credentials = "${config.webUIUsername}:${config.webUIPassword}"
-        val encodedCredentials = Base64.encodeToString(
-            credentials.toByteArray(Charsets.UTF_8),
-            Base64.NO_WRAP,
+        currentWebView.loadUrl(
+            webGuiUrl.toString(),
+            createAuthHeaders(config.webUIUsername, config.webUIPassword),
         )
-        return mapOf("Authorization" to "Basic $encodedCredentials")
     }
 
     private fun shouldOpenOutsideWebView(uri: Uri): Boolean {
@@ -304,7 +259,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         if (!Util.isRunningOnTV(this)) {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, uri))
-            } catch (e: ActivityNotFoundException) {
+            } catch (_: ActivityNotFoundException) {
                 Toast.makeText(this, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
             }
         }
@@ -355,13 +310,6 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         }
     }
 
-    @SuppressLint("PrivateApi")
-    private fun extractCertificate(sslCertificate: SslCertificate): X509Certificate? {
-        val certificateField = sslCertificate.javaClass.getDeclaredField("mX509Certificate")
-        certificateField.isAccessible = true
-        return certificateField.get(sslCertificate) as X509Certificate?
-    }
-
     companion object {
         private const val TAG = "WebGuiActivity"
         private const val WEB_VIEW_PROXY_EXCLUSIONS = "localhost|0.0.0.0|127.*|[::1]"
@@ -371,7 +319,11 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
          * Compatible with KitKat or higher android version.
          * Returns boolean if successful.
          * Source: https://stackoverflow.com/a/26781539
+         *
+         * It reflects into hidden framework classes whose shape differs between Android versions and
+         * vendors, so any exception only means the proxy could not be set: hence the broad catch.
          */
+        @Suppress("TooGenericExceptionCaught")
         @SuppressLint("PrivateApi")
         private fun setWebViewProxy(
             appContext: Context,

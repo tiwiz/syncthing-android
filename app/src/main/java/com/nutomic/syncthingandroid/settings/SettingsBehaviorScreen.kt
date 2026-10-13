@@ -2,6 +2,7 @@ package com.nutomic.syncthingandroid.settings
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
@@ -18,13 +19,14 @@ fun EntryProviderScope<SettingsRoute>.settingsBehaviorEntry() {
 
 
 @Composable
-fun SettingsBehaviorScreen() {
+fun SettingsBehaviorScreen(modifier: Modifier = Modifier) {
 
     val autoStart = rememberPreferenceState(Constants.PREF_START_SERVICE_ON_BOOT, false)
     val broadcast = rememberPreferenceState(Constants.PREF_BROADCAST_SERVICE_CONTROL, false)
     val overwrite = rememberPreferenceState(Constants.PREF_ALLOW_OVERWRITE_FILES, false)
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_behaviour),
     ) {
         item {

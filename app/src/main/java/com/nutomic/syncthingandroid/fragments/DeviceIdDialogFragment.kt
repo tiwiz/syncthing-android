@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,8 +64,8 @@ class DeviceIdDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val args = requireArguments()
-        val deviceName = args.getString(ARG_DEVICE_NAME)!!
-        val deviceId = args.getString(ARG_DEVICE_ID)!!
+        val deviceName = requireNotNull(args.getString(ARG_DEVICE_NAME))
+        val deviceId = requireNotNull(args.getString(ARG_DEVICE_ID))
         val isCurrentDevice = args.getBoolean(ARG_IS_CURRENT_DEVICE)
 
         val qrCode = generateQrCode(deviceId)
@@ -171,7 +172,9 @@ fun DeviceIdDialog(
     ApplicationTheme {
         AlertDialog(
             properties = DialogProperties(usePlatformDefaultWidth = false),
-            modifier = Modifier.let { if (!isLandscape()) it.widthIn(max = 460.dp).fillMaxWidth(0.9f) else it },
+            modifier = Modifier.let {
+                if (!isLandscape()) it.widthIn(max = 460.dp).fillMaxWidth(DIALOG_WIDTH_FRACTION) else it
+            },
             onDismissRequest = { onDismiss() },
             title = {
                 if (isLandscape()) {
@@ -203,7 +206,10 @@ fun DeviceIdDialog(
     }
 }
 
+private const val DIALOG_WIDTH_FRACTION = 0.9f
+
 @Composable
+@ReadOnlyComposable
 fun isLandscape(): Boolean {
     val configuration = LocalConfiguration.current
     return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -263,12 +269,13 @@ fun PortraitDialogContent(
     qrCode: Bitmap,
     onCopy: () -> Unit,
     onShare: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val windowInfo = LocalWindowInfo.current
     val containerHeightDp = windowInfo.containerDpSize.height
     val qrMaxHeight = minOf(containerHeightDp * 0.30f, 280.dp)
 
-    Column {
+    Column(modifier) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
@@ -315,8 +322,9 @@ fun LandscapeDialogContent(
     qrCode: Bitmap,
     onCopy: () -> Unit,
     onShare: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(Modifier.fillMaxWidth().heightIn(max = 250.dp)) {
+    Row(modifier.fillMaxWidth().heightIn(max = 250.dp)) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,

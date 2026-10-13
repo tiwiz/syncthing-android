@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -38,17 +39,21 @@ fun EntryProviderScope<SettingsRoute>.settingsTroubleshootingEntry() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTroubleshootingScreen() {
+fun SettingsTroubleshootingScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
     val issueTrackerUrl = stringResource(R.string.issue_tracker_url)
 
-    val stTraceOptions by rememberPreferenceState(Constants.PREF_DEBUG_FACILITIES_AVAILABLE, getFallbackDebugFacilities())
+    val stTraceOptions by rememberPreferenceState(
+        Constants.PREF_DEBUG_FACILITIES_AVAILABLE,
+        getFallbackDebugFacilities(),
+    )
     val stTraceSelection = rememberPreferenceState(Constants.PREF_DEBUG_FACILITIES_ENABLED, setOf<String>())
     val envVars = rememberPreferenceState(Constants.PREF_ENVIRONMENT_VARIABLES, "")
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_debug),
     ) {
         item {

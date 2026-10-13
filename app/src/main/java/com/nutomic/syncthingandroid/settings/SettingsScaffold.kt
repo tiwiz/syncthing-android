@@ -36,6 +36,7 @@ import com.nutomic.syncthingandroid.util.isTelevision
 @Composable
 fun SettingsScaffold(
     title: String,
+    modifier: Modifier = Modifier,
     description: String? = null,
     content: (LazyListScope.() -> Unit) = {},
 ) {
@@ -57,9 +58,9 @@ fun SettingsScaffold(
 
     Scaffold(
         modifier = if (configuration.isTelevision)
-            Modifier
+            modifier
         else
-            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (configuration.isTelevision) {
                 // Use normal top app bar because of low vertical space

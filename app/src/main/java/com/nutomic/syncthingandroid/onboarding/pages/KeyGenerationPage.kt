@@ -25,10 +25,12 @@ fun KeyGenerationPage(
     requestTvFocus: Boolean,
     onBack: () -> Unit,
     onFinishOnboarding: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
     OnboardingScaffold(
+        modifier = modifier,
         icon = OnboardingIcon.Vector(Icons.Outlined.Key),
         title = stringResource(R.string.key_generation_title),
         description = uiState.keyGenerationStatus,

@@ -38,10 +38,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -86,7 +86,11 @@ class DrawerFragment : Fragment(), OnServiceStateChangeListener {
 
         setContent {
             ApplicationTheme {
-                DrawerContent(stServiceRunning.value, focusRequested)
+                DrawerContent(
+                    stServiceRunning = stServiceRunning.value,
+                    focusRequested = focusRequested.value,
+                    onConsumeFocusRequest = { focusRequested.value = false },
+                )
             }
         }
     }
@@ -129,17 +133,20 @@ class DrawerFragment : Fragment(), OnServiceStateChangeListener {
 @Composable
 private fun DrawerContent(
     stServiceRunning: Boolean,
-    focusRequested: MutableState<Boolean>,
+    focusRequested: Boolean,
+    onConsumeFocusRequest: () -> Unit,
 ) {
     val activity = LocalActivity.current as MainActivity
     val config = LocalConfiguration.current
 
     val firstItemFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(focusRequested.value) {
-        if (focusRequested.value) {
+    val currentOnConsumeFocusRequest by rememberUpdatedState(onConsumeFocusRequest)
+
+    LaunchedEffect(focusRequested) {
+        if (focusRequested) {
             firstItemFocusRequester.requestFocus()
-            focusRequested.value = false
+            currentOnConsumeFocusRequest()
         }
     }
 

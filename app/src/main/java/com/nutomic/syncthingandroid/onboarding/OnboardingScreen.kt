@@ -21,6 +21,7 @@ fun OnboardingScreen(
     onGrantLocationPermission: () -> Unit,
     onGrantLocalNetworkPermission: () -> Unit,
     onGrantNotificationPermission: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPagerState(pageCount = { uiState.pages.size })
 
@@ -34,7 +35,7 @@ fun OnboardingScreen(
 
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         userScrollEnabled = false,
     ) { pageIdx ->
         val page = uiState.pages[pageIdx]

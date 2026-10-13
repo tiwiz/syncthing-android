@@ -1,0 +1,32 @@
+{
+  "connections": {
+    "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2": {
+      "at": "0001-01-01T00:00:00Z",
+      "inBytesTotal": 0,
+      "outBytesTotal": 0,
+      "startedAt": "0001-01-01T00:00:00Z",
+      "connected": false,
+      "paused": false,
+      "clientVersion": "",
+      "address": "",
+      "type": "",
+      "isLocal": false,
+      "crypto": "",
+      "primary": {
+        "at": "0001-01-01T00:00:00Z",
+        "inBytesTotal": 0,
+        "outBytesTotal": 0,
+        "startedAt": "0001-01-01T00:00:00Z",
+        "address": "",
+        "type": "",
+        "isLocal": false,
+        "crypto": ""
+      }
+    }
+  },
+  "total": {
+    "at": "2026-10-13T00:01:47+02:00",
+    "inBytesTotal": 0,
+    "outBytesTotal": 0
+  }
+}

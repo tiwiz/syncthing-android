@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -275,7 +276,6 @@ private val METADATA_ICON_SIZE = 14.dp
  *
  * Falls back to the timestamp exactly as Syncthing reported it if it could not be parsed.
  */
-@Composable
 private fun RecentChange.timeText(showExactTimes: Boolean): String {
     val millis = timeMillis ?: return rawTime
     return if (showExactTimes) {
@@ -367,7 +367,7 @@ private val RecentChange.icon: ImageVector
     }
 
 private val RecentChange.iconTint: Color
-    @Composable get() = when (action) {
+    @Composable @ReadOnlyComposable get() = when (action) {
         ChangeAction.ADDED -> MaterialTheme.colorScheme.primary
         ChangeAction.DELETED -> MaterialTheme.colorScheme.error
         ChangeAction.MODIFIED -> MaterialTheme.colorScheme.tertiary

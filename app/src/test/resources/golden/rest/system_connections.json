@@ -1,0 +1,28 @@
+{
+  "total": {
+    "address": "",
+    "at": "2026-10-13T00:01:47+02:00",
+    "clientVersion": "",
+    "connected": false,
+    "inBytesTotal": 0,
+    "outBytesTotal": 0,
+    "paused": false,
+    "type": "",
+    "inBits": 0,
+    "outBits": 0
+  },
+  "connections": {
+    "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2": {
+      "address": "",
+      "at": "0001-01-01T00:00:00Z",
+      "clientVersion": "",
+      "connected": false,
+      "inBytesTotal": 0,
+      "outBytesTotal": 0,
+      "paused": false,
+      "type": "",
+      "inBits": 0,
+      "outBits": 0
+    }
+  }
+}

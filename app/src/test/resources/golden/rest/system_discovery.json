@@ -1,0 +1,12 @@
+{
+  "B53EEZU-EX76N5D-KIZHSZC-XFUDUBO-LQM5GXS-DB3Z5NH-N5ESLFH-AJ62XAE": {
+    "addresses": [
+      "tcp://192.0.2.176:22000",
+      "tcp://[fdac:9c08:ca65:89f:be24:11ff:fe26:2715]:22000",
+      "relay://203.0.113.6:22067/?id\u003dIJJ6PZH-WLHGRPZ-YFTE4VL-BXVGPSX-BSFV57J-5MOGLDD-M2Z64KH-PKI2EQI",
+      "quic://192.0.2.176:22000",
+      "quic://[fdac:9c08:ca65:89f:be24:11ff:fe26:2715]:22000",
+      "quic://198.51.100.238:22000"
+    ]
+  }
+}

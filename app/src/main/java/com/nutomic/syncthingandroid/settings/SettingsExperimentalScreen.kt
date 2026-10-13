@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
@@ -23,7 +24,7 @@ fun EntryProviderScope<SettingsRoute>.settingsExperimentalEntry() {
 
 
 @Composable
-fun SettingsExperimentalScreen() {
+fun SettingsExperimentalScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
     val useTor = rememberPreferenceState(Constants.PREF_USE_TOR, false)
@@ -31,6 +32,7 @@ fun SettingsExperimentalScreen() {
     val httpProxy = rememberPreferenceState(Constants.PREF_HTTP_PROXY_ADDRESS, "")
 
     SettingsScaffold(
+        modifier = modifier,
         title = stringResource(R.string.category_experimental),
     ) {
         item {
@@ -42,7 +44,8 @@ fun SettingsExperimentalScreen() {
         }
         item {
             val socksProxySummary = if (socksProxy.value.isBlank())
-                "${stringResource(R.string.do_not_use_proxy)} ${stringResource(R.string.generic_example)}: ${stringResource(R.string.socks_proxy_address_example)}"
+                "${stringResource(R.string.do_not_use_proxy)} ${stringResource(R.string.generic_example)}: " +
+                    stringResource(R.string.socks_proxy_address_example)
             else
                 "${stringResource(R.string.use_proxy)} ${socksProxy.value}"
             TextFieldPreference(
@@ -62,7 +65,8 @@ fun SettingsExperimentalScreen() {
         }
         item {
             val httpProxySummary = if (httpProxy.value.isBlank())
-                "${stringResource(R.string.do_not_use_proxy)} ${stringResource(R.string.generic_example)}: ${stringResource(R.string.http_proxy_address_example)}"
+                "${stringResource(R.string.do_not_use_proxy)} ${stringResource(R.string.generic_example)}: " +
+                    stringResource(R.string.http_proxy_address_example)
             else
                 "${stringResource(R.string.use_proxy)} ${httpProxy.value}"
             TextFieldPreference(

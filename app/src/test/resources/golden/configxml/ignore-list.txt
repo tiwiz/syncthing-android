@@ -1,0 +1,3 @@
+missing file -> null
+after post -> [*.tmp, // comment, !keep.tmp]
+file -> *.tmp\n// comment\n!keep.tmp
