@@ -44,7 +44,8 @@ public enum Compression {
     }
 
     public static Compression fromValue(Context context, String value) {
-        int index = 0;
+        // Not found: fromIndex falls back to METADATA, Syncthing's default.
+        int index = -1;
         String[] values = context.getResources().getStringArray(R.array.compress_values);
         for (int i = 0; i < values.length; i++) {
             if (values[i].equals(value)) {

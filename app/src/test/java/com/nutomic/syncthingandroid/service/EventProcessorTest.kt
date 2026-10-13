@@ -156,8 +156,8 @@ class EventProcessorTest {
         val (status, cached) = api.getFolderStatus("cam-photos").let { it.key to it.value }
         assertEquals("idle", status.state)
         assertEquals(1L, status.localFiles)
-        // CHARACTERIZATION: LocalIndexUpdated reports "update", but the file is not on this
-        // device's disk, so the cache records a deletion.
+        // LocalIndexUpdated reports "update"; RestApi records an update of a file that is not on
+        // disk (as here, in the test) as a deletion.
         assertEquals("delete", cached.lastItemFinishedAction)
         assertEquals("a.txt", cached.lastItemFinishedItem)
         // A remote folder at 0% counts as up to date, like in the web GUI.

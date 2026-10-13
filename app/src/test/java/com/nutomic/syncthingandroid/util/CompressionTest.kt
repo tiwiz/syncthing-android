@@ -26,8 +26,9 @@ class CompressionTest {
         assertEquals(Compression.NONE, Compression.fromValue(context, "never"))
         assertEquals(Compression.METADATA, Compression.fromValue(context, "metadata"))
         assertEquals(Compression.ALWAYS, Compression.fromValue(context, "always"))
-        // CHARACTERIZATION: an unknown value maps to index 0, which is NONE, not METADATA.
-        assertEquals(Compression.NONE, Compression.fromValue(context, "bogus"))
+        // An unknown or missing value falls back to Syncthing's default.
+        assertEquals(Compression.METADATA, Compression.fromValue(context, "bogus"))
+        assertEquals(Compression.METADATA, Compression.fromValue(context, null))
         assertEquals(Compression.METADATA, Compression.fromIndex(1))
         assertEquals(Compression.METADATA, Compression.fromIndex(42))
     }
