@@ -58,6 +58,9 @@ dependencies {
 }
 
 val goldenRecord = providers.gradleProperty("golden.record").getOrElse("false")
+// -Pcoverage=true instruments debug unit tests for createDebugUnitTestCoverageReport. Off by
+// default so the gate runs the same bytecode as the app.
+val unitTestCoverage = providers.gradleProperty("coverage").getOrElse("false").toBoolean()
 
 android {
     compileSdk = libs.versions.compile.sdk.get().toInt()
@@ -107,6 +110,7 @@ android {
             isJniDebuggable = true
             isMinifyEnabled = false
             signingConfig = null
+            enableUnitTestCoverage = unitTestCoverage
         }
         getByName("release") {
             isMinifyEnabled = false
@@ -168,6 +172,13 @@ android {
                 it.systemProperty("golden.record", goldenRecord)
                 // Draw Compose with the hardware renderer so screenshots match the device.
                 it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+                if (unitTestCoverage) {
+                    // Robolectric loads app classes through its own class loader.
+                    it.extensions.configure<JacocoTaskExtension> {
+                        isIncludeNoLocationClasses = true
+                        excludes = listOf("jdk.internal.*")
+                    }
+                }
             }
         }
     }

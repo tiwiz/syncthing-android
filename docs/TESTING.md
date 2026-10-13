@@ -84,8 +84,31 @@ Most tests pin what the app does today, not what it should do. Expected output i
   running the host's `sh` (the About screen shows `ulimit -n` and `du`, which differ per machine).
   It needs `instrumentedPackages = ["com.nutomic.syncthingandroid.util"]` in `@Config`.
 
+## Coverage
+
+JaCoCo, built into AGP, measures line coverage of the unit tests. It is off by default, so the gate
+runs the same bytecode as the app; `-Pcoverage=true` turns it on for the debug unit tests.
+
+```bash
+IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createDebugUnitTestCoverageReport
+# → app/build/reports/coverage/test/debug/index.html (and report.xml)
+```
+
+- Run it through `verifyRoborazziDebug`, not plain `testDebugUnitTest`: without a Roborazzi mode,
+  `captureRoboImage { }` skips the composable and the onboarding screens look uncovered.
+- Robolectric loads app classes through its own class loader, so the test task sets JaCoCo's
+  `includeNoLocationClasses`; without it the report is almost empty.
+- Look at the report before refactoring a class: code that no test runs is not protected.
+
+Snapshot on 2026-10-13 (lines): 37% overall. `util` 69%, `settings` 57%, `onboarding` 50–68%,
+`model` 47%, `fragments` 36%, `activities` 24%, `service` 16%, `views` 11%; `http`, `webgui`,
+`recentchanges` and `fragments/dialog` 0%.
+
 ## Not covered yet
 
-`RestApi`, `EventProcessor`, `SyncthingRunnable` and `SyncthingService` start/stop need a running
-Syncthing or a fake HTTP server. They are the next candidates (MockWebServer would be a new test
-dependency).
+- `RestApi` (0%), `EventProcessor` (0%), `SyncthingRunnable` (0%), `SyncthingService` start/stop
+  (6%) and the `http` requests (0%) need a running Syncthing or a fake HTTP server.
+- `ShareActivity`, `LogActivity`, `FolderPickerActivity`, `PhotoShootActivity`,
+  `SyncConditionsActivity`, `WebViewActivity`, `WebGuiActivity`, recent changes and the device id
+  dialog have no test at all.
+- Screens are only captured with Syncthing stopped, and no test clicks anything.

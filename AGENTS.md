@@ -80,6 +80,8 @@ IS_COPILOT=true ./gradlew :app:testDebugUnitTest -Pgolden.record=true       # re
 IS_COPILOT=true ./gradlew :app:recordRoborazziDebug     # re-record screenshots (review the diff!)
 IS_COPILOT=true ./gradlew :app:detekt :app:ktfmtCheckMain :app:ktfmtCheckTest
 IS_COPILOT=true ./gradlew :app:lintDebug        # report: app/build/reports/lint-results-debug.html
+IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createDebugUnitTestCoverageReport
+                                                # coverage: app/build/reports/coverage/test/debug/index.html
 
 # Full build with the native binary
 git submodule update --init --recursive         # Syncthing sources
@@ -170,7 +172,8 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
 Next steps (to be confirmed with the owner):
 
-1. Coverage report (Kover/JaCoCo) to find gaps before each refactor.
+1. ~~Coverage report~~ done: JaCoCo, opt-in with `-Pcoverage=true`, 37% of lines
+   ([docs/TESTING.md](docs/TESTING.md#coverage)).
 2. Tests for `RestApi`/`EventProcessor` against a fake HTTP server.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
