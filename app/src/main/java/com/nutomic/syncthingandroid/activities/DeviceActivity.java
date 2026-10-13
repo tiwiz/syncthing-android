@@ -447,7 +447,7 @@ public class DeviceActivity extends SyncthingActivity {
             findViewById(R.id.customSyncConditionsContainer).setVisibility(View.GONE);
         } else {
             mCustomSyncConditionsSwitch.setChecked(mPreferences.getBoolean(
-                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_DEVICE + mDevice.deviceID), false
+                Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_DEVICE + mDevice.deviceID), false
             ));
         }
         mCustomSyncConditionsSwitch.setEnabled(!mIsCreateMode);
@@ -665,7 +665,7 @@ public class DeviceActivity extends SyncthingActivity {
         Log.v(TAG, "onSave: Updating device with ID = \'" + mDevice.deviceID + "\'");
         SharedPreferences.Editor editor = mPreferences.edit();
         editor.putBoolean(
-            Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_DEVICE + mDevice.deviceID),
+            Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_DEVICE + mDevice.deviceID),
             mCustomSyncConditionsSwitch.isChecked()
         );
         editor.apply();

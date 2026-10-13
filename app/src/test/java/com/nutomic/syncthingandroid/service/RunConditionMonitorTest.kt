@@ -248,19 +248,19 @@ class RunConditionMonitorTest {
                 "object mobile data allowed, on mobile data" to
                     {
                         network(mobileType)
-                        pref(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(objectId), true)
+                        pref(Constants.dynPrefObjectSyncOnMobileData(objectId), true)
                     },
                 "object wi-fi disallowed, on wi-fi" to
                     {
                         network(wifiType)
-                        pref(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(objectId), false)
+                        pref(Constants.dynPrefObjectSyncOnWifi(objectId), false)
                     },
                 "object charger only, on battery" to
                     {
                         network(wifiType)
                         plugged(0)
                         pref(
-                            Constants.DYN_PREF_OBJECT_SYNC_ON_POWER_SOURCE(objectId),
+                            Constants.dynPrefObjectSyncOnPowerSource(objectId),
                             Constants.PowerSource.CHARGER,
                         )
                     },

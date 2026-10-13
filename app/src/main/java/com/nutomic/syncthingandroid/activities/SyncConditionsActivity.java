@@ -120,12 +120,12 @@ public class SyncConditionsActivity extends SyncthingActivity {
         // Generate shared preferences names.
         mObjectPrefixAndId = intent.getStringExtra(EXTRA_OBJECT_PREFIX_AND_ID);
         Log.v(TAG, "Prefix is \'" + mObjectPrefixAndId + "\' (" + mObjectReadableName + ")");
-        mPrefSyncOnWifi = Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(mObjectPrefixAndId);
-        mPrefSyncOnWhitelistedWifi = Constants.DYN_PREF_OBJECT_USE_WIFI_SSID_WHITELIST(mObjectPrefixAndId);
-        mPrefSelectedWhitelistSsid = Constants.DYN_PREF_OBJECT_SELECTED_WHITELIST_SSID(mObjectPrefixAndId);
-        mPrefSyncOnMeteredWifi = Constants.DYN_PREF_OBJECT_SYNC_ON_METERED_WIFI(mObjectPrefixAndId);
-        mPrefSyncOnMobileData = Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(mObjectPrefixAndId);
-        mPrefSyncOnPowerSource = Constants.DYN_PREF_OBJECT_SYNC_ON_POWER_SOURCE(mObjectPrefixAndId);
+        mPrefSyncOnWifi = Constants.dynPrefObjectSyncOnWifi(mObjectPrefixAndId);
+        mPrefSyncOnWhitelistedWifi = Constants.dynPrefObjectUseWifiSsidWhitelist(mObjectPrefixAndId);
+        mPrefSelectedWhitelistSsid = Constants.dynPrefObjectSelectedWhitelistSsid(mObjectPrefixAndId);
+        mPrefSyncOnMeteredWifi = Constants.dynPrefObjectSyncOnMeteredWifi(mObjectPrefixAndId);
+        mPrefSyncOnMobileData = Constants.dynPrefObjectSyncOnMobileData(mObjectPrefixAndId);
+        mPrefSyncOnPowerSource = Constants.dynPrefObjectSyncOnPowerSource(mObjectPrefixAndId);
 
         /**
          * Load global run conditions.

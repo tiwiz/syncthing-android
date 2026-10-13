@@ -490,7 +490,7 @@ public class SyncthingService extends Service {
             for (Folder folder : folders) {
                 // LogV("applyCustomRunConditions: Processing config of folder(" + folder.label + ")");
                 Boolean folderCustomSyncConditionsEnabled = mPreferences.getBoolean(
-                    Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_FOLDER + folder.id), false
+                    Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_FOLDER + folder.id), false
                 );
                 if (folderCustomSyncConditionsEnabled) {
                     Boolean syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(
@@ -515,7 +515,7 @@ public class SyncthingService extends Service {
             for (Device device : devices) {
                 // LogV("applyCustomRunConditions: Processing config of device(" + device.name + ")");
                 Boolean deviceCustomSyncConditionsEnabled = mPreferences.getBoolean(
-                    Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS(Constants.PREF_OBJECT_PREFIX_DEVICE + device.deviceID), false
+                    Constants.dynPrefObjectCustomSyncConditions(Constants.PREF_OBJECT_PREFIX_DEVICE + device.deviceID), false
                 );
                 if (deviceCustomSyncConditionsEnabled) {
                     Boolean syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(

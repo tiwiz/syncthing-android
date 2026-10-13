@@ -310,8 +310,8 @@ class FolderDialogsTest {
             }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        assertFalse(prefs.getBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_WIFI(prefix), true))
-        assertTrue(prefs.getBoolean(Constants.DYN_PREF_OBJECT_SYNC_ON_MOBILE_DATA(prefix), false))
+        assertFalse(prefs.getBoolean(Constants.dynPrefObjectSyncOnWifi(prefix), true))
+        assertTrue(prefs.getBoolean(Constants.dynPrefObjectSyncOnMobileData(prefix), false))
     }
 
     @Test

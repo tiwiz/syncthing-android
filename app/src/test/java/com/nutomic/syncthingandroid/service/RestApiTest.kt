@@ -505,11 +505,11 @@ class RestApiTest {
         prefs
             .edit()
             .putBoolean(
-                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS("sc_folder_cam-photos"),
+                Constants.dynPrefObjectCustomSyncConditions("sc_folder_cam-photos"),
                 true,
             )
             .putBoolean(
-                Constants.DYN_PREF_OBJECT_CUSTOM_SYNC_CONDITIONS("sc_device_$LAPTOP_ID"),
+                Constants.dynPrefObjectCustomSyncConditions("sc_device_$LAPTOP_ID"),
                 true,
             )
             .commit()
