@@ -8,9 +8,7 @@ item is done, delete it here in the same PR.
 Each one is pinned by a test commented `// CHARACTERIZATION:`. Fixing it means changing that test on
 purpose.
 
-1. `ConfigRouter.ignoreDevice` / `ignoreFolder` do nothing (they only log) while Syncthing is not
-   running.
-2. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
+1. `Compression.fromValue` maps an unknown value to `NONE`, not the default `METADATA`.
 
 ## detekt suppressions
 

@@ -7,10 +7,13 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
+import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.w3c.dom.Element
 
 /** With no running Syncthing (`RestApi == null`) the router reads and writes `config.xml`. */
 @RunWith(AndroidJUnit4::class)
@@ -56,12 +59,46 @@ class ConfigRouterTest {
     }
 
     @Test
-    fun `ignoring a device or a folder needs a running syncthing`() {
-        // CHARACTERIZATION: without the REST API both calls only log an error; config.xml is
-        // untouched.
-        val before = Constants.getConfigFile(context).readText()
-        router.ignoreDevice(null, "AAAAAAA-BBBBBBB", "stranger", "tcp://192.0.2.99:22000")
+    fun `ignoring a device while stopped records it once in config xml`() {
+        router.ignoreDevice(null, STRANGER_ID, "stranger", "tcp://192.0.2.99:22000")
+        router.ignoreDevice(null, STRANGER_ID, "stranger", "tcp://192.0.2.99:22000")
+
+        val ignored = savedElements("remoteIgnoredDevice")
+        assertEquals(1, ignored.size)
+        assertEquals(STRANGER_ID, ignored[0].getAttribute("id"))
+        assertEquals("stranger", ignored[0].getAttribute("name"))
+        assertEquals("tcp://192.0.2.99:22000", ignored[0].getAttribute("address"))
+        assertTrue(ignored[0].getAttribute("time").isNotEmpty())
+    }
+
+    @Test
+    fun `ignoring a folder while stopped records it once on the offering device`() {
         router.ignoreFolder(null, REMOTE_DEVICE_ID, "secret-folder", "Secret")
-        assertEquals(before, Constants.getConfigFile(context).readText())
+        router.ignoreFolder(null, REMOTE_DEVICE_ID, "secret-folder", "Secret")
+
+        val remote = ConfigRouter(context).getDevices(null, false).single()
+        assertEquals(listOf("secret-folder"), remote.ignoredFolders.map { it.id })
+        assertEquals("Secret", remote.ignoredFolders.single().label)
+        assertTrue(remote.ignoredFolders.single().time.isNotEmpty())
+    }
+
+    @Test
+    fun `ignoring a folder of an unknown device while stopped records nothing`() {
+        router.ignoreFolder(null, STRANGER_ID, "secret-folder", "Secret")
+
+        assertTrue(savedElements("ignoredFolder").isEmpty())
+    }
+
+    private fun savedElements(tag: String): List<Element> {
+        val document =
+            DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(Constants.getConfigFile(context))
+        val nodes = document.documentElement.getElementsByTagName(tag)
+        return (0 until nodes.length).map { nodes.item(it) as Element }
+    }
+
+    private companion object {
+        const val STRANGER_ID = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
     }
 }

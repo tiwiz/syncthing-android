@@ -79,7 +79,10 @@ public class ConfigRouter {
                                     final String folderId,
                                     final String folderLabel) {
         if (restApi == null || !restApi.isConfigLoaded()) {
-            Log.e(TAG, "ignoreFolder failed, Syncthing is not running or REST API is not (yet) available.");
+            // Syncthing is not running or REST API is not (yet) available.
+            configXml.loadConfig();
+            configXml.ignoreFolder(deviceId, folderId, folderLabel);
+            configXml.saveChanges();
             return;
         }
 
@@ -194,7 +197,10 @@ public class ConfigRouter {
                                     final String deviceName,
                                     final String deviceAddress) {
         if (restApi == null || !restApi.isConfigLoaded()) {
-            Log.e(TAG, "ignoreDevice failed, Syncthing is not running or REST API is not (yet) available.");
+            // Syncthing is not running or REST API is not (yet) available.
+            configXml.loadConfig();
+            configXml.ignoreDevice(deviceID, deviceName, deviceAddress);
+            configXml.saveChanges();
             return;
         }
 
