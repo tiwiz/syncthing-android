@@ -1019,6 +1019,62 @@ public class ConfigXml {
         }
     }
 
+    /**
+     * Permanently ignores a device, like {@link com.nutomic.syncthingandroid.service.RestApi#ignoreDevice}
+     * does while Syncthing is running. Adds a "remoteIgnoredDevice" node unless the device is
+     * already ignored.
+     */
+    public void ignoreDevice(String deviceID, String deviceName, String deviceAddress) {
+        NodeList nodeIgnoredDevices = mConfig.getDocumentElement().getElementsByTagName("remoteIgnoredDevice");
+        for (int i = 0; i < nodeIgnoredDevices.getLength(); i++) {
+            if (deviceID.equals(getAttributeOrDefault((Element) nodeIgnoredDevices.item(i), "id", ""))) {
+                Log.d(TAG, "ignoreDevice: Device already ignored [" + deviceID + "]");
+                return;
+            }
+        }
+        Element elementIgnoredDevice = mConfig.createElement("remoteIgnoredDevice");
+        elementIgnoredDevice.setAttribute("time", Util.getLocalZonedDateTime());
+        elementIgnoredDevice.setAttribute("id", deviceID);
+        elementIgnoredDevice.setAttribute("name", deviceName);
+        elementIgnoredDevice.setAttribute("address", deviceAddress);
+        mConfig.getDocumentElement().appendChild(elementIgnoredDevice);
+        Log.d(TAG, "ignoreDevice: Ignored device [" + deviceID + "]");
+    }
+
+    /**
+     * Permanently ignores a folder offered by a device, like
+     * {@link com.nutomic.syncthingandroid.service.RestApi#ignoreFolder} does while Syncthing is
+     * running. Adds an "ignoredFolder" node to the device unless the folder is already ignored.
+     * Does nothing for an unknown device.
+     */
+    public void ignoreFolder(String deviceID, String folderID, String folderLabel) {
+        // Prevent enumerating "<device>" tags below "<folder>" nodes by enumerating child nodes manually.
+        NodeList childNodes = mConfig.getDocumentElement().getChildNodes();
+        for (int i = 0; i < childNodes.getLength(); i++) {
+            Node node = childNodes.item(i);
+            if (!node.getNodeName().equals("device") ||
+                    !deviceID.equals(getAttributeOrDefault((Element) node, "id", ""))) {
+                continue;
+            }
+            Element elementDevice = (Element) node;
+            NodeList nodeIgnoredFolders = elementDevice.getElementsByTagName("ignoredFolder");
+            for (int j = 0; j < nodeIgnoredFolders.getLength(); j++) {
+                if (folderID.equals(getAttributeOrDefault((Element) nodeIgnoredFolders.item(j), "id", ""))) {
+                    Log.d(TAG, "ignoreFolder: Folder [" + folderID + "] already ignored on device [" + deviceID + "]");
+                    return;
+                }
+            }
+            Element elementIgnoredFolder = mConfig.createElement("ignoredFolder");
+            elementIgnoredFolder.setAttribute("time", Util.getLocalZonedDateTime());
+            elementIgnoredFolder.setAttribute("id", folderID);
+            elementIgnoredFolder.setAttribute("label", folderLabel);
+            elementDevice.appendChild(elementIgnoredFolder);
+            Log.d(TAG, "ignoreFolder: Ignored folder [" + folderID + "] announced by device [" + deviceID + "]");
+            return;
+        }
+        Log.w(TAG, "ignoreFolder: Unknown device [" + deviceID + "]");
+    }
+
     public Gui getGui() {
         Element elementGui = (Element) mConfig.getDocumentElement().getElementsByTagName("gui").item(0);
         Gui gui = new Gui();
