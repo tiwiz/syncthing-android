@@ -174,6 +174,10 @@ public class RestApi {
 
     private Boolean hasShutdown = false;
 
+    private static final long STARTUP_RETRY_DELAY_MS = 2000;
+
+    private final Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
+
     private Gson mGson;
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -212,6 +216,12 @@ public class RestApi {
             asyncQueryConfigComplete = false;
             asyncQuerySystemStatusComplete = false;
         }
+        queryVersionForStartup();
+        queryConfigForStartup();
+        querySystemStatusForStartup();
+    }
+
+    private void queryVersionForStartup() {
         new GetRequest(mContext, mUrl, GetRequest.URI_VERSION, mApiKey, null, result -> {
             JsonObject json = new JsonParser().parse(result).getAsJsonObject();
             mVersion = json.get("version").getAsString();
@@ -220,22 +230,54 @@ public class RestApi {
                 asyncQueryVersionComplete = true;
                 checkReadConfigFromRestApiCompleted();
             }
-        }, error -> {});
+        }, error -> retryStartupQuery(GetRequest.URI_VERSION, this::queryVersionForStartup));
+    }
+
+    private void queryConfigForStartup() {
         new GetRequest(mContext, mUrl, GetRequest.URI_CONFIG, mApiKey, null, result -> {
             onReloadConfigComplete(result);
             synchronized (mAsyncQueryCompleteLock) {
                 asyncQueryConfigComplete = true;
                 checkReadConfigFromRestApiCompleted();
             }
-        }, error -> {});
-        getSystemStatus(info -> {
+        }, error -> retryStartupQuery(GetRequest.URI_CONFIG, this::queryConfigForStartup));
+    }
+
+    private void querySystemStatusForStartup() {
+        new GetRequest(mContext, mUrl, GetRequest.URI_SYSTEM_STATUS, mApiKey, null, result -> {
+            SystemStatus info;
+            try {
+                info = mGson.fromJson(result, SystemStatus.class);
+            } catch (Exception e) {
+                Log.e(TAG, "querySystemStatusForStartup: Parsing REST API result failed. result=" + result);
+                retryStartupQuery(GetRequest.URI_SYSTEM_STATUS, this::querySystemStatusForStartup);
+                return;
+            }
             mLocalDeviceId = info.myID;
             mUrVersionMax = info.urVersionMax;
             synchronized (mAsyncQueryCompleteLock) {
                 asyncQuerySystemStatusComplete = true;
                 checkReadConfigFromRestApiCompleted();
             }
-        });
+        }, error -> retryStartupQuery(GetRequest.URI_SYSTEM_STATUS, this::querySystemStatusForStartup));
+    }
+
+    /**
+     * A startup query that fails is repeated until it succeeds or we shut down. Without the
+     * retry, onApiAvailable never fires and SyncthingService stays in State.STARTING, where it
+     * also defers its own shutdown.
+     */
+    private void retryStartupQuery(String uri, Runnable query) {
+        if (hasShutdown) {
+            return;
+        }
+        Log.w(TAG, "readConfigFromRestApi: " + uri + " failed, retrying in " +
+                STARTUP_RETRY_DELAY_MS + " ms");
+        mMainThreadHandler.postDelayed(() -> {
+            if (!hasShutdown) {
+                query.run();
+            }
+        }, STARTUP_RETRY_DELAY_MS);
     }
 
     private void checkReadConfigFromRestApiCompleted() {

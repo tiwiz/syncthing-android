@@ -10,6 +10,7 @@ import java.net.InetAddress
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -34,6 +35,7 @@ class FakeSyncthing(context: Context) : Closeable {
             .build()
     private val server = MockWebServer()
     private val overrides = ConcurrentHashMap<String, MockResponse>()
+    private val failures = ConcurrentHashMap<String, AtomicInteger>()
     private val recorded = CopyOnWriteArrayList<RecordedRequest>()
 
     /** Every request received so far, oldest first. */
@@ -55,7 +57,11 @@ class FakeSyncthing(context: Context) : Closeable {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     recorded += request
                     val path = request.url.encodedPath
-                    return overrides["${request.method} $path"] ?: fixtureResponse(request, path)
+                    val key = "${request.method} $path"
+                    if ((failures[key]?.getAndDecrement() ?: 0) > 0) {
+                        return MockResponse.Builder().code(SERVER_ERROR).body("boom").build()
+                    }
+                    return overrides[key] ?: fixtureResponse(request, path)
                 }
             }
         server.start(InetAddress.getByName("127.0.0.1"), 0)
@@ -64,6 +70,11 @@ class FakeSyncthing(context: Context) : Closeable {
     /** Answers `method path` with [body] and [code] instead of the fixture. */
     fun respond(method: String, path: String, body: String, code: Int = 200) {
         overrides["$method $path"] = MockResponse.Builder().code(code).body(body).build()
+    }
+
+    /** Answers the next [times] `method path` requests with a server error. */
+    fun failNext(method: String, path: String, times: Int = 1) {
+        failures["$method $path"] = AtomicInteger(times)
     }
 
     /** Requests received for [path], oldest first. */
@@ -97,6 +108,7 @@ class FakeSyncthing(context: Context) : Closeable {
 
     companion object {
         private const val NOT_FOUND = 404
+        private const val SERVER_ERROR = 500
 
         private val FIXTURES =
             mapOf(

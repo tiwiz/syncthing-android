@@ -118,17 +118,49 @@ class RestApiTest {
         assertEquals(1, apiAvailable)
     }
 
-    // CHARACTERIZATION: a failed startup request is not retried and the API never becomes
-    // available, so the service stays in STARTING.
     @Test
-    fun `startup never completes when one of its requests fails`() {
+    fun `a failed startup request is retried until the API is available`() {
+        val looper = shadowOf(Looper.getMainLooper())
+        syncthing.failNext("GET", "/rest/system/version")
+        syncthing.failNext("GET", "/rest/system/config")
+        syncthing.failNext("GET", "/rest/system/status", times = 2)
+        val api = newApi()
+
+        api.readConfigFromRestApi()
+        awaitMain {
+            syncthing.requests("/rest/system/status").size == 1 && api.isConfigLoaded.not()
+        }
+        drainMain()
+        assertEquals(0, apiAvailable)
+
+        looper.idleFor(Duration.ofSeconds(2))
+        awaitMain { syncthing.requests("/rest/system/status").size == 2 }
+        drainMain()
+        assertEquals(0, apiAvailable)
+
+        looper.idleFor(Duration.ofSeconds(2))
+        awaitMain { apiAvailable > 0 }
+
+        assertEquals(1, apiAvailable)
+        assertEquals(2, syncthing.requests("/rest/system/version").size)
+        assertEquals(2, syncthing.requests("/rest/system/config", "GET").size)
+        assertEquals(3, syncthing.requests("/rest/system/status").size)
+    }
+
+    @Test
+    fun `startup retries stop after shutdown`() {
+        val looper = shadowOf(Looper.getMainLooper())
         syncthing.respond("GET", "/rest/system/status", "boom", code = 500)
         val api = newApi()
 
         api.readConfigFromRestApi()
-        awaitMain { syncthing.requests("/rest/system/status").isNotEmpty() && api.isConfigLoaded }
+        awaitMain { syncthing.requests("/rest/system/status").size == 1 }
+        drainMain()
+        api.shutdown()
+        looper.idleFor(Duration.ofSeconds(10))
         drainMain()
 
+        assertEquals(1, syncthing.requests("/rest/system/status").size)
         assertEquals(0, apiAvailable)
     }
 
