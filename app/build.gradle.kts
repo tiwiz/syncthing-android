@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.stream)
     implementation(libs.volley)
+    implementation(libs.webkit)
     implementation(libs.zhanghai.compose.preference)
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)

@@ -17,7 +17,6 @@ Each one has its reason next to it. Remove the suppression when the code no long
 | `settings/SettingsActivity.kt` `LocalServiceUpdateTick` | `CompositionLocalAllowlist` | Same as above: expose service state as an observable instead of a tick |
 | `settings/SettingsNavigation.kt` `LocalSettingsNavigator` | `CompositionLocalAllowlist` | Pass navigation callbacks to the screens |
 | `util/CompositionLocals.kt` `LocalActivityScope` | `CompositionLocalAllowlist` | Move the long-running work (config writes, exports) out of composables, e.g. into a ViewModel or the service |
-| `webgui/WebGuiActivity.kt` `setWebViewProxy` | `TooGenericExceptionCaught` | Replace the reflective proxy hack (e.g. `androidx.webkit.ProxyController`), or catch the exact exceptions once they are known |
 | `settings/SettingsUserInterfaceScreen.kt` `syncWebGuiTheme` | `TooGenericExceptionCaught` | Catch the specific exceptions `ConfigRouter.getGui` / `updateGui` can throw |
 
 ## TODOs
