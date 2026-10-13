@@ -5,7 +5,9 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
+1. `VersioningDialogActivity`: the type spinner compares the choice with the type the dialog was
+   opened with, not the current one, so switching to another type and back to the original one
+   keeps the other type.
 
 ## detekt suppressions
 
