@@ -83,13 +83,13 @@ class SettingsActivity : SyncthingActivity() {
             ApplicationTheme {
                 CompositionLocalProvider(
                     LocalActivityScope provides activityScope,
-                    LocalSettingsNavigator provides navigator,
                     LocalSyncthingService provides syncthingServiceState,
                     LocalServiceUpdateTick provides serviceUpdateTick,
                 ) {
                     ProvidePreferenceLocals(flow = prefFlow) {
                         SettingsNavDisplay(
                             backStack = backStack,
+                            navigator = navigator,
                         )
                     }
                 }

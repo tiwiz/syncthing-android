@@ -59,15 +59,18 @@ import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.RunConditions> {
-        SettingsRunConditionsScreen()
+        SettingsRunConditionsScreen(navigator = navigator)
     }
 }
 
 
 @Composable
-fun SettingsRunConditionsScreen(modifier: Modifier = Modifier) {
+fun SettingsRunConditionsScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val stService = LocalSyncthingService.current
@@ -116,6 +119,7 @@ fun SettingsRunConditionsScreen(modifier: Modifier = Modifier) {
 
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.run_conditions_title),
         description = stringResource(R.string.run_conditions_summary),

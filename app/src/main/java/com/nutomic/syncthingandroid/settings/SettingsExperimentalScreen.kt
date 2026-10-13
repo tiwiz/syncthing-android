@@ -16,15 +16,18 @@ import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsExperimentalEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsExperimentalEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.Experimental> {
-        SettingsExperimentalScreen()
+        SettingsExperimentalScreen(navigator = navigator)
     }
 }
 
 
 @Composable
-fun SettingsExperimentalScreen(modifier: Modifier = Modifier) {
+fun SettingsExperimentalScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
 
     val useTor = rememberPreferenceState(Constants.PREF_USE_TOR, false)
@@ -32,6 +35,7 @@ fun SettingsExperimentalScreen(modifier: Modifier = Modifier) {
     val httpProxy = rememberPreferenceState(Constants.PREF_HTTP_PROXY_ADDRESS, "")
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_experimental),
     ) {

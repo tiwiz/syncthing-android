@@ -54,19 +54,23 @@ import me.zhanghai.compose.preference.TwoTargetPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.ImportExport> {
-        SettingsImportExportScreen()
+        SettingsImportExportScreen(navigator = navigator)
     }
 }
 
 
 @Composable
-fun SettingsImportExportScreen(modifier: Modifier = Modifier) {
+fun SettingsImportExportScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
     val defaultBackupPath = "backups/syncthing/config.zip"
     val backupPath = rememberPreferenceState(Constants.PREF_BACKUP_REL_PATH_TO_ZIP,defaultBackupPath)
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_backup),
     ) {
@@ -104,10 +108,10 @@ fun SettingsImportExportScreen(modifier: Modifier = Modifier) {
             )
         }
         item {
-            ExportConfigPreference()
+            ExportConfigPreference(navigator = navigator)
         }
         item {
-            ImportConfigPreference()
+            ImportConfigPreference(navigator = navigator)
         }
     }
 }
@@ -204,10 +208,12 @@ private fun PasswordPreference() {
 }
 
 @Composable
-private fun ExportConfigPreference(ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
+private fun ExportConfigPreference(
+    navigator: Navigator<SettingsRoute>,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
-    val navigator = LocalSettingsNavigator.current
     val stService = LocalSyncthingService.current
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
@@ -267,10 +273,12 @@ private fun ExportConfigPreference(ioDispatcher: CoroutineDispatcher = Dispatche
 }
 
 @Composable
-private fun ImportConfigPreference(ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
+private fun ImportConfigPreference(
+    navigator: Navigator<SettingsRoute>,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val context = LocalContext.current
     val scope = LocalActivityScope.current
-    val navigator = LocalSettingsNavigator.current
     val stService = LocalSyncthingService.current
     val prefs = LocalPreferenceFlow.current
 

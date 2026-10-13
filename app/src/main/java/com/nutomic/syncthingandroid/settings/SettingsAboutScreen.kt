@@ -24,20 +24,20 @@ import me.zhanghai.compose.preference.Preference
 
 private const val TAG = "SettingsAboutScreen"
 
-fun EntryProviderScope<SettingsRoute>.settingsAboutEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.About> {
-        SettingsAboutScreen()
+        SettingsAboutScreen(navigator = navigator)
     }
 }
 
 
 @Composable
 fun SettingsAboutScreen(
+    navigator: Navigator<SettingsRoute>,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val navigator = LocalSettingsNavigator.current
     val uriHandler = LocalUriHandler.current
     val stService = LocalSyncthingService.current
     val stServiceTick = LocalServiceUpdateTick.current
@@ -62,6 +62,7 @@ fun SettingsAboutScreen(
     }
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_about),
     ) {

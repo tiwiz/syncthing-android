@@ -30,16 +30,19 @@ import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-fun EntryProviderScope<SettingsRoute>.settingsTroubleshootingEntry() {
+fun EntryProviderScope<SettingsRoute>.settingsTroubleshootingEntry(navigator: Navigator<SettingsRoute>) {
     entry<SettingsRoute.Troubleshooting> {
-        SettingsTroubleshootingScreen()
+        SettingsTroubleshootingScreen(navigator = navigator)
     }
 }
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTroubleshootingScreen(modifier: Modifier = Modifier) {
+fun SettingsTroubleshootingScreen(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -53,6 +56,7 @@ fun SettingsTroubleshootingScreen(modifier: Modifier = Modifier) {
     val envVars = rememberPreferenceState(Constants.PREF_ENVIRONMENT_VARIABLES, "")
 
     SettingsScaffold(
+        onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_debug),
     ) {
