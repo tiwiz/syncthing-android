@@ -26,7 +26,7 @@ import org.robolectric.Shadows.shadowOf
  *
  * Volley delivers responses on the main looper, so tests wait with [awaitMain].
  */
-class FakeSyncthing(context: Context) : Closeable {
+class FakeSyncthing(context: Context, port: Int = 0, resetVolley: Boolean = true) : Closeable {
 
     private val certificate =
         HeldCertificate.Builder()
@@ -42,12 +42,16 @@ class FakeSyncthing(context: Context) : Closeable {
     val requests: List<RecordedRequest>
         get() = recorded.toList()
 
+    /** Called on the server thread when the app asks Syncthing to shut down. */
+    @Volatile var onShutdown: () -> Unit = {}
+
     /** Base URL of the API, as `ConfigXml.getWebGuiUrl` would return it. */
     val url: URL
         get() = URL("https://127.0.0.1:${server.port}")
 
     init {
-        resetVolleyQueue()
+        // A test that starts the app's requests first resets the queue itself, before them.
+        if (resetVolley) resetVolleyQueue()
         Constants.getHttpsCertFile(context).writeText(certificate.certificatePem())
         server.useHttps(
             HandshakeCertificates.Builder().heldCertificate(certificate).build().sslSocketFactory()
@@ -64,7 +68,7 @@ class FakeSyncthing(context: Context) : Closeable {
                     return overrides[key] ?: fixtureResponse(request, path)
                 }
             }
-        server.start(InetAddress.getByName("127.0.0.1"), 0)
+        server.start(InetAddress.getByName("127.0.0.1"), port)
     }
 
     /** Answers `method path` with [body] and [code] instead of the fixture. */
@@ -93,7 +97,12 @@ class FakeSyncthing(context: Context) : Closeable {
     }
 
     private fun fixtureResponse(request: RecordedRequest, path: String): MockResponse {
-        if (request.method == "POST") return json("")
+        if (request.method == "POST") {
+            if (path == "/rest/system/shutdown") onShutdown()
+            return json("")
+        }
+        // The web GUI page, which the app polls until Syncthing is up.
+        if (path == "/") return MockResponse.Builder().body("<html></html>").build()
         val fixture =
             when (path) {
                 "/rest/system/config" -> return json(configJson())
@@ -130,7 +139,7 @@ class FakeSyncthing(context: Context) : Closeable {
          * `ApiRequest` keeps one Volley queue for the whole process, bound to the files dir of the
          * first test that used it. Each test gets a fresh one.
          */
-        private fun resetVolleyQueue() {
+        fun resetVolleyQueue() {
             val field = ApiRequest::class.java.getDeclaredField("sVolleyQueue")
             field.isAccessible = true
             (field.get(null) as RequestQueue?)?.stop()
