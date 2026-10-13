@@ -169,12 +169,16 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 - 2026-10-13, same branch: all 80 detekt findings in app code fixed, detekt baseline removed
   (details at the end of [docs/plans/BASELINE.md](docs/plans/BASELINE.md)). No golden file or
   screenshot changed.
+- 2026-10-13, same branch: opt-in JaCoCo coverage (`-Pcoverage=true`), then `RestApiTest` and
+  `EventProcessorTest` against a fake Syncthing (test deps: `mockwebserver3`, `okhttp-tls`,
+  `httpclient`). Coverage 37% → 46%.
 
 Next steps (to be confirmed with the owner):
 
 1. ~~Coverage report~~ done: JaCoCo, opt-in with `-Pcoverage=true`, 37% of lines
    ([docs/TESTING.md](docs/TESTING.md#coverage)).
-2. Tests for `RestApi`/`EventProcessor` against a fake HTTP server.
+2. ~~Tests for `RestApi`/`EventProcessor`~~ done: `FakeSyncthing` (MockWebServer over HTTPS),
+   36 tests, coverage 46%. They found 4 more pinned bugs (TECH-DEBT 6–9).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
@@ -184,6 +188,8 @@ Next steps (to be confirmed with the owner):
   `--repo tiwiz/syncthing-android --base main`.
 - Upstream (`researchxxl/syncthing-android`) does not accept AI-generated contributions or
   unsolicited PRs.
+- `RestApi.shutdown()` runs `Util.killProcess("find")`: in tests keep `ShadowUtilDeviceShell` on,
+  or it kills `find` processes on the host ([docs/TESTING.md](docs/TESTING.md)).
 - Robolectric runs SDK 36 and needs `--add-opens java.base/jdk.internal.access` on JDK 21 (set in
   `app/build.gradle.kts`). Test-only shadows in `app/src/test/.../testutil/` fill Robolectric gaps
   and replace host-dependent shell calls; never change app code to make a test run.

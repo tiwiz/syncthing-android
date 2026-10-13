@@ -29,6 +29,7 @@ SDK 37 image; the app targets 37.
 |---|---|---|
 | Plain JVM | JUnit 4 | `LuhnTest`, `CertificateValidatorTest`, `RestModelParsingTest` |
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest` |
+| REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest` |
 
 ```bash
@@ -51,6 +52,23 @@ Most tests pin what the app does today, not what it should do. Expected output i
   folders). Fixing it is a separate change that updates that test on purpose.
 - Saved `config.xml` files are produced by the JVM's XML transformer, which formats differently from
   Android's. They pin behaviour on the JVM, not byte-for-byte output on a device.
+
+## The fake Syncthing REST API
+
+`testutil/FakeSyncthing` serves the REST fixtures over HTTPS on `127.0.0.1` with MockWebServer. Its
+self-signed certificate is written to `Constants.getHttpsCertFile`, so requests go through the real
+Volley stack, `SyncthingTrustManager` pinning and loopback rewrite.
+
+- `respond(method, path, body, code)` overrides one endpoint; `requests(path, method)` lists what the
+  app sent. Unknown GETs answer 404, POSTs answer 200.
+- Volley delivers on the main looper: wait with `awaitMain { … }`, and use `drainMain()` before
+  checking that something did *not* happen. Delayed work (`postDelayed`) needs
+  `shadowOf(getMainLooper()).idleFor(…)`.
+- Tests that reach `RestApi.shutdown()` must use `ShadowUtilDeviceShell` (with
+  `instrumentedPackages = ["com.nutomic.syncthingandroid.util"]`): it calls `Util.killProcess("find")`,
+  which would otherwise kill `find` processes on the host.
+- Volley still links `org.apache.http`, which Android ships and Robolectric does not; the test
+  classpath adds `httpclient` for it.
 
 ## Screenshots
 
@@ -100,14 +118,14 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
   `includeNoLocationClasses`; without it the report is almost empty.
 - Look at the report before refactoring a class: code that no test runs is not protected.
 
-Snapshot on 2026-10-13 (lines): 37% overall. `util` 69%, `settings` 57%, `onboarding` 50–68%,
-`model` 47%, `fragments` 36%, `activities` 24%, `service` 16%, `views` 11%; `http`, `webgui`,
-`recentchanges` and `fragments/dialog` 0%.
+Snapshot on 2026-10-13 (lines): 46% overall. `model` 83%, `util` 69%, `http` 59%, `settings` 57%,
+`onboarding` 50–68%, `service` 45% (`EventProcessor` 82%, `RestApi` 66%), `fragments` 36%,
+`activities` 24%, `views` 11%; `webgui`, `recentchanges` and `fragments/dialog` 0%.
 
 ## Not covered yet
 
-- `RestApi` (0%), `EventProcessor` (0%), `SyncthingRunnable` (0%), `SyncthingService` start/stop
-  (6%) and the `http` requests (0%) need a running Syncthing or a fake HTTP server.
+- `SyncthingRunnable` (0%) and `SyncthingService` start/stop (6%): they launch the native binary.
+- In `RestApi`: `applyCustomRunConditions`, the sync-complete broadcast and the conflict-file scan.
 - `ShareActivity`, `LogActivity`, `FolderPickerActivity`, `PhotoShootActivity`,
   `SyncConditionsActivity`, `WebViewActivity`, `WebGuiActivity`, recent changes and the device id
   dialog have no test at all.

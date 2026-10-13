@@ -50,7 +50,11 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.compose.ui.test.manifest)
+    // Volley still references org.apache.http, which Android ships but Robolectric's image lacks.
+    testImplementation(libs.httpclient)
     testImplementation(libs.junit4)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

@@ -1,0 +1,315 @@
+package com.nutomic.syncthingandroid.service
+
+import android.app.NotificationManager
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Looper
+import androidx.core.app.NotificationCompat
+import androidx.preference.PreferenceManager
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.gson.Gson
+import com.google.gson.JsonParser
+import com.nutomic.syncthingandroid.model.Event
+import com.nutomic.syncthingandroid.testutil.FakeSyncthing
+import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
+import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitMain
+import com.nutomic.syncthingandroid.testutil.drainMain
+import java.time.Duration
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowMediaScannerConnection
+
+/**
+ * Characterizes [EventProcessor]: how it polls `/rest/events` through [RestApi] against
+ * [FakeSyncthing], and what each event type changes in the [RestApi] caches or the notifications.
+ */
+@RunWith(AndroidJUnit4::class)
+@Config(
+    qualifiers = "en-rUS",
+    shadows = [ShadowEnvironmentWithAllFilesAccess::class, ShadowUtilDeviceShell::class],
+    instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
+)
+class EventProcessorTest {
+
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val notifications = context.getSystemService(NotificationManager::class.java)
+    private lateinit var service: SyncthingService
+    private lateinit var syncthing: FakeSyncthing
+    private lateinit var api: RestApi
+    private lateinit var processor: EventProcessor
+
+    @Before
+    fun setUp() {
+        service = StoppedSyncthingService.install()
+        syncthing = FakeSyncthing(context)
+        var available = false
+        api = RestApi(service, syncthing.url, "fixture-api-key", { available = true }, {})
+        api.readConfigFromRestApi()
+        awaitMain { available }
+        // Let the startup follow-ups (pending devices, completion, ...) finish first.
+        awaitMain { syncthing.requests("/rest/stats/device").isNotEmpty() }
+        drainMain()
+        processor = EventProcessor(service, api)
+    }
+
+    @After
+    fun tearDown() {
+        processor.stop()
+        syncthing.close()
+    }
+
+    private fun eventRequests() =
+        syncthing.requests("/rest/events").map {
+            "since=${it.url.queryParameter("since")} limit=${it.url.queryParameter("limit")}"
+        }
+
+    private fun send(json: String) {
+        val element = JsonParser.parseString(json)
+        processor.onEvent(Gson().fromJson(element, Event::class.java), element)
+    }
+
+    private fun notificationTexts(): List<String> =
+        shadowOf(notifications).allNotifications.map {
+            it.extras.getCharSequence(NotificationCompat.EXTRA_TEXT).toString()
+        }
+
+    @Test
+    fun `a poll checks the newest event, then reads from the stored id and stores the last one`() {
+        prefs.edit().putLong(Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID, 5).apply()
+
+        processor.run()
+        awaitMain { prefs.getLong(Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID, 0) == 16L }
+
+        assertEquals(listOf("since=0 limit=1", "since=5 limit=0"), eventRequests())
+    }
+
+    @Test
+    fun `when event ids went backwards Syncthing restarted, so reading starts from zero`() {
+        prefs.edit().putLong(Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID, 100).apply()
+
+        processor.run()
+        awaitMain { syncthing.requests("/rest/events").size == 2 }
+        drainMain()
+
+        assertEquals(listOf("since=0 limit=1", "since=0 limit=0"), eventRequests())
+        assertEquals(16L, prefs.getLong(Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID, 0))
+    }
+
+    @Test
+    fun `start polls every five seconds until stopped`() {
+        val looper = shadowOf(Looper.getMainLooper())
+
+        processor.start()
+        looper.idleFor(Duration.ofSeconds(4))
+        drainMain()
+        assertTrue(eventRequests().isEmpty())
+
+        looper.idleFor(Duration.ofSeconds(1))
+        awaitMain { eventRequests().size == 2 }
+        drainMain()
+        looper.idleFor(Duration.ofSeconds(5))
+        awaitMain { eventRequests().size == 4 }
+        drainMain()
+
+        processor.stop()
+        looper.idleFor(Duration.ofSeconds(30))
+        drainMain()
+        assertEquals(4, eventRequests().size)
+    }
+
+    // CHARACTERIZATION: run() first asks for the newest event id with a listener whose onError()
+    // is empty, so when that request fails nothing is rescheduled and polling stops for good.
+    @Test
+    fun `a failed poll stops polling`() {
+        syncthing.respond("GET", "/rest/events", "boom", code = 500)
+        val looper = shadowOf(Looper.getMainLooper())
+
+        processor.start()
+        looper.idleFor(Duration.ofSeconds(5))
+        awaitMain { eventRequests().size == 1 }
+        drainMain()
+        looper.idleFor(Duration.ofSeconds(30))
+        drainMain()
+
+        assertEquals(listOf("since=0 limit=1"), eventRequests())
+    }
+
+    @Test
+    fun `the captured events update the folder caches and reload the config`() {
+        val configReadsBefore = syncthing.requests("/rest/system/config", "GET").size
+
+        processor.run()
+        awaitMain { prefs.getLong(Constants.PREF_EVENT_PROCESSOR_LAST_SYNC_ID, 0) == 16L }
+        drainMain()
+
+        // Two ConfigSaved events, two reloads.
+        assertEquals(2, syncthing.requests("/rest/system/config", "GET").size - configReadsBefore)
+        val (status, cached) = api.getFolderStatus("cam-photos").let { it.key to it.value }
+        assertEquals("idle", status.state)
+        assertEquals(1L, status.localFiles)
+        // CHARACTERIZATION: LocalIndexUpdated reports "update", but the file is not on this
+        // device's disk, so the cache records a deletion.
+        assertEquals("delete", cached.lastItemFinishedAction)
+        assertEquals("a.txt", cached.lastItemFinishedItem)
+        // A remote folder at 0% counts as up to date, like in the web GUI.
+        assertEquals(100, api.getRemoteDeviceCompletion(LAPTOP_ID))
+    }
+
+    @Test
+    fun `device connection events update the device cache`() {
+        send("""{"id": 1, "type": "DeviceConnected", "data": {"id": "$LAPTOP_ID"}}""")
+        assertTrue(api.getRemoteDeviceStatus(LAPTOP_ID).connected)
+
+        send("""{"id": 2, "type": "DeviceDisconnected", "data": {"id": "$LAPTOP_ID"}}""")
+        assertFalse(api.getRemoteDeviceStatus(LAPTOP_ID).connected)
+
+        send("""{"id": 3, "type": "DevicePaused", "data": {"device": "$LAPTOP_ID"}}""")
+        assertTrue(api.getRemoteDeviceStatus(LAPTOP_ID).paused)
+
+        send("""{"id": 4, "type": "DeviceResumed", "data": {"device": "$LAPTOP_ID"}}""")
+        assertFalse(api.getRemoteDeviceStatus(LAPTOP_ID).paused)
+    }
+
+    @Test
+    fun `folder state, pause and completion events update the folder cache`() {
+        send(
+            """{"id": 1, "type": "StateChanged", "data": {"folder": "cam-photos", "to": "syncing"}}"""
+        )
+        assertEquals("syncing", api.getFolderStatus("cam-photos").key.state)
+
+        send("""{"id": 2, "type": "FolderPaused", "data": {"id": "cam-photos"}}""")
+        assertTrue(api.getFolderStatus("cam-photos").value.paused)
+
+        send("""{"id": 3, "type": "FolderResumed", "data": {"id": "cam-photos"}}""")
+        assertFalse(api.getFolderStatus("cam-photos").value.paused)
+
+        send(
+            """{"id": 4, "type": "FolderCompletion", "data": {"device": "$LAPTOP_ID",
+               "folder": "cam-photos", "completion": 40, "needBytes": 6}}"""
+        )
+        assertEquals(40, api.getRemoteDeviceCompletion(LAPTOP_ID))
+        assertEquals(6.0, api.getRemoteDeviceNeedBytes(LAPTOP_ID), 0.0)
+    }
+
+    @Test
+    fun `remote index updates are remembered per folder`() {
+        send(
+            """{"id": 1, "type": "RemoteIndexUpdated",
+               "data": {"device": "$LAPTOP_ID", "folder": "cam-photos", "items": 0}}"""
+        )
+        assertFalse(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
+
+        send(
+            """{"id": 2, "type": "RemoteIndexUpdated",
+               "data": {"device": "$LAPTOP_ID", "folder": "cam-photos", "items": 3}}"""
+        )
+        assertTrue(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
+    }
+
+    // CHARACTERIZATION: the ignored event types fall through into the RemoteIndexUpdated case (its
+    // `break` is commented out), so one carrying device, folder and items counts as an update.
+    @Test
+    fun `ignored event types fall through into RemoteIndexUpdated`() {
+        send(
+            """{"id": 1, "type": "RemoteDownloadProgress",
+               "data": {"device": "$LAPTOP_ID", "folder": "cam-photos", "items": 3}}"""
+        )
+
+        assertTrue(api.getFolderStatus("cam-photos").value.remoteIndexUpdated)
+    }
+
+    @Test
+    fun `a finished item is rescanned by the media scanner`() {
+        send(
+            """{"id": 1, "type": "ItemFinished", "time": "2026-10-13T10:00:00Z",
+               "data": {"action": "update", "folder": "cam-photos", "item": "IMG_1.jpg"}}"""
+        )
+
+        assertEquals(
+            setOf("/storage/emulated/0/DCIM/Camera/IMG_1.jpg"),
+            ShadowMediaScannerConnection.getSavedPaths(),
+        )
+        assertEquals("IMG_1.jpg", api.getFolderStatus("cam-photos").value.lastItemFinishedItem)
+    }
+
+    @Test
+    fun `a finished item in an unknown folder is skipped`() {
+        send(
+            """{"id": 1, "type": "ItemFinished",
+               "data": {"action": "update", "folder": "missing", "item": "IMG_1.jpg"}}"""
+        )
+
+        assertTrue(ShadowMediaScannerConnection.getSavedPaths().isEmpty())
+    }
+
+    @Test
+    fun `running out of disk space shows a notification`() {
+        fun crashTitle() =
+            shadowOf(notifications)
+                .allNotifications
+                .single()
+                .extras
+                .getString(NotificationCompat.EXTRA_TITLE)
+
+        send(
+            """{"id": 1, "type": "ItemFinished",
+               "data": {"action": "update", "folder": "cam-photos", "item": "sub/IMG_1.jpg",
+                        "error": "write: no space left on device"}}"""
+        )
+        assertEquals("The SDcard is full. File sub/IMG_1.jpg", crashTitle())
+        assertTrue(ShadowMediaScannerConnection.getSavedPaths().isEmpty())
+
+        send(
+            """{"id": 2, "type": "FolderErrors", "data": {"folder": "cam-photos", "errors": [
+               {"error": "insufficient space in basic /storage", "path": "sub/IMG_2.jpg"}]}}"""
+        )
+        // CHARACTERIZATION: FolderErrors keeps the JSON quotes around the path, and both share
+        // one notification id, so the second replaces the first.
+        assertEquals("The SDcard is full. File \"sub/IMG_2.jpg\"", crashTitle())
+    }
+
+    @Test
+    fun `pending device and folder events show consent notifications`() {
+        send(
+            """{"id": 1, "type": "PendingDevicesChanged", "data": {"added": [
+               {"deviceID": "$NEW_ID", "name": "tablet", "address": "192.0.2.9:22000"}]}}"""
+        )
+        send(
+            """{"id": 2, "type": "PendingFoldersChanged", "data": {"added": [
+               {"deviceID": "$LAPTOP_ID", "folderID": "music", "folderLabel": "Music",
+                "receiveEncrypted": false, "remoteEncrypted": false}]}}"""
+        )
+
+        assertEquals(
+            listOf(
+                "Device \"laptop\" wants to share folder \"Music (music)\"",
+                "Device \"tablet\" wants to connect",
+            ),
+            notificationTexts().sorted(),
+        )
+    }
+
+    @Test
+    fun `a saved config is reloaded`() {
+        val before = syncthing.requests("/rest/system/config", "GET").size
+
+        send("""{"id": 1, "type": "ConfigSaved", "data": {}}""")
+        awaitMain { syncthing.requests("/rest/system/config", "GET").size > before }
+    }
+
+    private companion object {
+        const val LAPTOP_ID = "P56IOI7-MZJNU2Y-IQGDREY-DM2MGTI-MGL3BXN-PQ6W5BM-TBBZ4TJ-XZWICQ2"
+        const val NEW_ID = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
+    }
+}
