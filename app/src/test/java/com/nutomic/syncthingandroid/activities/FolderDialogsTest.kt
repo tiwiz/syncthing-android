@@ -5,9 +5,13 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -27,6 +31,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -48,6 +53,8 @@ import org.robolectric.shadows.ShadowToast
         ],
 )
 class FolderDialogsTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val app = context as Application
@@ -118,15 +125,10 @@ class FolderDialogsTest {
                 Constants.FOLDER_TYPE_SEND_ONLY,
             )
             .use { scenario ->
-                scenario.onActivity {
-                    val spinner = it.findViewById<Spinner>(R.id.folderTypeSpinner)
-                    assertEquals(1, spinner.selectedItemPosition)
-                    spinner.setSelection(2)
-                }
-                idle()
-                scenario.onActivity {
-                    it.findViewById<android.view.View>(R.id.finish_btn).performClick()
-                }
+                compose.onNodeWithText("Send Only").assertIsSelected()
+                compose.onNodeWithText("Receive Only").performClick()
+                compose.onNodeWithText("Send Only").assertIsNotSelected()
+                compose.onNodeWithText("Finish").performClick()
 
                 val result = scenario.result
                 assertEquals(Activity.RESULT_OK, result.resultCode)
@@ -159,6 +161,28 @@ class FolderDialogsTest {
     }
 
     @Test
+    fun `the folder type survives recreating the screen`() {
+        launchDialog(
+                FolderTypeDialogActivity::class.java,
+                FolderTypeDialogActivity.EXTRA_FOLDER_TYPE,
+                Constants.FOLDER_TYPE_SEND_ONLY,
+            )
+            .use { scenario ->
+                compose.onNodeWithText("Receive Only").performClick()
+                scenario.recreate()
+                compose.onNodeWithText("Receive Only").assertIsSelected()
+                compose.onNodeWithText("Finish").performClick()
+
+                assertEquals(
+                    Constants.FOLDER_TYPE_RECEIVE_ONLY,
+                    scenario.result.resultData.getStringExtra(
+                        FolderTypeDialogActivity.EXTRA_RESULT_FOLDER_TYPE
+                    ),
+                )
+            }
+    }
+
+    @Test
     fun `the pull order screen returns the chosen order`() {
         launchDialog(
                 PullOrderDialogActivity::class.java,
@@ -166,12 +190,8 @@ class FolderDialogsTest {
                 "random",
             )
             .use { scenario ->
-                scenario.onActivity {
-                    val spinner = it.findViewById<Spinner>(R.id.pullOrderTypeSpinner)
-                    assertEquals(0, spinner.selectedItemPosition)
-                    spinner.setSelection(5)
-                }
-                idle()
+                compose.onNodeWithText("Random").assertIsSelected()
+                compose.onNodeWithText("Newest First").performClick()
                 scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
 
                 val result = scenario.result

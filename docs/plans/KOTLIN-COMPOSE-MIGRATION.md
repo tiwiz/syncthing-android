@@ -28,13 +28,15 @@ One topic per PR, each with the gate and CI green before merging.
        Done (#41).
    12. `RestApi` (helpers in `RestApiSupport.kt`). Done (#42).
    13. `SyncthingService` (backup in `ConfigBackup.kt`, certificate files in `HttpsCertFiles.kt`,
-       per-object run conditions in `ObjectRunConditions.kt`). Done (`refactor/kotlin-syncthingservice`).
+       per-object run conditions in `ObjectRunConditions.kt`). Done (#43).
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
    Compose rewrite replaces them.
 2. **Screens → Compose**, smallest first: folder type, pull order and versioning dialogs, sync
    conditions, QR scanner, photo shoot, log, folder picker, share, web page, device, folder, then
    the main screen with its drawer, lists and status tab. Screenshot goldens are re-recorded in
    these PRs and every change is reviewed.
+   - Folder type and pull order: one Compose radio list, `SingleChoiceDialogActivity`, in the
+     same dialog window. Done (`refactor/compose-folder-type-pull-order`).
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 
