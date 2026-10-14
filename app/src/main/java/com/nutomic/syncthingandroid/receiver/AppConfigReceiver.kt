@@ -8,7 +8,7 @@ import androidx.core.content.edit
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.service.RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION
+import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.ACTION_UPDATE_SHOULDRUN_DECISION
 
 /** Broadcast-receiver to control and configure Syncthing remotely. */
 class AppConfigReceiver : BroadcastReceiver() {

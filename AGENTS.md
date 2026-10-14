@@ -216,8 +216,9 @@ Next steps (to be confirmed with the owner):
    (`ConfigXmlEditTest`, REST routing test). PR #37: `Constants` (`ConstantsTest` pins
    the per-object preference keys) and the two tiles. PR #38: `NotificationHandler`
    (`NotificationHandlerTest`). PR #39: `SyncthingRunnable` (log trimming
-   and gateway tests). Branch `refactor/kotlin-eventprocessor`: `EventProcessor` (deletes,
-   receive-encrypted, local index tests added to `EventProcessorTest`).
+   and gateway tests). PR #40: `EventProcessor`. Branch
+   `refactor/kotlin-runconditions`: `RunConditionMonitor` + `RunConditionChecks` + `DeviceState`
+   (`RunConditionTimelineTest`).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
