@@ -216,9 +216,10 @@ Next steps (to be confirmed with the owner):
    (`ConfigXmlEditTest`, REST routing test). PR #37: `Constants` (`ConstantsTest` pins
    the per-object preference keys) and the two tiles. PR #38: `NotificationHandler`
    (`NotificationHandlerTest`). PR #39: `SyncthingRunnable` (log trimming
-   and gateway tests). PR #40: `EventProcessor`. Branch
-   `refactor/kotlin-runconditions`: `RunConditionMonitor` + `RunConditionChecks` + `DeviceState`
-   (`RunConditionTimelineTest`).
+   and gateway tests). PR #40: `EventProcessor`. PR #41:
+   `RunConditionMonitor` + `RunConditionChecks` + `DeviceState` (`RunConditionTimelineTest`).
+   Branch `refactor/kotlin-restapi`: `RestApi` + `RestApiSupport` (`RestApiCacheTest`). Next:
+   `SyncthingService`, then the screens to Compose.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

@@ -495,7 +495,7 @@ class RestApiTest {
     fun `getFolderByID finds a folder or returns null`() {
         val api = loadedApi()
 
-        assertEquals("Camera", api.getFolderByID("cam-photos").label)
+        assertEquals("Camera", api.getFolderByID("cam-photos")?.label)
         assertNull(api.getFolderByID("missing"))
     }
 

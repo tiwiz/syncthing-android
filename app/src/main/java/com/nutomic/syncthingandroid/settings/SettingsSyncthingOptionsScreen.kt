@@ -641,7 +641,7 @@ private var RestApi.preferences: Preferences
         values[Keys.API_KEY] = this.apiKey
         values[Keys.USAGE_REPORTING] = this.isUsageReportingAccepted
 
-        this.options?.let { options ->
+        this.options.let { options ->
             values[Keys.LISTEN_ADDRESSES] = checkNotNull(options.listenAddresses).joinToString()
             values[Keys.INCOMING_RATE_LIMIT] = options.maxRecvKbps
             values[Keys.OUTGOING_RATE_LIMIT] = options.maxSendKbps
@@ -653,7 +653,7 @@ private var RestApi.preferences: Preferences
             values[Keys.CRASH_REPORTING] = options.crashReportingEnabled
         }
 
-        this.gui?.let { gui ->
+        this.gui.let { gui ->
             values[Keys.WEB_GUI_PORT] = gui.bindPort.toIntOrNull() ?: Constants.DEFAULT_WEBGUI_TCP_PORT
             values[Keys.WEB_GUI_REMOTE_ACCESS] = gui.bindAddress != BIND_LOCALHOST
             gui.user?.let { values[Keys.WEB_GUI_USERNAME] = it }
