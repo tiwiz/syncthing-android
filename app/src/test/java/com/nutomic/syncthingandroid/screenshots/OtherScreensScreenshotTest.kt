@@ -16,6 +16,7 @@ import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.activities.PhotoShootActivity
 import com.nutomic.syncthingandroid.activities.PullOrderDialogActivity
+import com.nutomic.syncthingandroid.activities.QRScannerActivity
 import com.nutomic.syncthingandroid.activities.ShareActivity
 import com.nutomic.syncthingandroid.activities.SyncConditionsActivity
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
@@ -75,6 +76,7 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
             },
         ),
         PHOTO_SHOOT(PhotoShootActivity::class.java),
+        QR_SCANNER(QRScannerActivity::class.java),
         SHARE(
             ShareActivity::class.java,
             extras = {

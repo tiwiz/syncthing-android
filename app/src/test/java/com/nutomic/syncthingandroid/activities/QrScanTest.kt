@@ -9,6 +9,9 @@ import android.content.pm.PackageManager
 import android.os.Looper
 import android.view.View
 import android.widget.EditText
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -25,6 +28,7 @@ import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -45,6 +49,8 @@ import org.robolectric.annotation.Config
         ],
 )
 class QrScanTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val app = context as Application
@@ -113,7 +119,7 @@ class QrScanTest {
     @Test
     fun `cancel closes the scanner`() {
         launchScanner().use { scenario ->
-            scenario.onActivity { it.findViewById<View>(R.id.cancel_button).performClick() }
+            compose.onNodeWithText("Cancel").performClick()
 
             assertEquals(Activity.RESULT_CANCELED, scenario.result.resultCode)
         }
