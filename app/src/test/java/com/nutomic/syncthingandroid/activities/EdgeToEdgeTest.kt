@@ -68,7 +68,7 @@ class EdgeToEdgeTest {
 
     @Test
     fun `a View screen keeps a coloured status bar with light icons`() {
-        val bar = statusBarOf(LogActivity::class.java)
+        val bar = statusBarOf(MainActivity::class.java)
 
         assertNotEquals(Color.TRANSPARENT, bar.color)
         assertFalse(bar.darkIcons)

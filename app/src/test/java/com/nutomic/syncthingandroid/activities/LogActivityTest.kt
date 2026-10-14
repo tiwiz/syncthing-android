@@ -4,7 +4,11 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.TextView
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.test.core.app.ActivityScenario
@@ -15,15 +19,14 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
-import com.nutomic.syncthingandroid.testutil.awaitMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.fakes.RoboMenuItem
 import org.robolectric.shadows.ShadowToast
 
 /**
@@ -37,6 +40,8 @@ import org.robolectric.shadows.ShadowToast
     instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
 )
 class LogActivityTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -57,26 +62,23 @@ class LogActivityTest {
 
     private fun launch() = ActivityScenario.launch(LogActivity::class.java)
 
-    private fun ActivityScenario<LogActivity>.shown(): String {
-        var text = ""
-        onActivity { text = it.findViewById<TextView>(R.id.log).text.toString() }
-        return text
-    }
-
+    /** Waits until the screen shows exactly [expected] as the log. */
+    @Suppress("UnusedReceiverParameter") // Reads like the scenario's own step.
     private fun ActivityScenario<LogActivity>.awaitShown(expected: String) {
-        try {
-            awaitMain { shown() == expected }
-        } catch (e: IllegalStateException) {
-            throw AssertionError("shown: [${shown()}]", e)
+        compose.waitUntil(TIMEOUT_MILLIS) {
+            compose.onAllNodesWithText(expected).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
+    @Suppress("UnusedReceiverParameter")
     private fun ActivityScenario<LogActivity>.switchLogs() {
-        onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.switch_logs)) }
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("View Syncthing Log").performClick()
     }
 
+    @Suppress("UnusedReceiverParameter")
     private fun ActivityScenario<LogActivity>.share() {
-        onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.menu_share_log_file)) }
+        compose.onNodeWithContentDescription("Share log file").performClick()
     }
 
     // Removing the milliseconds also removes the space before the tag, as it always did.
@@ -111,6 +113,7 @@ class LogActivityTest {
             it.awaitShown("10:00:00I/SyncthingService up")
             it.switchLogs()
             it.awaitShown("[ABCDE] INFO: Syncthing log\n")
+            compose.onNodeWithText("Syncthing Log").assertExists()
         }
     }
 
@@ -156,5 +159,9 @@ class LogActivityTest {
             assertEquals("${context.packageName}.provider", stream.authority)
             assertEquals("syncthing.log", stream.lastPathSegment)
         }
+    }
+
+    private companion object {
+        const val TIMEOUT_MILLIS = 5_000L
     }
 }
