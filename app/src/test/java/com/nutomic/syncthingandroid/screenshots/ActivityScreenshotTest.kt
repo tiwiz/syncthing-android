@@ -3,11 +3,9 @@ package com.nutomic.syncthingandroid.screenshots
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.widget.EditText
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.DeviceActivity
 import com.nutomic.syncthingandroid.activities.FolderActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
@@ -41,7 +39,14 @@ class ActivityScreenshotTest(private val screen: Screen, private val dark: Boole
 
     enum class Screen(val activity: Class<out Activity>, val extras: Intent.() -> Unit = {}) {
         MAIN(MainActivity::class.java),
-        FOLDER_NEW(FolderActivity::class.java, { putExtra(FolderActivity.EXTRA_IS_CREATE, true) }),
+        FOLDER_NEW(
+            FolderActivity::class.java,
+            {
+                putExtra(FolderActivity.EXTRA_IS_CREATE, true)
+                // The app proposes a random folder id; pin it for the screenshot.
+                putExtra(FolderActivity.EXTRA_FOLDER_ID, "abcde-fghij")
+            },
+        ),
         FOLDER_EDIT(
             FolderActivity::class.java,
             {
@@ -70,10 +75,6 @@ class ActivityScreenshotTest(private val screen: Screen, private val dark: Boole
         ActivityScenario.launch<Activity>(intent).use { scenario ->
             settle()
             scenario.onActivity {
-                if (screen == Screen.FOLDER_NEW) {
-                    // The app proposes a random folder id; pin it for the screenshot.
-                    it.findViewById<EditText>(R.id.id).setText("abcde-fghij")
-                }
                 it.window.decorView.hideTextCursors()
                 settle(rounds = 2)
                 it.window.decorView.captureRoboImage(

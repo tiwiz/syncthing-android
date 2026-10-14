@@ -248,6 +248,11 @@ class FolderActivityTest {
     @Test
     fun `a new pull order from its screen is shown and saved`() {
         prefs.edit().putBoolean(Constants.PREF_EXPERT_MODE, true).commit()
+        // Send-only folders pull nothing, so they offer no pull order.
+        ConfigFixture.install(context) {
+            it.replace("path=\"/storage/emulated/0/DCIM/Camera\"", "path=\"${folderDir.path}\"")
+                .replace("type=\"sendonly\"", "type=\"sendreceive\"")
+        }
         editFolder().use { screen ->
             val started = checkNotNull(screen.open(FolderScreen.Opener.PULL_ORDER))
             assertEquals(PullOrderDialogActivity::class.java.name, started.component?.className)
@@ -262,6 +267,13 @@ class FolderActivityTest {
 
             assertEquals("oldestFirst", savedFolder().order)
         }
+    }
+
+    @Test
+    fun `send-only folders offer no pull order`() {
+        prefs.edit().putBoolean(Constants.PREF_EXPERT_MODE, true).commit()
+
+        editFolder().use { screen -> assertFalse(screen.offers(FolderScreen.Opener.PULL_ORDER)) }
     }
 
     @Test

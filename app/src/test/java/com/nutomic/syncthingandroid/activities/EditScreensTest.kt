@@ -63,12 +63,6 @@ class EditScreensTest {
     ): ActivityScenario<T> =
         ActivityScenario.launchActivityForResult(Intent(context, T::class.java).apply(extras))
 
-    private fun editFolder() =
-        launch<FolderActivity> {
-            putExtra(FolderActivity.EXTRA_IS_CREATE, false)
-            putExtra(FolderActivity.EXTRA_FOLDER_ID, "cam-photos")
-        }
-
     private fun editDevice() =
         DeviceScreen(
             launch<DeviceActivity> {

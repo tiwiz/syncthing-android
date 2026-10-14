@@ -28,9 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -413,46 +411,6 @@ private fun LabelledValue(label: Int, value: String) {
 }
 
 @Composable
-private fun SectionTitle(title: Int) {
-    Text(
-        text = stringResource(title),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-    )
-}
-
-@Composable
-private fun SwitchRow(
-    title: String,
-    checked: Boolean,
-    summary: String? = null,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .selectable(selected = checked, role = Role.Switch) { onCheckedChange(!checked) }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            summary?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = null)
-    }
-}
-
-@Composable
 private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: DeviceScreenActions) {
     val dismiss = { actions.onDialog(DeviceDialog.NONE) }
     when (dialog) {
@@ -512,22 +470,6 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
             )
         }
     }
-}
-
-@Composable
-internal fun ConfirmDialog(
-    message: Int,
-    confirm: Int,
-    dismiss: Int,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = { Text(stringResource(message)) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(confirm)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(dismiss)) } },
-    )
 }
 
 /** The index of [value] among the compression [values]; Syncthing's default for unknown ones. */

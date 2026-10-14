@@ -2,22 +2,23 @@ package com.nutomic.syncthingandroid.activities
 
 import android.app.Activity
 import android.app.Application
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Looper
-import android.view.View
-import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.SwitchCompat
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import com.nutomic.syncthingandroid.R
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.fakes.RoboMenuItem
-import org.robolectric.shadows.ShadowDialog
 
 /**
  * Drives the folder screen the way a user would, so the tests stay the same whatever the screen is
@@ -25,109 +26,130 @@ import org.robolectric.shadows.ShadowDialog
  */
 internal class FolderScreen(
     private val scenario: ActivityScenario<FolderActivity>,
-    @Suppress("unused") private val compose: ComposeTestRule,
+    private val compose: ComposeTestRule,
 ) : AutoCloseable {
 
-    enum class Switch(val id: Int) {
-        FILE_WATCHER(R.id.fileWatcher),
-        PAUSED(R.id.folderPause),
-        CUSTOM_SYNC_CONDITIONS(R.id.customSyncConditionsSwitch),
-        IGNORE_DELETE(R.id.ignoreDelete),
-        RUN_SCRIPT(R.id.runScriptSwitch),
+    enum class Switch(val title: String) {
+        FILE_WATCHER("Watch for changes"),
+        PAUSED("Pause Folder"),
+        CUSTOM_SYNC_CONDITIONS("Custom sync conditions"),
+        IGNORE_DELETE("Ignore Delete"),
+        RUN_SCRIPT("Run Script"),
     }
 
     /** The parts of the screen that open another screen. */
-    enum class Opener(val id: Int) {
-        FOLDER_TYPE(R.id.folderTypeContainer),
-        PULL_ORDER(R.id.pullOrderContainer),
-        VERSIONING(R.id.versioningContainer),
-        SYNC_CONDITIONS(R.id.customSyncConditionsDialog),
-        ADVANCED_DIRECTORY(R.id.selectAdvancedDirectory),
+    enum class Opener(val tag: String?, val text: String? = null) {
+        FOLDER_TYPE("folderType"),
+        PULL_ORDER("pullOrder"),
+        VERSIONING("versioning"),
+        SYNC_CONDITIONS("syncConditions"),
+        ADVANCED_DIRECTORY(null, "Advanced Directory Selection"),
     }
 
-    /** The texts the screen shows for a setting. */
-    enum class Shown(val id: Int) {
-        FOLDER_TYPE(R.id.folderType),
-        PULL_ORDER(R.id.pullOrderType),
-        VERSIONING(R.id.versioningType),
-        VERSIONING_DESCRIPTION(R.id.versioningDescription),
-        PATH(R.id.directoryTextView),
+    /** The texts the screen shows for a setting: a tagged row and which of its texts. */
+    enum class Shown(val tag: String, val index: Int) {
+        FOLDER_TYPE("folderType", 1),
+        PULL_ORDER("pullOrder", 1),
+        VERSIONING("versioning", 1),
+        VERSIONING_DESCRIPTION("versioning", 2),
+        PATH("path", 0),
     }
 
-    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
-
-    private fun <T> on(block: (FolderActivity) -> T): T {
-        var result: T? = null
-        scenario.onActivity { result = block(it) }
-        idle()
-        @Suppress("UNCHECKED_CAST")
-        return result as T
+    private fun idle() {
+        shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
     }
 
-    fun setLabel(label: String) = on { it.findViewById<EditText>(R.id.label).setText(label) }
+    private fun tagged(tag: String) = compose.onNodeWithTag(tag).performScrollTo()
 
-    fun setId(id: String) = on { it.findViewById<EditText>(R.id.id).setText(id) }
-
-    fun setIgnoreList(text: String) = on {
-        it.findViewById<EditText>(R.id.edit_ignore_list_content).setText(text)
+    fun setLabel(label: String) {
+        tagged("label").performTextReplacement(label)
     }
 
-    fun ignoreList(): String = on {
-        it.findViewById<EditText>(R.id.edit_ignore_list_content).text.toString()
+    fun setId(id: String) {
+        tagged("id").performTextReplacement(id)
     }
 
-    fun toggle(switch: Switch) = on { it.findViewById<SwitchCompat>(switch.id).toggle() }
+    fun setIgnoreList(text: String) {
+        tagged("ignoreList").performTextReplacement(text)
+    }
 
-    fun shown(shown: Shown): String = on { it.findViewById<TextView>(shown.id).text.toString() }
+    fun ignoreList(): String =
+        tagged("ignoreList").fetchSemanticsNode().config[SemanticsProperties.EditableText].text
 
-    fun isEnabled(opener: Opener): Boolean = on { it.findViewById<View>(opener.id).isEnabled }
+    fun toggle(switch: Switch) {
+        compose.onNodeWithText(switch.title).performScrollTo().performClick()
+    }
+
+    fun shown(shown: Shown): String =
+        tagged(shown.tag).fetchSemanticsNode().config[SemanticsProperties.Text][shown.index].text
+
+    fun isEnabled(opener: Opener): Boolean =
+        SemanticsProperties.Disabled !in node(opener).fetchSemanticsNode().config
+
+    /** Whether the screen shows [opener] at all. */
+    fun offers(opener: Opener): Boolean =
+        compose.onAllNodesWithTag(checkNotNull(opener.tag)).fetchSemanticsNodes().isNotEmpty()
+
+    private fun node(opener: Opener) =
+        if (opener.tag != null) tagged(opener.tag)
+        else compose.onNodeWithText(checkNotNull(opener.text)).performScrollTo()
 
     /** Opens what [opener] opens and returns the screen it started, if any. */
     fun open(opener: Opener): Intent? {
-        on { it.findViewById<View>(opener.id).performClick() }
+        node(opener).performClick()
+        idle()
         return shadowOf(ApplicationProvider.getApplicationContext<Application>())
             .nextStartedActivity
     }
 
     /** Hands [data] back as the result of the screen [started]. */
-    fun receive(started: Intent, data: Intent) = on {
-        shadowOf(it).receiveResult(started, Activity.RESULT_OK, data)
+    fun receive(started: Intent, data: Intent) {
+        scenario.onActivity { shadowOf(it).receiveResult(started, Activity.RESULT_OK, data) }
+        idle()
     }
 
-    private fun FolderActivity.deviceRow(name: String): ViewGroup {
-        val container = findViewById<ViewGroup>(R.id.devicesContainer)
-        return (0 until container.childCount)
-            .map { container.getChildAt(it) }
-            .filterIsInstance<ViewGroup>()
-            .single { (it.getChildAt(0) as SwitchCompat).text.toString() == name }
+    fun deviceShared(name: String): Boolean =
+        compose
+            .onNodeWithText(name)
+            .performScrollTo()
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Selected]
+
+    fun toggleDevice(name: String) {
+        compose.onNodeWithText(name).performScrollTo().performClick()
     }
 
-    fun deviceShared(name: String): Boolean = on {
-        (it.deviceRow(name).getChildAt(0) as SwitchCompat).isChecked
+    fun setDevicePassword(name: String, password: String) {
+        tagged("password:$name").performTextReplacement(password)
     }
 
-    fun toggleDevice(name: String) = on {
-        (it.deviceRow(name).getChildAt(0) as SwitchCompat).toggle()
-    }
-
-    fun setDevicePassword(name: String, password: String) = on {
-        (it.deviceRow(name).getChildAt(1) as EditText).setText(password)
-    }
-
-    fun save() = on { it.onOptionsItemSelected(RoboMenuItem(R.id.save)) }
-
-    fun delete() = on { it.onOptionsItemSelected(RoboMenuItem(R.id.remove)) }
-
-    fun back() = on { it.onBackPressedDispatcher.onBackPressed() }
-
-    fun confirmDialog() {
-        (ShadowDialog.getLatestDialog() as AlertDialog)
-            .getButton(DialogInterface.BUTTON_POSITIVE)
+    fun save() {
+        compose
+            .onNode(hasContentDescription("Save") or hasContentDescription("Create"))
             .performClick()
         idle()
     }
 
-    fun finishing(): Boolean = on { it.isFinishing }
+    fun delete() {
+        compose.onNodeWithContentDescription("Delete Folder").performClick()
+    }
+
+    fun back() {
+        scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        idle()
+    }
+
+    fun confirmDialog() {
+        compose.onNode((hasText("OK") or hasText("Yes")) and hasClickAction()).performClick()
+        idle()
+    }
+
+    fun finishing(): Boolean {
+        var finishing = false
+        scenario.onActivity { finishing = it.isFinishing }
+        return finishing
+    }
 
     fun resultCode(): Int = scenario.result.resultCode
 

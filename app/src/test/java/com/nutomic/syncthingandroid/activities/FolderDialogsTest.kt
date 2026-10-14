@@ -1,11 +1,8 @@
 package com.nutomic.syncthingandroid.activities
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.os.Looper
-import android.widget.TextView
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -22,13 +19,11 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
-import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
 import java.nio.file.Files
 import org.junit.After
@@ -39,9 +34,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.fakes.RoboMenuItem
 
 /**
  * The folder type, pull order and sync conditions screens, on their own and through the folder
@@ -61,7 +54,6 @@ class FolderDialogsTest {
     @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val app = context as Application
     private val folderDir: File = Files.createTempDirectory("camera").toFile()
 
     @Before
@@ -85,47 +77,12 @@ class FolderDialogsTest {
         return compose.onNodeWithText(text)
     }
 
-    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
-
-    private fun savedFolder() = ConfigXml(context).apply { loadConfig() }.folders.single()
-
-    private fun editFolder(): ActivityScenario<FolderActivity> =
-        ActivityScenario.launchActivityForResult(
-            Intent(context, FolderActivity::class.java)
-                .putExtra(FolderActivity.EXTRA_IS_CREATE, false)
-                .putExtra(FolderActivity.EXTRA_FOLDER_ID, "cam-photos")
-        )
-
     private fun <T : Activity> launchDialog(
         activity: Class<T>,
         extra: String,
         value: String,
     ): ActivityScenario<T> =
         ActivityScenario.launchActivityForResult(Intent(context, activity).putExtra(extra, value))
-
-    /** Clicks [viewId] on the folder screen and returns the screen it started. */
-    private fun ActivityScenario<FolderActivity>.click(viewId: Int): Intent? {
-        onActivity { it.findViewById<android.view.View>(viewId).performClick() }
-        idle()
-        return shadowOf(app).nextStartedActivity
-    }
-
-    /** Hands [data] back to the folder screen as the result of the screen it started. */
-    private fun ActivityScenario<FolderActivity>.receive(started: Intent, data: Intent) {
-        onActivity { shadowOf(it).receiveResult(started, Activity.RESULT_OK, data) }
-        idle()
-    }
-
-    private fun ActivityScenario<FolderActivity>.save() {
-        onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.save)) }
-        idle()
-    }
-
-    private fun ActivityScenario<FolderActivity>.text(viewId: Int): String {
-        var text = ""
-        onActivity { text = it.findViewById<TextView>(viewId).text.toString() }
-        return text
-    }
 
     @Test
     fun `the folder type screen returns the chosen type`() {
