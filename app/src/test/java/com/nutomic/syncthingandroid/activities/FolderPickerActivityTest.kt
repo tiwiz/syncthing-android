@@ -2,30 +2,29 @@ package com.nutomic.syncthingandroid.activities
 
 import android.app.Activity
 import android.content.Context
-import android.content.DialogInterface
-import android.os.Looper
-import android.view.View
-import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ListView
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onChildren
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.fakes.RoboMenuItem
-import org.robolectric.shadows.ShadowDialog
 
 /**
  * [FolderPickerActivity] limited to a temporary root folder, so the listing does not depend on the
@@ -34,6 +33,8 @@ import org.robolectric.shadows.ShadowDialog
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "en-rUS", shadows = [ShadowEnvironmentWithAllFilesAccess::class])
 class FolderPickerActivityTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private lateinit var root: File
@@ -57,52 +58,56 @@ class FolderPickerActivityTest {
             FolderPickerActivity.createIntent(context, initial, root.path)
         )
 
-    private fun FolderPickerActivity.listed(): List<String> {
-        val list = findViewById<ListView>(android.R.id.list)
-        return (0 until list.adapter.count).map { (list.adapter.getItem(it) as File).name }
+    /** The names listed, in order; empty when the folder is. */
+    private fun listed(): List<String> {
+        val lists = compose.onAllNodes(hasScrollAction()).fetchSemanticsNodes()
+        if (lists.isEmpty()) return emptyList()
+        return compose.onNode(hasScrollAction()).onChildren().fetchSemanticsNodes().map {
+            it.config[SemanticsProperties.Text].joinToString()
+        }
     }
 
-    private fun FolderPickerActivity.currentPath(): String =
-        findViewById<TextView>(R.id.currentPath).text.toString()
+    private fun currentPath(): String =
+        compose
+            .onNode(hasText("Current Path: ", substring = true))
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .joinToString()
 
-    private fun FolderPickerActivity.open(name: String) {
-        val list = findViewById<ListView>(android.R.id.list)
-        val position = listed().indexOf(name)
-        list.performItemClick(list.adapter.getView(position, null, list), position, 0)
+    private fun open(name: String) {
+        compose.onNodeWithText(name).performClick()
     }
 
     @Test
     fun `a single root is opened directly, folders first, names ignoring case`() {
         launch().use { scenario ->
-            scenario.onActivity {
-                assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), it.listed())
-                assertTrue(it.currentPath(), it.currentPath().endsWith(root.absolutePath))
-            }
+            assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), listed())
+            assertTrue(currentPath(), currentPath().endsWith(root.absolutePath))
         }
     }
 
     @Test
     fun `clicking a folder enters it, files do nothing`() {
         launch().use { scenario ->
-            scenario.onActivity {
-                it.open("notes.txt")
-                assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), it.listed())
+            open("notes.txt")
+            assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), listed())
 
-                it.open("Music")
-                assertEquals(listOf("Albums"), it.listed())
-            }
+            open("Music")
+            assertEquals(listOf("Albums"), listed())
         }
     }
 
     @Test
     fun `going up stops at the root`() {
         launch(initial = File(root, "Music/Albums").path).use { scenario ->
-            scenario.onActivity {
-                it.onOptionsItemSelected(RoboMenuItem(R.id.folder_go_up))
-                assertEquals(listOf("Albums"), it.listed())
-                it.onOptionsItemSelected(RoboMenuItem(R.id.folder_go_up))
-                assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), it.listed())
+            compose.onNodeWithContentDescription("Go up").performClick()
+            assertEquals(listOf("Albums"), listed())
+            compose.onNodeWithContentDescription("Go up").performClick()
+            assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), listed())
+            compose.onNodeWithContentDescription("Go up").performClick()
+            assertEquals(listOf("documents", "Music", "A.txt", "notes.txt"), listed())
 
+            scenario.onActivity {
                 // A single root has no list of roots above it.
                 assertEquals(false, it.canGoUpToSubDir())
                 assertEquals(false, it.canGoUpToRootDir())
@@ -113,7 +118,7 @@ class FolderPickerActivityTest {
     @Test
     fun `select returns the folder shown`() {
         launch(initial = File(root, "Music").path).use { scenario ->
-            scenario.onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.select)) }
+            compose.onNodeWithContentDescription("Select Folder").performClick()
 
             assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
             // formatPath: a URI path, so a folder ends with a slash.
@@ -129,25 +134,23 @@ class FolderPickerActivityTest {
     @Test
     fun `a new folder is created and entered`() {
         launch().use { scenario ->
-            scenario.onActivity {
-                it.onOptionsItemSelected(RoboMenuItem(R.id.create_folder))
-                val dialog = ShadowDialog.getLatestDialog() as AlertDialog
-                checkNotNull(dialog.window).decorView.editTexts().single().setText("Photos")
-                dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
-                // AlertDialog delivers button clicks through a handler.
-                shadowOf(Looper.getMainLooper()).idle()
+            compose.onNodeWithContentDescription("Create new Folder").performClick()
+            compose.onNode(hasSetTextAction()).performTextInput("Photos")
+            compose.onNodeWithText("OK").performClick()
 
-                assertTrue(File(root, "Photos").isDirectory)
-                assertTrue(it.currentPath(), it.currentPath().endsWith("Photos"))
-                assertEquals(emptyList<String>(), it.listed())
-            }
+            assertTrue(File(root, "Photos").isDirectory)
+            assertTrue(currentPath(), currentPath().endsWith("Photos"))
+            assertEquals(emptyList<String>(), listed())
+            compose.onNodeWithText("Directory is Empty").assertExists()
         }
     }
 
-    private fun View.editTexts(): List<EditText> =
-        when (this) {
-            is EditText -> listOf(this)
-            is ViewGroup -> (0 until childCount).flatMap { getChildAt(it).editTexts() }
-            else -> emptyList()
+    @Test
+    fun `back cancels`() {
+        launch().use { scenario ->
+            scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+
+            assertEquals(Activity.RESULT_CANCELED, scenario.result.resultCode)
         }
+    }
 }
