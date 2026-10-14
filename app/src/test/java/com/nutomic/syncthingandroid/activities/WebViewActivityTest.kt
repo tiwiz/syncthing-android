@@ -3,7 +3,6 @@ package com.nutomic.syncthingandroid.activities
 import android.app.Application
 import android.app.UiModeManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
@@ -11,15 +10,18 @@ import android.net.http.SslCertificate
 import android.net.http.SslError
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.SslErrorHandler
 import android.webkit.WebView
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
@@ -29,12 +31,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadow.api.Shadow
-import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowSslErrorHandler
 
 /**
@@ -48,6 +50,8 @@ import org.robolectric.shadows.ShadowSslErrorHandler
     instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
 )
 class WebViewActivityTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -73,8 +77,18 @@ class WebViewActivityTest {
     }
 
     private fun ActivityScenario<WebViewActivity>.webView(): WebView = on {
-        it.findViewById(R.id.webview)
+        checkNotNull(it.window.decorView.findWebView())
     }
+
+    private fun View.findWebView(): WebView? =
+        when (this) {
+            is WebView -> this
+            is ViewGroup ->
+                (0 until childCount).firstNotNullOfOrNull { getChildAt(it).findWebView() }
+            else -> null
+        }
+
+    private fun loadingMessage() = compose.onNodeWithText("Loading webpage", substring = true)
 
     @Test
     fun `without a URL the screen closes`() {
@@ -87,12 +101,7 @@ class WebViewActivityTest {
     fun `the page is loaded behind a loading message that names it`() {
         launch().use { scenario ->
             assertEquals(PAGE, shadowOf(scenario.webView()).lastLoadedUrl)
-            scenario.on {
-                assertEquals(View.VISIBLE, it.findViewById<View>(R.id.loading).visibility)
-                assertTrue(
-                    it.findViewById<TextView>(R.id.loading_text).text.toString().contains(PAGE)
-                )
-            }
+            loadingMessage().assertTextContains(PAGE, substring = true)
         }
     }
 
@@ -103,8 +112,7 @@ class WebViewActivityTest {
 
             shadowOf(webView).webViewClient.onPageFinished(webView, PAGE)
 
-            assertEquals(View.VISIBLE, webView.visibility)
-            scenario.on { assertEquals(View.GONE, it.findViewById<View>(R.id.loading).visibility) }
+            loadingMessage().assertDoesNotExist()
         }
     }
 
@@ -113,15 +121,15 @@ class WebViewActivityTest {
         launch().use { scenario ->
             val handler = sslError(scenario)
 
-            val dialog = ShadowDialog.getLatestDialog() as AlertDialog
-            val message = dialog.findViewById<TextView>(android.R.id.message)?.text.toString()
-            assertTrue(message, message.contains(PAGE))
+            compose
+                .onNodeWithText("invalid certificate", substring = true)
+                .assertTextContains(PAGE, substring = true)
             assertFalse(handler.wasProceedCalled())
 
-            dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
-            shadowOf(Looper.getMainLooper()).idle()
+            compose.onNodeWithText("Continue").performClick()
 
             assertTrue(handler.wasProceedCalled())
+            compose.onNodeWithText("Security Notice").assertDoesNotExist()
         }
     }
 
@@ -129,14 +137,12 @@ class WebViewActivityTest {
     fun `once accepted, later certificate errors on the page do not ask again`() {
         launch().use { scenario ->
             sslError(scenario)
-            val first = ShadowDialog.getLatestDialog() as AlertDialog
-            first.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
-            shadowOf(Looper.getMainLooper()).idle()
+            compose.onNodeWithText("Continue").performClick()
 
             val second = sslError(scenario)
 
             assertTrue(second.wasProceedCalled())
-            assertTrue(ShadowDialog.getLatestDialog() === first)
+            compose.onNodeWithText("Security Notice").assertDoesNotExist()
         }
     }
 
@@ -145,10 +151,7 @@ class WebViewActivityTest {
         launch().use { scenario ->
             val handler = sslError(scenario)
 
-            (ShadowDialog.getLatestDialog() as AlertDialog)
-                .getButton(DialogInterface.BUTTON_NEGATIVE)
-                .performClick()
-            shadowOf(Looper.getMainLooper()).idle()
+            compose.onNodeWithText("Cancel").performClick()
 
             assertTrue(handler.wasCancelCalled())
             scenario.on { assertFalse(it.isFinishing) }
@@ -161,10 +164,7 @@ class WebViewActivityTest {
         launch().use { scenario ->
             sslError(scenario)
 
-            (ShadowDialog.getLatestDialog() as AlertDialog)
-                .getButton(DialogInterface.BUTTON_NEGATIVE)
-                .performClick()
-            shadowOf(Looper.getMainLooper()).idle()
+            compose.onNodeWithText("Cancel").performClick()
 
             scenario.on { assertTrue(it.isFinishing) }
         }
@@ -173,7 +173,7 @@ class WebViewActivityTest {
     @Test
     fun `open in browser hands the page to the browser and closes`() {
         launch().use { scenario ->
-            scenario.on { shadowOf(it).clickMenuItem(R.id.openBrowser) }
+            compose.onNodeWithContentDescription("Open in browser").performClick()
 
             val opened = shadowOf(context as Application).nextStartedActivity
             assertEquals(Intent.ACTION_VIEW, opened.action)
@@ -185,12 +185,8 @@ class WebViewActivityTest {
     @Test
     fun `there is no browser to open on a TV`() {
         runOnTv()
-        launch().use { scenario ->
-            val visible = scenario.on {
-                shadowOf(it).optionsMenu.findItem(R.id.openBrowser).isVisible
-            }
-
-            assertFalse(visible)
+        launch().use {
+            compose.onNodeWithContentDescription("Open in browser").assertDoesNotExist()
         }
     }
 
