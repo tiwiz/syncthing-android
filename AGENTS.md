@@ -221,9 +221,9 @@ Next steps (to be confirmed with the owner):
    PR #42: `RestApi` + `RestApiSupport` (`RestApiCacheTest`). PR #43:
    `SyncthingService` + `ConfigBackup`, `HttpsCertFiles`,
    `ObjectRunConditions` (`SyncthingServiceStoppedTest`). All non-UI code is Kotlin now. Screens to
-   Compose: PR #44 folder type and pull order dialogs (`SingleChoiceDialogActivity`). Branch
-   `refactor/compose-versioning`: versioning dialog (`VersioningScreen`,
-   `VersioningDialogActivityTest`). Next: sync conditions, QR scanner, photo shoot, log, …
+   Compose: PR #44 folder type and pull order dialogs (`SingleChoiceDialogActivity`). PR #45
+   versioning dialog (`VersioningScreen`). Branch `refactor/compose-sync-conditions`:
+   `SyncConditionsScreen` (`FolderDialogsTest`). Next: QR scanner, photo shoot, log, …
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
