@@ -178,5 +178,7 @@ Snapshot on 2026-10-13 (lines): 66% overall. `receiver` 94%, `model` 87%, `http`
 
 - The web GUI's own JavaScript UI (served by the real Syncthing) is not exercised; the instrumented
   tests use a fake page.
+- Syncthing Camera's failure path (picture cancelled or unreadable): Robolectric's MediaStore
+  shadow decodes any picture, so only the success path is tested.
 - The QR scanner's camera preview: Robolectric has no camera, so `QrScanTest` reports a scan to the
   scanner's callback directly.

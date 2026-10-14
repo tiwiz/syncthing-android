@@ -222,8 +222,9 @@ Next steps (to be confirmed with the owner):
    `SyncthingService` + `ConfigBackup`, `HttpsCertFiles`,
    `ObjectRunConditions` (`SyncthingServiceStoppedTest`). All non-UI code is Kotlin now. Screens to
    Compose: PR #44 folder type and pull order dialogs (`SingleChoiceDialogActivity`). PR #45
-   versioning dialog (`VersioningScreen`). Branch `refactor/compose-sync-conditions`:
-   `SyncConditionsScreen` (`FolderDialogsTest`). Next: QR scanner, photo shoot, log, …
+   versioning dialog (`VersioningScreen`). PR #46
+   `SyncConditionsScreen`. Branch `refactor/compose-qr-photo`: QR scanner and Syncthing Camera
+   (`PhotoShootActivityTest`). Next: log, folder picker, share, web page, device, folder, main.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
