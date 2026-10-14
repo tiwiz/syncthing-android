@@ -1,8 +1,12 @@
 package com.nutomic.syncthingandroid.service
 
 import android.app.NotificationManager
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
 import android.content.SharedPreferences
+import android.database.Cursor
+import android.net.Uri
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
@@ -25,6 +29,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowMediaScannerConnection
@@ -77,6 +82,19 @@ class EventProcessorTest {
     private fun send(json: String) {
         val element = JsonParser.parseString(json)
         processor.onEvent(Gson().fromJson(element, Event::class.java), element)
+    }
+
+    /** Serves the camera folder at [path] with [type] and reloads the config, as after a change. */
+    private fun useCameraFolder(path: String, type: String = Constants.FOLDER_TYPE_SEND_ONLY) {
+        val config =
+            syncthing
+                .configJson()
+                .replace("/storage/emulated/0/DCIM/Camera", path)
+                .replace("\"type\": \"sendonly\"", "\"type\": \"$type\"")
+        syncthing.respond("GET", "/rest/system/config", config)
+        api.reloadConfig()
+        awaitMain { api.folders.single().path == path }
+        drainMain()
     }
 
     private fun notificationTexts(): List<String> =
@@ -250,6 +268,70 @@ class EventProcessorTest {
     }
 
     @Test
+    fun `metadata changes and other actions are not rescanned`() {
+        send(
+            """{"id": 1, "type": "ItemFinished",
+               "data": {"action": "metadata", "folder": "cam-photos", "item": "IMG_1.jpg"}}"""
+        )
+        send(
+            """{"id": 2, "type": "ItemFinished",
+               "data": {"action": "rename", "folder": "cam-photos", "item": "IMG_2.jpg"}}"""
+        )
+
+        assertTrue(ShadowMediaScannerConnection.getSavedPaths().isEmpty())
+        assertEquals("IMG_2.jpg", api.getFolderStatus("cam-photos").value.lastItemFinishedItem)
+    }
+
+    @Test
+    fun `a deleted file leaves the media store unless it still exists`() {
+        val media = Robolectric.setupContentProvider(RecordingMediaProvider::class.java, "media")
+        val dir = java.nio.file.Files.createTempDirectory("camera").toFile()
+        useCameraFolder(dir.path)
+        java.io.File(dir, "still-here.jpg").writeText("x")
+
+        send(
+            """{"id": 1, "type": "ItemFinished",
+               "data": {"action": "delete", "folder": "cam-photos", "item": "still-here.jpg"}}"""
+        )
+        send(
+            """{"id": 2, "type": "ItemFinished",
+               "data": {"action": "delete", "folder": "cam-photos", "item": "gone.jpg"}}"""
+        )
+        drainMain()
+
+        assertEquals(listOf(listOf("${dir.path}/gone.jpg")), media.deletes)
+    }
+
+    @Test
+    fun `items in receive-encrypted folders are not shown to the media scanner`() {
+        useCameraFolder("/storage/emulated/0/DCIM/Camera", Constants.FOLDER_TYPE_RECEIVE_ENCRYPTED)
+
+        send(
+            """{"id": 1, "type": "ItemFinished",
+               "data": {"action": "update", "folder": "cam-photos", "item": "blob"}}"""
+        )
+
+        assertTrue(ShadowMediaScannerConnection.getSavedPaths().isEmpty())
+    }
+
+    @Test
+    fun `the newest local change becomes the folder's last item`() {
+        val dir = java.nio.file.Files.createTempDirectory("camera").toFile()
+        useCameraFolder(dir.path)
+        java.io.File(dir, "b.jpg").writeText("x")
+
+        send(
+            """{"id": 1, "type": "LocalIndexUpdated", "time": "2026-10-13T11:00:00Z",
+               "data": {"folder": "cam-photos", "filenames": ["a.jpg", "b.jpg"]}}"""
+        )
+
+        val status = api.getFolderStatus("cam-photos").value
+        assertEquals("b.jpg", status.lastItemFinishedItem)
+        assertEquals("update", status.lastItemFinishedAction)
+        assertEquals("2026-10-13T11:00:00Z", status.lastItemFinishedTime)
+    }
+
+    @Test
     fun `running out of disk space shows a notification`() {
         fun crashTitle() =
             shadowOf(notifications)
@@ -301,6 +383,37 @@ class EventProcessorTest {
 
         send("""{"id": 1, "type": "ConfigSaved", "data": {}}""")
         awaitMain { syncthing.requests("/rest/system/config", "GET").size > before }
+    }
+
+    /** Stands in for MediaStore, which Robolectric does not let the app delete from. */
+    class RecordingMediaProvider : ContentProvider() {
+        val deletes = mutableListOf<List<String>>()
+
+        override fun onCreate() = true
+
+        override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
+            deletes += selectionArgs.orEmpty().toList()
+            return 1
+        }
+
+        override fun query(
+            uri: Uri,
+            projection: Array<out String>?,
+            selection: String?,
+            selectionArgs: Array<out String>?,
+            sortOrder: String?,
+        ): Cursor? = null
+
+        override fun getType(uri: Uri): String? = null
+
+        override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+
+        override fun update(
+            uri: Uri,
+            values: ContentValues?,
+            selection: String?,
+            selectionArgs: Array<out String>?,
+        ): Int = 0
     }
 
     private companion object {
