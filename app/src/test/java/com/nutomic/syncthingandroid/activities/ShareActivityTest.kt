@@ -1,8 +1,11 @@
 package com.nutomic.syncthingandroid.activities
 
+import android.app.Activity
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Looper
 import android.view.View
@@ -10,15 +13,20 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.lifecycle.Lifecycle
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.model.Folder
+import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.util.formatPath
 import java.io.File
 import java.nio.file.Files
 import org.junit.After
@@ -53,6 +61,12 @@ class ShareActivityTest {
     @Before
     fun setUp() {
         System.setProperty("os.version", "6.1.0-android")
+        // LocalBroadcastManager is a process-wide singleton that would keep an earlier test's
+        // context.
+        LocalBroadcastManager::class.java.getDeclaredField("mInstance").apply {
+            isAccessible = true
+            set(null, null)
+        }
         ConfigFixture.install(context) {
             it.replace("path=\"/storage/emulated/0/DCIM/Camera\"", "path=\"${folderDir.path}\"")
         }
@@ -191,6 +205,66 @@ class ShareActivityTest {
             val started = checkNotNull(shadowOf(context as Application).nextStartedActivity)
             assertEquals(FolderPickerActivity::class.java.name, started.component?.className)
         }
+    }
+
+    @Test
+    fun `a sub folder from the picker is used for the copy and remembered`() {
+        File(folderDir, "inbox").mkdirs()
+        share(sharedFile("notes.txt", "hello")).use { scenario ->
+            browse(scenario)
+            val started = checkNotNull(shadowOf(context as Application).nextStartedActivity)
+            scenario.onActivity {
+                shadowOf(it)
+                    .receiveResult(
+                        started,
+                        Activity.RESULT_OK,
+                        Intent()
+                            .putExtra(
+                                FolderPickerActivity.EXTRA_RESULT_DIRECTORY,
+                                formatPath(File(folderDir, "inbox").path),
+                            ),
+                    )
+            }
+            shadowOf(Looper.getMainLooper()).idle()
+            scenario.shareAndWait()
+
+            assertEquals("hello", File(folderDir, "inbox/notes.txt").readText())
+        }
+        assertEquals(
+            "inbox/",
+            PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(ShareActivity.PREF_FOLDER_SAVED_SUBDIRECTORY + "cam-photos", null),
+        )
+    }
+
+    @Test
+    fun `with the time schedule on, sharing asks Syncthing to run now`() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, true)
+            .commit()
+        val received = mutableListOf<Intent>()
+        LocalBroadcastManager.getInstance(context)
+            .registerReceiver(
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        received += intent
+                    }
+                },
+                IntentFilter(RunConditionMonitor.ACTION_SYNC_TRIGGER_FIRED),
+            )
+
+        share(sharedFile("notes.txt", "hello")).use { it.shareAndWait() }
+
+        assertTrue(
+            received
+                .single()
+                .getBooleanExtra(RunConditionMonitor.EXTRA_BEGIN_ACTIVE_TIME_WINDOW, false)
+        )
+    }
+
+    private fun browse(scenario: ActivityScenario<ShareActivity>) {
+        scenario.onActivity { it.findViewById<View>(R.id.browse_button).performClick() }
     }
 
     private companion object {
