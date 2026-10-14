@@ -29,4 +29,5 @@ Kept from the Kotlin migration:
 
 | Where | What |
 |---|---|
+| `activities/LogText.kt` | Removing the milliseconds from Android log lines also removes the space before the tag (`10:00:00I/Tag`), as the Java version did; pinned by `LogActivityTest`. |
 | `onboarding/OnboardingActivity.kt` `onCreate` | Move `enableEdgeToEdge()` to `ThemedAppCompatActivity` once every activity uses Compose (was a `TODO:`, rephrased for detekt). Not before: tried on 2026-10-13, on Android 14 it put dark icons on the View screens' blue status bar (main screen); `EdgeToEdgeTest` pins the difference |
