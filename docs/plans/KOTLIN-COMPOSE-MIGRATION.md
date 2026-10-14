@@ -44,8 +44,9 @@ One topic per PR, each with the gate and CI green before merging.
    - QR scanner (`DecoratedBarcodeView` in `AndroidView`) and Syncthing Camera (intro on
      `OnboardingScaffold`). Done (#47).
    - Log: `LogActivity` with `LogText.kt` (filter, files). Done (#48).
-   - Folder picker: `FolderPickerState` + `FolderPickerScreen`. Done
-     (`refactor/compose-folder-picker`).
+   - Folder picker: `FolderPickerState` + `FolderPickerScreen`. Done (#49).
+   - Share: `ShareScreen` + `ShareFiles.kt` (names, copy on the IO dispatcher). Done
+     (`refactor/compose-share`).
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 
