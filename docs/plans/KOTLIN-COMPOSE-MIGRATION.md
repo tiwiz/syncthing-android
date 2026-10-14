@@ -40,8 +40,9 @@ One topic per PR, each with the gate and CI green before merging.
    - Versioning: `VersioningScreen` (type radios, number fields, versions path through the
      folder picker) replaces the dialog, its five fragments and `NumberPickerFragment`. Done (#45).
    - Sync conditions: `SyncConditionsScreen` on `SettingsScaffold` and the settings' preference
-     components; `GlobalRunConditions`/`ObjectRunConditions` read and save the prefs. Done
-     (`refactor/compose-sync-conditions`).
+     components; `GlobalRunConditions`/`ObjectRunConditions` read and save the prefs. Done (#46).
+   - QR scanner (`DecoratedBarcodeView` in `AndroidView`) and Syncthing Camera (intro on
+     `OnboardingScaffold`). Done (`refactor/compose-qr-photo`).
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 

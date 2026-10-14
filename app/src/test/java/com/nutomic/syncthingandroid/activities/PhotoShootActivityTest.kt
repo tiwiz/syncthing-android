@@ -12,6 +12,9 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Looper
 import android.provider.MediaStore
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import androidx.preference.PreferenceManager
@@ -26,6 +29,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -39,6 +43,8 @@ import org.robolectric.shadows.ShadowToast
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "en-rUS", shadows = [ShadowEnvironmentWithAllFilesAccess::class])
 class PhotoShootActivityTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val app = context as Application
@@ -110,7 +116,7 @@ class PhotoShootActivityTest {
     fun `continue without the camera permission asks for it`() {
         launch().use { scenario ->
             assertNull(captureRequest())
-            clickContinue(scenario)
+            clickContinue()
 
             assertEquals(
                 "We require storage and camera permission to continue.",
@@ -124,7 +130,7 @@ class PhotoShootActivityTest {
     @Test
     fun `the camera permission button asks for the permission`() {
         launch().use { scenario ->
-            clickGrantCamera(scenario)
+            clickGrantCamera()
             scenario.onActivity {
                 val request = checkNotNull(shadowOf(it).lastRequestedPermission)
                 assertEquals(
@@ -140,7 +146,7 @@ class PhotoShootActivityTest {
         grantCamera()
 
         launch().use { scenario ->
-            clickContinue(scenario)
+            clickContinue()
 
             assertTrue(prefs.getBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, false))
             assertNotNull(captureRequest())
@@ -171,19 +177,13 @@ class PhotoShootActivityTest {
         }
     }
 
-    private fun clickContinue(scenario: ActivityScenario<PhotoShootActivity>) {
-        scenario.onActivity {
-            it.findViewById<android.view.View>(com.nutomic.syncthingandroid.R.id.btn_go)
-                .performClick()
-        }
+    private fun clickContinue() {
+        compose.onNodeWithText("Continue").performClick()
         idle()
     }
 
-    private fun clickGrantCamera(scenario: ActivityScenario<PhotoShootActivity>) {
-        scenario.onActivity {
-            it.findViewById<android.view.View>(com.nutomic.syncthingandroid.R.id.btnGrantCameraPerm)
-                .performClick()
-        }
+    private fun clickGrantCamera() {
+        compose.onNodeWithText("Grant camera permission").performClick()
         idle()
     }
 }
