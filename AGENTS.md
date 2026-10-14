@@ -228,8 +228,10 @@ Next steps (to be confirmed with the owner):
    screen. PR #49
    folder picker. PR #50 share
    screen. PR #51 web
-   page. Branch `refactor/compose-device`: device screen (`DeviceActivityTest` drives it through
-   the `DeviceScreen` test driver). Next: folder, main.
+   page. PR #52
+   device screen (`DeviceActivityTest` through the `DeviceScreen` driver). Branch
+   `refactor/compose-folder`: folder screen (`FolderActivityTest` through `FolderScreen`). Next:
+   main screen (drawer, lists, status tab, adapters, views).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
