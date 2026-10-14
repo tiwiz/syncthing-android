@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Looper
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,6 +23,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -44,6 +46,8 @@ import org.robolectric.shadows.ShadowToast
         ],
 )
 class EditScreensTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     private val context: Context = ApplicationProvider.getApplicationContext()
 
@@ -70,10 +74,19 @@ class EditScreensTest {
         }
 
     private fun editDevice() =
-        launch<DeviceActivity> {
-            putExtra(DeviceActivity.EXTRA_IS_CREATE, false)
-            putExtra(DeviceActivity.EXTRA_DEVICE_ID, REMOTE_DEVICE_ID)
-        }
+        DeviceScreen(
+            launch<DeviceActivity> {
+                putExtra(DeviceActivity.EXTRA_IS_CREATE, false)
+                putExtra(DeviceActivity.EXTRA_DEVICE_ID, REMOTE_DEVICE_ID)
+            },
+            compose,
+        )
+
+    private fun newDevice() =
+        DeviceScreen(
+            launch<DeviceActivity> { putExtra(DeviceActivity.EXTRA_IS_CREATE, true) },
+            compose,
+        )
 
     /** Confirms the delete dialog the screen just opened. */
     private fun confirmDialog() {
@@ -139,13 +152,11 @@ class EditScreensTest {
 
     @Test
     fun `renaming a device is saved to config xml`() {
-        editDevice().use { scenario ->
-            scenario.onActivity {
-                it.findViewById<EditText>(R.id.name).setText("work laptop")
-                it.onOptionsItemSelected(RoboMenuItem(R.id.save))
-            }
+        editDevice().use { screen ->
+            screen.setName("work laptop")
+            screen.save()
 
-            assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
+            assertEquals(Activity.RESULT_OK, screen.resultCode())
             assertEquals(
                 "work laptop",
                 savedConfig().getDevices(false).single { it.deviceID == REMOTE_DEVICE_ID }.name,
@@ -155,13 +166,11 @@ class EditScreensTest {
 
     @Test
     fun `removing a device asks first, then deletes it from config xml`() {
-        editDevice().use { scenario ->
-            scenario.onActivity {
-                it.onOptionsItemSelected(RoboMenuItem(R.id.remove))
-                confirmDialog()
-            }
+        editDevice().use { screen ->
+            screen.delete()
+            screen.confirmDialog()
 
-            assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
+            assertEquals(Activity.RESULT_OK, screen.resultCode())
             assertEquals(
                 listOf(LOCAL_DEVICE_ID),
                 savedConfig().getDevices(true).map { it.deviceID },
@@ -171,38 +180,32 @@ class EditScreensTest {
 
     @Test
     fun `a new device needs a valid id`() {
-        launch<DeviceActivity> { putExtra(DeviceActivity.EXTRA_IS_CREATE, true) }
-            .use { scenario ->
-                scenario.onActivity {
-                    it.findViewById<EditText>(R.id.editDeviceId).setText("not-a-device-id")
-                    it.onOptionsItemSelected(RoboMenuItem(R.id.save))
+        newDevice().use { screen ->
+            screen.setNewDeviceId("not-a-device-id")
+            screen.save()
 
-                    assertEquals(
-                        "The device ID is not formatted correctly. Please retry and enter the correct ID.",
-                        ShadowToast.getTextOfLatestToast(),
-                    )
-                    assertFalse(it.isFinishing)
-                }
-            }
+            assertEquals(
+                "The device ID is not formatted correctly. Please retry and enter the correct ID.",
+                ShadowToast.getTextOfLatestToast(),
+            )
+            assertFalse(screen.finishing())
+        }
     }
 
     @Test
     fun `a new device with a valid id is added to config xml`() {
         val newId = "AIR6LPZ-7K4PTTV-UXQSMUU-CPQ5YWH-OEDFIIQ-JUG777G-2YQXXR5-YD6AWQR"
 
-        launch<DeviceActivity> { putExtra(DeviceActivity.EXTRA_IS_CREATE, true) }
-            .use { scenario ->
-                scenario.onActivity {
-                    it.findViewById<EditText>(R.id.editDeviceId).setText(newId)
-                    it.findViewById<EditText>(R.id.name).setText("tablet")
-                    it.onOptionsItemSelected(RoboMenuItem(R.id.save))
-                }
+        newDevice().use { screen ->
+            screen.setNewDeviceId(newId)
+            screen.setName("tablet")
+            screen.save()
 
-                assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
-                assertEquals(
-                    "tablet",
-                    savedConfig().getDevices(false).single { it.deviceID == newId }.name,
-                )
-            }
+            assertEquals(Activity.RESULT_OK, screen.resultCode())
+            assertEquals(
+                "tablet",
+                savedConfig().getDevices(false).single { it.deviceID == newId }.name,
+            )
+        }
     }
 }
