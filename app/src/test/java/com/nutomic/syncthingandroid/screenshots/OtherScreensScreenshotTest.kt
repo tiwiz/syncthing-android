@@ -11,9 +11,11 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.nutomic.syncthingandroid.activities.FolderTypeDialogActivity
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.activities.PhotoShootActivity
+import com.nutomic.syncthingandroid.activities.PullOrderDialogActivity
 import com.nutomic.syncthingandroid.activities.ShareActivity
 import com.nutomic.syncthingandroid.activities.SyncConditionsActivity
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
@@ -82,6 +84,21 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
             },
         ),
         RECENT_CHANGES(RecentChangesActivity::class.java),
+        FOLDER_TYPE(
+            FolderTypeDialogActivity::class.java,
+            extras = {
+                putExtra(
+                    FolderTypeDialogActivity.EXTRA_FOLDER_TYPE,
+                    Constants.FOLDER_TYPE_SEND_ONLY,
+                )
+            },
+            wholeScreen = true,
+        ),
+        PULL_ORDER(
+            PullOrderDialogActivity::class.java,
+            extras = { putExtra(PullOrderDialogActivity.EXTRA_PULL_ORDER, "oldestFirst") },
+            wholeScreen = true,
+        ),
         DEVICE_ID_DIALOG(
             MainActivity::class.java,
             onLaunched = {

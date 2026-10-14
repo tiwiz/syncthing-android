@@ -218,10 +218,12 @@ Next steps (to be confirmed with the owner):
    (`NotificationHandlerTest`). PR #39: `SyncthingRunnable` (log trimming
    and gateway tests). PR #40: `EventProcessor`. PR #41:
    `RunConditionMonitor` + `RunConditionChecks` + `DeviceState` (`RunConditionTimelineTest`).
-   PR #42: `RestApi` + `RestApiSupport` (`RestApiCacheTest`). Branch
-   `refactor/kotlin-syncthingservice`: `SyncthingService` + `ConfigBackup`, `HttpsCertFiles`,
-   `ObjectRunConditions` (`SyncthingServiceStoppedTest`). All non-UI code is Kotlin now; next:
-   the screens (activities, fragments, views) to Compose.
+   PR #42: `RestApi` + `RestApiSupport` (`RestApiCacheTest`). PR #43:
+   `SyncthingService` + `ConfigBackup`, `HttpsCertFiles`,
+   `ObjectRunConditions` (`SyncthingServiceStoppedTest`). All non-UI code is Kotlin now. Screens to
+   Compose: branch `refactor/compose-folder-type-pull-order` (folder type and pull order dialogs
+   share `SingleChoiceDialogActivity`; `FolderDialogsTest`, screenshots `other/folder_type`,
+   `other/pull_order`).
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
