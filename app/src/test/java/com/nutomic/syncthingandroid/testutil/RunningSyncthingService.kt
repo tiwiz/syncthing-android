@@ -24,7 +24,7 @@ object RunningSyncthingService {
         awaitMain { syncthing.requests("/rest/stats/device").isNotEmpty() }
         drainMain()
 
-        SyncthingService::class.java.getDeclaredField("mRestApi").apply {
+        SyncthingService::class.java.getDeclaredField("api").apply {
             isAccessible = true
             set(service, api)
         }

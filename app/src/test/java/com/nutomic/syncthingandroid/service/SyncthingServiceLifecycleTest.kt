@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.os.Looper
+import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -13,6 +14,7 @@ import com.nutomic.syncthingandroid.testutil.FakeSyncthingBinary
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.util.ConfigXml
 import java.net.ServerSocket
 import java.time.Duration
 import org.junit.After
@@ -147,6 +149,34 @@ class SyncthingServiceLifecycleTest {
 
         assertEquals(SyncthingService.State.DISABLED, service.currentState)
         assertTrue(!binary.started)
+    }
+
+    @Test
+    fun `a stop intent shuts an active Syncthing down`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        controller.withIntent(Intent(SyncthingService.ACTION_STOP)).startCommand(0, 2)
+
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    @Test
+    fun `a folder whose own run conditions fail is paused in the config before the start`() {
+        val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(Constants.dynPrefObjectCustomSyncConditions(prefix), true)
+            .putBoolean(Constants.dynPrefObjectSyncOnWifi(prefix), false)
+            .commit()
+
+        startService()
+        awaitWithClock { binary.started }
+
+        val config = ConfigXml(context).apply { loadConfig() }
+        assertTrue(config.folders.single().paused)
     }
 
     private companion object {
