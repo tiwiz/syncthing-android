@@ -120,7 +120,7 @@ class DrawerFragment : Fragment(), OnServiceStateChangeListener {
         }
     }
 
-    override fun onServiceStateChange(currentState: SyncthingService.State?) {
+    override fun onServiceStateChange(currentState: SyncthingService.State) {
         stServiceRunning.value = currentState == SyncthingService.State.ACTIVE
     }
 

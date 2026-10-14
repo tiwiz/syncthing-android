@@ -1,10 +1,8 @@
 package com.nutomic.syncthingandroid.service
 
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonParser
-import com.nutomic.syncthingandroid.model.Config
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.model.Connections
 import com.nutomic.syncthingandroid.model.Device
@@ -76,60 +74,6 @@ internal fun notifyPendingFolders(
             )
         }
     }
-}
-
-/**
- * Pauses or resumes the folders and devices that have their own sync conditions, by those
- * conditions. Returns whether the config changed, or null if it is not ready yet.
- */
-internal fun applyObjectRunConditions(
-    config: Config,
-    preferences: SharedPreferences,
-    runConditionMonitor: RunConditionMonitor,
-    logV: (String) -> Unit,
-): Boolean? {
-    var configChanged = false
-    val folders = config.folders
-    if (folders == null) {
-        Log.d(TAG, "applyCustomRunConditions: mConfig.folders is not ready yet.")
-        return null
-    }
-    for (folder in folders) {
-        val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + folder.id
-        if (!preferences.getBoolean(Constants.dynPrefObjectCustomSyncConditions(prefix), false))
-            continue
-        val syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(prefix)
-        logV("applyCustomRunConditions: f(${folder.label})=${if (syncConditionsMet) "1" else "0"}")
-        if (folder.paused != !syncConditionsMet) {
-            folder.paused = !syncConditionsMet
-            Log.d(
-                TAG,
-                "applyCustomRunConditions: f(${folder.label})=${if (syncConditionsMet) ">1" else ">0"}",
-            )
-            configChanged = true
-        }
-    }
-    val devices = config.devices
-    if (devices == null) {
-        Log.d(TAG, "applyCustomRunConditions: mConfig.devices is not ready yet.")
-        return null
-    }
-    for (device in devices) {
-        val prefix = Constants.PREF_OBJECT_PREFIX_DEVICE + device.deviceID
-        if (!preferences.getBoolean(Constants.dynPrefObjectCustomSyncConditions(prefix), false))
-            continue
-        val syncConditionsMet = runConditionMonitor.checkObjectSyncConditions(prefix)
-        logV("applyCustomRunConditions: d(${device.name})=${if (syncConditionsMet) "1" else "0"}")
-        if (device.paused != !syncConditionsMet) {
-            device.paused = !syncConditionsMet
-            Log.d(
-                TAG,
-                "applyCustomRunConditions: d(${device.name})=${if (syncConditionsMet) ">1" else ">0"}",
-            )
-            configChanged = true
-        }
-    }
-    return configChanged
 }
 
 /** Transfer rates per device and in total, from successive /rest/system/connections answers. */
