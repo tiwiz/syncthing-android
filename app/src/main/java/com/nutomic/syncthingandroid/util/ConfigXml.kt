@@ -71,7 +71,7 @@ class ConfigXml(private val context: Context) {
     @Throws(OpenConfigException::class, SyncthingRunnable.ExecutableNotFoundException::class)
     fun generateConfig() {
         Log.i(TAG, "(Re)Generating keys and config.")
-        SyncthingRunnable(context, SyncthingRunnable.Command.generate).run(true)
+        SyncthingRunnable(context, SyncthingRunnable.Command.GENERATE).run(true)
         parseConfig()
         var changed = false
 
@@ -149,7 +149,7 @@ class ConfigXml(private val context: Context) {
 
     @Throws(SyncthingRunnable.ExecutableNotFoundException::class)
     private fun getLocalDeviceIDandStoreToPref(): String {
-        val logOutput = SyncthingRunnable(context, SyncthingRunnable.Command.deviceid).run(true)
+        val logOutput = SyncthingRunnable(context, SyncthingRunnable.Command.DEVICE_ID).run(true)
         val localDeviceID = logOutput.replace("\n", "")
         // Verify that local device ID is correctly formatted.
         if (!Device().apply { deviceID = localDeviceID }.checkDeviceID()) {
