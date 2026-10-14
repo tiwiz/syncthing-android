@@ -36,7 +36,10 @@ One topic per PR, each with the gate and CI green before merging.
    the main screen with its drawer, lists and status tab. Screenshot goldens are re-recorded in
    these PRs and every change is reviewed.
    - Folder type and pull order: one Compose radio list, `SingleChoiceDialogActivity`, in the
-     same dialog window. Done (`refactor/compose-folder-type-pull-order`).
+     same dialog window. Done (#44).
+   - Versioning: `VersioningScreen` (type radios, number fields, versions path through the
+     folder picker) replaces the dialog, its five fragments and `NumberPickerFragment`. Done
+     (`refactor/compose-versioning`).
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 

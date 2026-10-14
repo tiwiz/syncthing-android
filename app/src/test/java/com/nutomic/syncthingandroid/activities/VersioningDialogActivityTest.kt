@@ -1,16 +1,21 @@
 package com.nutomic.syncthingandroid.activities
 
 import android.app.Activity
+import android.app.Application
 import android.content.Intent
 import android.os.Bundle
-import android.os.Looper
-import android.widget.Button
-import android.widget.Spinner
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -24,6 +29,8 @@ import org.robolectric.annotation.Config
 @Config(qualifiers = "en-rUS")
 class VersioningDialogActivityTest {
 
+    @get:Rule val compose = createEmptyComposeRule()
+
     private fun launch(
         vararg params: Pair<String, String>
     ): ActivityScenario<VersioningDialogActivity> {
@@ -36,14 +43,13 @@ class VersioningDialogActivityTest {
         return ActivityScenario.launchActivityForResult(intent)
     }
 
-    private fun ActivityScenario<VersioningDialogActivity>.select(type: Int) {
-        onActivity { it.findViewById<Spinner>(R.id.versioningTypeSpinner).setSelection(type) }
-        shadowOf(Looper.getMainLooper()).idle()
+    private fun select(type: String) {
+        compose.onNodeWithText(type).performClick()
     }
 
     /** Taps Finish and returns the extras the activity set as its result, sorted by key. */
     private fun ActivityScenario<VersioningDialogActivity>.finish(): Map<String, String?> {
-        onActivity { it.findViewById<Button>(R.id.finish_btn).performClick() }
+        compose.onNodeWithText("Finish").performScrollTo().performClick()
         assertEquals(Activity.RESULT_OK, result.resultCode)
         val extras: Bundle = checkNotNull(result.resultData.extras)
         return extras.keySet().sorted().associateWith { extras.getString(it) }
@@ -86,7 +92,7 @@ class VersioningDialogActivityTest {
     @Test
     fun `choosing another type returns it with its defaults and keeps the shared parameters`() {
         launch("type" to "trashcan", "cleanoutDays" to "7").use {
-            it.select(SIMPLE)
+            select(SIMPLE)
 
             assertEquals(
                 mapOf("cleanoutDays" to "7", "keep" to "5", "type" to "simple"),
@@ -108,15 +114,82 @@ class VersioningDialogActivityTest {
     @Test
     fun `going back to the original type returns the original type`() {
         launch("type" to "none").use {
-            it.select(SIMPLE)
-            it.select(NONE)
+            select(SIMPLE)
+            select(NONE)
 
             assertEquals(mapOf("cleanoutDays" to "0", "keep" to "5", "type" to "none"), it.finish())
         }
     }
 
+    @Test
+    fun `edited numbers are returned, clamped to their range`() {
+        launch("type" to "simple").use {
+            compose.onNodeWithTag("keep").performTextReplacement("12")
+            compose.onNodeWithTag("cleanoutDays").performTextReplacement("365")
+
+            assertEquals(
+                mapOf("cleanoutDays" to "100", "keep" to "12", "type" to "simple"),
+                it.finish(),
+            )
+        }
+    }
+
+    @Test
+    fun `the maximum age is shown in days and returned in seconds`() {
+        launch("type" to "staggered", "maxAge" to "864000", "versionsPath" to "").use {
+            compose.onNodeWithTag("maxAge").assertTextContains("10")
+            compose.onNodeWithTag("maxAge").performTextReplacement("30")
+
+            assertEquals("2592000", it.finish()["maxAge"])
+        }
+    }
+
+    @Test
+    fun `the external command is returned`() {
+        launch("type" to "external").use {
+            compose.onNodeWithTag("command").performTextReplacement("/bin/archive %FILE_PATH%")
+
+            assertEquals("/bin/archive %FILE_PATH%", it.finish()["command"])
+        }
+    }
+
+    @Test
+    fun `the versions path comes from the folder picker`() {
+        launch("type" to "staggered").use {
+            compose.onNodeWithTag("versionsPath").performScrollTo().performClick()
+            val app = ApplicationProvider.getApplicationContext<Application>()
+            val started = checkNotNull(shadowOf(app).nextStartedActivityForResult)
+            assertEquals(FolderPickerActivity::class.java.name, started.intent.component?.className)
+            it.onActivity { activity ->
+                shadowOf(activity)
+                    .receiveResult(
+                        started.intent,
+                        Activity.RESULT_OK,
+                        Intent().putExtra(FolderPickerActivity.EXTRA_RESULT_DIRECTORY, "/sdcard/v"),
+                    )
+            }
+            compose.onNodeWithText("/sdcard/v").assertExists()
+
+            assertEquals("/sdcard/v", it.finish()["versionsPath"])
+        }
+    }
+
+    @Test
+    fun `the parameters survive recreating the screen`() {
+        launch("type" to "trashcan").use {
+            select(SIMPLE)
+            compose.onNodeWithTag("keep").performTextReplacement("9")
+            it.recreate()
+
+            assertEquals(
+                mapOf("cleanoutDays" to "0", "keep" to "9", "type" to "simple"),
+                it.finish(),
+            )
+        }
+    }
+
     private companion object {
-        const val NONE = 0
-        const val SIMPLE = 2
+        const val NONE = "None"
+        const val SIMPLE = "Simple"
     }
 }
