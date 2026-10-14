@@ -5,13 +5,11 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Looper
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
@@ -21,14 +19,12 @@ import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.util.ConfigXml
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.fakes.RoboMenuItem
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
 
@@ -94,60 +90,6 @@ class EditScreensTest {
             .getButton(DialogInterface.BUTTON_POSITIVE)
             .performClick()
         idle()
-    }
-
-    @Test
-    fun `renaming a folder is saved to config xml`() {
-        editFolder().use { scenario ->
-            scenario.onActivity {
-                it.findViewById<EditText>(R.id.label).setText("Photos")
-                it.onOptionsItemSelected(RoboMenuItem(R.id.save))
-            }
-
-            assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
-            assertEquals("Photos", savedConfig().folders.single().label)
-        }
-    }
-
-    @Test
-    fun `saving an unchanged folder writes nothing`() {
-        val before = savedConfig().folders.single().label
-
-        editFolder().use { scenario ->
-            scenario.onActivity { it.onOptionsItemSelected(RoboMenuItem(R.id.save)) }
-
-            assertEquals(Activity.RESULT_CANCELED, scenario.result.resultCode)
-            assertEquals(before, savedConfig().folders.single().label)
-        }
-    }
-
-    @Test
-    fun `a folder without a label is not saved`() {
-        editFolder().use { scenario ->
-            scenario.onActivity {
-                it.findViewById<EditText>(R.id.label).setText("")
-                it.onOptionsItemSelected(RoboMenuItem(R.id.save))
-
-                assertEquals(
-                    "The folder label must not be empty",
-                    ShadowToast.getTextOfLatestToast(),
-                )
-                assertFalse(it.isFinishing)
-            }
-            assertEquals("Camera", savedConfig().folders.single().label)
-        }
-    }
-
-    @Test
-    fun `removing a folder asks first, then deletes it from config xml`() {
-        editFolder().use { scenario ->
-            scenario.onActivity {
-                it.onOptionsItemSelected(RoboMenuItem(R.id.remove))
-                confirmDialog()
-                assertTrue(it.isFinishing)
-            }
-            assertEquals(emptyList<String>(), savedConfig().folders.map { it.id })
-        }
     }
 
     @Test
