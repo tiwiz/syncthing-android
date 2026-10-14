@@ -224,8 +224,9 @@ Next steps (to be confirmed with the owner):
    Compose: PR #44 folder type and pull order dialogs (`SingleChoiceDialogActivity`). PR #45
    versioning dialog (`VersioningScreen`). PR #46
    `SyncConditionsScreen`. PR #47 QR
-   scanner and Syncthing Camera. Branch `refactor/compose-log`: log screen (`LogActivityTest`).
-   Next: folder picker, share, web page, device, folder, main.
+   scanner and Syncthing Camera. PR #48 log
+   screen. Branch `refactor/compose-folder-picker`: folder picker (`FolderPickerActivityTest`).
+   Next: share, web page, device, folder, main.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
