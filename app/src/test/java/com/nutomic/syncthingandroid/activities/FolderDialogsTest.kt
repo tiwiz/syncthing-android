@@ -7,11 +7,18 @@ import android.content.Intent
 import android.os.Looper
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -73,6 +80,12 @@ class FolderDialogsTest {
     @After
     fun tearDown() {
         folderDir.deleteRecursively()
+    }
+
+    /** The list item with [text], scrolled into view (and so composed) first. */
+    private fun scrollTo(text: String): SemanticsNodeInteraction {
+        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(text))
+        return compose.onNodeWithText(text)
     }
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
@@ -320,11 +333,9 @@ class FolderDialogsTest {
                 SyncConditionsActivity.createIntent(context, prefix, "Camera")
             )
             .use { scenario ->
-                scenario.onActivity {
-                    it.findViewById<SwitchCompat>(R.id.sync_on_wifi_title).isChecked = false
-                    it.findViewById<SwitchCompat>(R.id.sync_on_mobile_data_title).isChecked = true
-                    it.onBackPressedDispatcher.onBackPressed()
-                }
+                compose.onNodeWithText("Run on Wi-Fi").performClick()
+                scrollTo("Run on mobile data").assertIsOn()
+                scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
 
                 assertEquals(Activity.RESULT_OK, scenario.result.resultCode)
             }
@@ -344,15 +355,67 @@ class FolderDialogsTest {
         ActivityScenario.launch<SyncConditionsActivity>(
                 SyncConditionsActivity.createIntent(context, "sc_folder_x", "X")
             )
-            .use { scenario ->
-                scenario.onActivity {
-                    val wifi = it.findViewById<SwitchCompat>(R.id.sync_on_wifi_title)
-                    assertFalse(wifi.isChecked)
-                    assertFalse(wifi.isEnabled)
-                    assertFalse(
-                        it.findViewById<SwitchCompat>(R.id.sync_on_mobile_data_title).isEnabled
-                    )
-                }
+            .use {
+                compose.onNodeWithText("Run on Wi-Fi").assertIsOff().assertIsNotEnabled()
+                scrollTo("Run on mobile data").assertIsNotEnabled()
             }
+    }
+
+    @Test
+    fun `only networks still on the global whitelist can be chosen, and are saved`() {
+        val prefix = "sc_folder_x"
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(Constants.PREF_USE_WIFI_SSID_WHITELIST, true)
+            .putStringSet(Constants.PREF_WIFI_SSID_WHITELIST, setOf("\"home\"", "\"office\""))
+            .putStringSet(
+                Constants.dynPrefObjectSelectedWhitelistSsid(prefix),
+                setOf("\"home\"", "\"gone\""),
+            )
+            .commit()
+
+        ActivityScenario.launch<SyncConditionsActivity>(
+                SyncConditionsActivity.createIntent(context, prefix, "X")
+            )
+            .use { scenario ->
+                compose.onNodeWithText("Run on specified Wi-Fi networks").assertIsOn()
+                scrollTo("home").assertIsOn()
+                scrollTo("office").assertIsOff().performClick()
+                scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            }
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        assertTrue(prefs.getBoolean(Constants.dynPrefObjectUseWifiSsidWhitelist(prefix), false))
+        assertEquals(
+            setOf("\"home\"", "\"office\""),
+            prefs.getStringSet(Constants.dynPrefObjectSelectedWhitelistSsid(prefix), null),
+        )
+    }
+
+    @Test
+    fun `a global power source is taken over and cannot be changed`() {
+        val prefix = "sc_folder_x"
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER)
+            .putString(
+                Constants.dynPrefObjectSyncOnPowerSource(prefix),
+                Constants.PowerSource.BATTERY,
+            )
+            .commit()
+
+        ActivityScenario.launch<SyncConditionsActivity>(
+                SyncConditionsActivity.createIntent(context, prefix, "X")
+            )
+            .use { scenario ->
+                scrollTo("AC power.").assertExists()
+                scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            }
+
+        assertEquals(
+            Constants.PowerSource.CHARGER,
+            PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(Constants.dynPrefObjectSyncOnPowerSource(prefix), null),
+        )
     }
 }

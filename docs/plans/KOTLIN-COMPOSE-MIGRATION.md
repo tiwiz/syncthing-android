@@ -38,8 +38,10 @@ One topic per PR, each with the gate and CI green before merging.
    - Folder type and pull order: one Compose radio list, `SingleChoiceDialogActivity`, in the
      same dialog window. Done (#44).
    - Versioning: `VersioningScreen` (type radios, number fields, versions path through the
-     folder picker) replaces the dialog, its five fragments and `NumberPickerFragment`. Done
-     (`refactor/compose-versioning`).
+     folder picker) replaces the dialog, its five fragments and `NumberPickerFragment`. Done (#45).
+   - Sync conditions: `SyncConditionsScreen` on `SettingsScaffold` and the settings' preference
+     components; `GlobalRunConditions`/`ObjectRunConditions` read and save the prefs. Done
+     (`refactor/compose-sync-conditions`).
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 
