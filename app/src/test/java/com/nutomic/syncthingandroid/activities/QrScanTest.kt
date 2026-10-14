@@ -7,9 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Looper
-import android.view.View
-import android.widget.EditText
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
@@ -19,7 +20,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.Result
 import com.journeyapps.barcodescanner.BarcodeResult
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
@@ -129,7 +129,7 @@ class QrScanTest {
     fun `a scanned device id fills in the new device`() {
         ActivityScenario.launch<DeviceActivity>(DeviceActivity.createIntent(context)).use { scenario
             ->
-            scenario.onActivity { it.findViewById<View>(R.id.qrButton).performClick() }
+            compose.onNodeWithContentDescription("Scan QR Code").performClick()
             idle()
             val started = checkNotNull(shadowOf(app).nextStartedActivity)
             assertEquals(QRScannerActivity::class.java.name, started.component?.className)
@@ -144,12 +144,14 @@ class QrScanTest {
             }
             idle()
 
-            scenario.onActivity {
-                assertEquals(
-                    REMOTE_DEVICE_ID,
-                    it.findViewById<EditText>(R.id.editDeviceId).text.toString(),
-                )
-            }
+            assertEquals(
+                REMOTE_DEVICE_ID,
+                compose
+                    .onNodeWithTag("deviceId")
+                    .fetchSemanticsNode()
+                    .config[SemanticsProperties.EditableText]
+                    .text,
+            )
             assertTrue(scenario.state.isAtLeast(Lifecycle.State.RESUMED))
         }
     }

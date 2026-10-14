@@ -227,8 +227,9 @@ Next steps (to be confirmed with the owner):
    scanner and Syncthing Camera. PR #48 log
    screen. PR #49
    folder picker. PR #50 share
-   screen. Branch `refactor/compose-webview`: web page (`WebViewActivityTest`,
-   `WebViewActivityWebTest`). Next: device, folder, main.
+   screen. PR #51 web
+   page. Branch `refactor/compose-device`: device screen (`DeviceActivityTest` drives it through
+   the `DeviceScreen` test driver). Next: folder, main.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
