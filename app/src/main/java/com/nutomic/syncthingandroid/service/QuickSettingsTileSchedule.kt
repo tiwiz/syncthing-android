@@ -14,8 +14,8 @@ import androidx.annotation.RequiresApi
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.service.RunConditionMonitor.ACTION_SYNC_TRIGGER_FIRED
-import com.nutomic.syncthingandroid.service.RunConditionMonitor.EXTRA_BEGIN_ACTIVE_TIME_WINDOW
+import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.ACTION_SYNC_TRIGGER_FIRED
+import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.EXTRA_BEGIN_ACTIVE_TIME_WINDOW
 
 /** Starts Syncthing for the configured duration, when it follows a time schedule. */
 @RequiresApi(Build.VERSION_CODES.N)

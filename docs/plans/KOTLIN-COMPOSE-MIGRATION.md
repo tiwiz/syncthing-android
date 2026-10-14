@@ -23,8 +23,10 @@ One topic per PR, each with the gate and CI green before merging.
    7. `Constants` and the force/schedule tiles. Done (#37).
    8. `NotificationHandler`. Done (#38).
    9. `SyncthingRunnable`. Done (#39).
-   10. `EventProcessor`. Done (`refactor/kotlin-eventprocessor`).
-   11. The rest of `service/`: `RunConditionMonitor`, `RestApi`, `SyncthingService`.
+   10. `EventProcessor`. Done (#40).
+   11. `RunConditionMonitor`, split into the monitor, `RunConditionChecks` and `DeviceState`.
+       Done (`refactor/kotlin-runconditions`).
+   12. `RestApi`, `SyncthingService`.
    Activities, fragments, adapters and custom Views are not converted to Kotlin first: the
    Compose rewrite replaces them.
 2. **Screens → Compose**, smallest first: folder type, pull order and versioning dialogs, sync

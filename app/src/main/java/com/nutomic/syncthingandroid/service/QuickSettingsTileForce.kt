@@ -13,7 +13,7 @@ import androidx.core.content.edit
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.service.RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION
+import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.ACTION_UPDATE_SHOULDRUN_DECISION
 
 /** Cycles through following the run conditions, forcing Syncthing to run and forcing it to stop. */
 @RequiresApi(Build.VERSION_CODES.N)

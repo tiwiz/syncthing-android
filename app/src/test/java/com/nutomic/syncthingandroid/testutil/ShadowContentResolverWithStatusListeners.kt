@@ -36,5 +36,12 @@ class ShadowContentResolverWithStatusListeners : ShadowContentResolver() {
 
         val registeredListeners: Int
             get() = listeners.size
+
+        /** Tells the registered listeners that a sync setting changed, as Android would. */
+        fun notifyListeners() {
+            listeners.values.toList().forEach {
+                it.onStatusChanged(ContentResolver.SYNC_OBSERVER_TYPE_SETTINGS)
+            }
+        }
     }
 }

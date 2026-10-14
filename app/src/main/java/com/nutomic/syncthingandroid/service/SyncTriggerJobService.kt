@@ -4,7 +4,7 @@ import android.app.job.JobParameters
 import android.app.job.JobService
 import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.nutomic.syncthingandroid.service.RunConditionMonitor.EXTRA_BEGIN_ACTIVE_TIME_WINDOW
+import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.EXTRA_BEGIN_ACTIVE_TIME_WINDOW
 
 /**
  * Scheduled by the JobScheduler, see JobUtils.scheduleSyncTriggerServiceJob. Tells
