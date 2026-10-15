@@ -14,8 +14,6 @@ import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,10 +21,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Why `enableEdgeToEdge()` is called by the Compose activities and not by ThemedAppCompatActivity
- * (docs/TECH-DEBT.md): on the light theme the View screens keep a coloured status bar with light
- * icons, while the Compose screens draw behind a transparent one with dark icons. One call in the
- * base class would put dark icons on the View screens' coloured bar.
+ * The Compose screens draw behind a transparent status bar with dark icons on the light theme. No
+ * View screen is left, so `enableEdgeToEdge()` can move to ThemedAppCompatActivity
+ * (docs/TECH-DEBT.md); until then each activity calls it.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(
@@ -64,14 +61,6 @@ class EdgeToEdgeTest {
             }
         }
         return bar
-    }
-
-    @Test
-    fun `a View screen keeps a coloured status bar with light icons`() {
-        val bar = statusBarOf(MainActivity::class.java)
-
-        assertNotEquals(Color.TRANSPARENT, bar.color)
-        assertFalse(bar.darkIcons)
     }
 
     @Test

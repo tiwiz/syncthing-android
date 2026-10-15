@@ -6,9 +6,6 @@ import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.activities.PhotoShootActivity
 import com.nutomic.syncthingandroid.activities.ShareActivity
 import com.nutomic.syncthingandroid.activities.SyncConditionsActivity
-import com.nutomic.syncthingandroid.fragments.DeviceListFragment
-import com.nutomic.syncthingandroid.fragments.FolderListFragment
-import com.nutomic.syncthingandroid.fragments.StatusFragment
 import com.nutomic.syncthingandroid.onboarding.OnboardingActivity
 import com.nutomic.syncthingandroid.service.EventProcessor
 import com.nutomic.syncthingandroid.service.RestApi
@@ -26,13 +23,9 @@ import javax.inject.Singleton
 interface DaggerComponent {
     fun inject(activity: DeviceActivity)
 
-    fun inject(fragment: DeviceListFragment)
-
     fun inject(eventProcessor: EventProcessor)
 
     fun inject(activity: FolderActivity)
-
-    fun inject(fragment: FolderListFragment)
 
     fun inject(activity: MainActivity)
 
@@ -47,8 +40,6 @@ interface DaggerComponent {
     fun inject(settingsActivity: SettingsActivity)
 
     fun inject(activity: ShareActivity)
-
-    fun inject(fragment: StatusFragment)
 
     fun inject(activity: SyncConditionsActivity)
 

@@ -50,9 +50,9 @@ One topic per PR, each with the gate and CI green before merging.
    - Device: `DeviceForm` + `DeviceEditScreen`. Done (#52).
    - Folder: `FolderForm` + `FolderEditScreen` + `FolderFiles.kt`; shared parts in
      `EditComponents.kt`. Done (#53).
-   - Main screen: row states and Kotlin adapters (#55); characterization tests through the
-     `MainScreen` driver (`test/main-screen`); the Compose screen is next, see AGENTS.md
-     "Resume here".
+   - Main screen: row states and Kotlin adapters (#55), characterization tests through the
+     `MainScreen` driver (#56), the Compose screen (`refactor/compose-main-screen`). Every screen
+     is Compose now.
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 

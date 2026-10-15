@@ -3,11 +3,13 @@ package com.nutomic.syncthingandroid.screenshots
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.viewpager.widget.ViewPager
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.DeviceActivity
 import com.nutomic.syncthingandroid.activities.FolderActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
@@ -21,6 +23,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import java.util.TimeZone
 import org.junit.After
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -48,6 +51,8 @@ import org.robolectric.annotation.GraphicsMode
     instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
 )
 class RunningScreenshotTest(private val screen: Screen, private val dark: Boolean) {
+
+    @get:Rule val compose = createEmptyComposeRule()
 
     enum class Screen(
         val activity: Class<out Activity>,
@@ -90,6 +95,17 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         TimeZone.setDefault(savedTimeZone)
     }
 
+    /**
+     * Lets the screen's work finish: with a compose rule, Compose recomposes on the rule's clock,
+     * so it has to catch up after each round of the main looper.
+     */
+    private fun settleAll() {
+        repeat(SETTLE_ROUNDS) {
+            settle(rounds = 1)
+            compose.waitForIdle()
+        }
+    }
+
     @Test
     fun screenshot() {
         System.setProperty("os.version", "6.1.0-android")
@@ -100,14 +116,14 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         RunningSyncthingService.install(syncthing)
         val intent = Intent(context, screen.activity).apply(screen.extras)
         ActivityScenario.launch<Activity>(intent).use { scenario ->
-            settle()
+            settleAll()
             screen.tab?.let { tab ->
-                scenario.onActivity { it.findViewById<ViewPager>(R.id.pager).currentItem = tab }
-                settle()
+                compose.onNode(hasText(TAB_TITLES[tab]) and hasClickAction()).performClick()
+                settleAll()
             }
+            scenario.onActivity { it.window.decorView.hideTextCursors() }
+            settleAll()
             scenario.onActivity {
-                it.window.decorView.hideTextCursors()
-                settle(rounds = 2)
                 it.window.decorView.captureRoboImage(
                     screenshotPath("running", screen.name.lowercase(), dark)
                 )
@@ -116,6 +132,11 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
     }
 
     companion object {
+        private const val SETTLE_ROUNDS = 20
+
+        /** The main screen's tab titles, by index. */
+        private val TAB_TITLES = listOf("Folders", "Devices", "Status")
+
         private fun Intent.settingsRoute(route: String) {
             putExtra(SettingsActivity.EXTRA_START_DESTINATION, route)
         }
