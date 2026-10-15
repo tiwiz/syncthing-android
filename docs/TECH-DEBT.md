@@ -29,4 +29,5 @@ Kept from the Kotlin migration:
 
 | Where | What |
 |---|---|
+| `activities/MainContent.kt` | In Italian the status tab's segmented buttons ("Forza arresto ignora condizioni di esecuzione") wrap to five lines and touch the border on a phone in portrait; use a smaller text style or shorter labels. |
 | `activities/LogText.kt` | Removing the milliseconds from Android log lines also removes the space before the tag (`10:00:00I/Tag`), as the Java version did; pinned by `LogActivityTest`. |
