@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -58,7 +57,6 @@ class LogActivity : SyncthingActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showSyncthingLog = savedInstanceState?.getBoolean(STATE_SHOW_SYNCTHING_LOG) ?: false
-        enableEdgeToEdge()
         setContent {
             ApplicationTheme {
                 LogScreen(

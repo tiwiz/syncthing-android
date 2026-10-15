@@ -37,24 +37,24 @@ The namespace is inherited from the original app. The application id is
 
 | Package | Language | Role |
 |---|---|---|
-| (root) | Java | `SyncthingApp` (Application, builds the Dagger graph), `DaggerComponent`, `SyncthingModule` |
-| `service` | Java | The core: `SyncthingService`, `SyncthingRunnable`, `RestApi`, `EventProcessor`, `RunConditionMonitor`, `NotificationHandler`, Quick Settings tiles, `SyncTriggerJobService`, `Constants`, `AppPrefs` |
-| `http` | Java | Volley requests to the REST API: `ApiRequest`, `GetRequest`, `PostRequest`, `PollWebGuiAvailableTask`, `SyncthingTrustManager` |
-| `model` | Java | Gson POJOs mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
-| `util` | Java + Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`, `PermissionUtil`, `Util`, `JobUtils`, `CertificateValidator.kt`, `extensions.kt` |
-| `activities` | Java (Views) | `MainActivity`, `FolderActivity`, `DeviceActivity`, pickers and dialogs, `ShareActivity`, `PhotoShootActivity`, `QRScannerActivity`, `LogActivity`, `WebViewActivity` |
-| `fragments` | Java + Kotlin | Folder/device lists and status tab (Views), versioning dialogs, `DrawerFragment.kt` and `DeviceIdDialogFragment.kt` (Compose inside `ComposeView`) |
-| `views` | Java | RecyclerView adapters and custom widgets |
+| (root) | Kotlin | `SyncthingApp` (Application, builds the Dagger graph), `DaggerComponent`, `SyncthingModule` |
+| `service` | Kotlin | The core: `SyncthingService` (+ `ConfigBackup`, `HttpsCertFiles`), `SyncthingRunnable`, `RestApi` (+ `RestApiSupport`), `EventProcessor`, `RunConditionMonitor` (+ `RunConditionChecks`, `DeviceState`, `ObjectRunConditions`), `NotificationHandler`, Quick Settings tiles, `SyncTriggerJobService`, `Constants`, `AppPrefs` |
+| `http` | Kotlin | Volley requests to the REST API: `ApiRequest`, `GetRequest`, `PostRequest`, `PollWebGuiAvailableTask`, `SyncthingTrustManager` |
+| `model` | Kotlin | Gson models mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
+| `util` | Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`/`SafUtils`/`FileOpener`, `PermissionUtil`, `Util` (shell), `TextFormat`, `UiUtil`, `JobUtils`, `CertificateValidator`, `extensions.kt` |
+| `activities` | Kotlin, Compose | Every screen except onboarding, settings, recent changes and the web GUI: main (`MainContent`, `MainRows`, `MainDrawer`), folder (`FolderForm`, `FolderEditScreen`), device (`DeviceForm`, `DeviceEditScreen`), pickers and dialogs, share, Syncthing Camera, QR scanner, log, web page. `ThemedAppCompatActivity` applies the theme and edge-to-edge; `SyncthingActivity` binds the service |
+| `fragments` | Kotlin, Compose | `DeviceIdDialogFragment` (Compose inside a dialog fragment) |
+| `views` | Kotlin | `FolderRowState`, `DeviceRowState`: what a row of the main screen's lists shows |
 | `onboarding` | Kotlin, Compose | Launcher activity: welcome, permissions, key generation |
 | `settings` | Kotlin, Compose | `SettingsActivity` with Navigation 3 and one screen per section, backed by `SharedPreferenceFlow.kt` |
 | `recentchanges` | Kotlin, Compose | List of recent disk events |
 | `webgui` | Kotlin, Compose | `WebGuiActivity`, embeds the Syncthing web GUI in a WebView |
 | `theme` | Kotlin, Compose | `ApplicationTheme` (Material 3) |
-| `receiver` | Java | `BootReceiver`, `AppConfigReceiver` (broadcast remote control) |
+| `receiver` | Kotlin | `BootReceiver`, `AppConfigReceiver` (broadcast remote control) |
 
-The code base is in transition: the older screens are Java with XML layouts and AppCompat, the
-newer ones (onboarding, settings, recent changes, web GUI, drawer) are Kotlin and Jetpack Compose.
-New UI is written in Compose.
+All app code is Kotlin and every screen is Jetpack Compose with Material 3 (migration plan:
+[plans/KOTLIN-COMPOSE-MIGRATION.md](plans/KOTLIN-COMPOSE-MIGRATION.md)). The Syncthing camera
+preview (zxing) and the WebViews are Views hosted in `AndroidView`.
 
 ## Dependency injection
 
@@ -181,7 +181,7 @@ screens therefore work while Syncthing is stopped.
 ### Preferences
 
 App settings are the default `SharedPreferences`. The keys are the `PREF_*` constants in
-`service/Constants.java`. Per-folder and per-device sync conditions use prefixed keys built by
+`service/Constants.kt`. Per-folder and per-device sync conditions use prefixed keys built by
 `Constants.DYN_PREF_OBJECT_*`. The Compose settings screens observe them through
 `createPreferenceFlow()` (`settings/SharedPreferenceFlow.kt`) and `zhanghai` compose-preference.
 The import/export zip includes these preferences, so renaming a key breaks old backups.

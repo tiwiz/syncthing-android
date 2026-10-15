@@ -10,7 +10,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -33,7 +32,6 @@ class FolderPickerActivity : SyncthingActivity() {
             FolderPickerState(roots, null).let {
                 if (initial != null) it.copy(location = File(initial)) else it.atRoot()
             }
-        enableEdgeToEdge()
         setContent {
             ApplicationTheme {
                 FolderPickerScreen(

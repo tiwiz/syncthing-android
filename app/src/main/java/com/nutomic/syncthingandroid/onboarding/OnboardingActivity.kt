@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -148,7 +147,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         super.onCreate(savedInstanceState)
         // Not in ThemedAppCompatActivity: below Android 15 the View screens keep a coloured status
         // bar that needs light icons (EdgeToEdgeTest). Move it there once every activity uses Compose.
-        enableEdgeToEdge()
         (application as SyncthingApp).component().inject(this)
 
         val isRunningOnTv = isRunningOnTV(this)

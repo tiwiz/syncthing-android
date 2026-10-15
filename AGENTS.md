@@ -10,8 +10,8 @@ Read it at the start of every task and keep it current.
 - This checkout is `tiwiz/syncthing-android`, a fork of `researchxxl/syncthing-android`
   (itself forked from `syncthing/syncthing-android`). Application id
   `com.github.catfriend1.syncthingfork`, namespace `com.nutomic.syncthingandroid`.
-- Java (older code, Views + AppCompat) and Kotlin (newer code, Jetpack Compose + Material 3).
-  Dagger 2 via KSP, Volley + Gson for HTTP, Navigation 3 in settings. Go for the native part.
+- Kotlin only, every screen in Jetpack Compose + Material 3 (migrated from Java/Views in
+  October 2026). Dagger 2 via KSP, Volley + Gson for HTTP, Navigation 3 in settings. Go for the native part.
 - minSdk 23, compileSdk/targetSdk 37, JDK 21, AGP 9.4, Kotlin 2.4, Gradle 9.8.
 
 ## SOURCE OF TRUTH DOCS
@@ -118,13 +118,14 @@ app/                         Android application (only Gradle module with code)
     http/          Volley requests to the REST API (loopback only, custom trust manager)
     model/         Gson POJOs for Syncthing's JSON + local caches
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
-    activities/    Java/Views screens: Main, Folder, Device, pickers, Share, PhotoShoot, Log
-    fragments/     Folder/Device/Status tabs, versioning dialogs, Compose drawer
-    views/         RecyclerView adapters, custom widgets
+    activities/    Compose screens: Main (+ drawer), Folder, Device, pickers, dialogs, Share,
+                   PhotoShoot, QR scanner, Log, web page; base classes for theme and service
+    fragments/     DeviceIdDialogFragment (Compose)
+    views/         FolderRowState, DeviceRowState (main screen list rows)
     onboarding/    Compose launcher flow (permissions, key generation)
     settings/      Compose settings, Navigation 3, SharedPreferenceFlow
     recentchanges/ webgui/ theme/ receiver/
-  src/main/res/    XML layouts, strings (values = English, values-* from Weblate)
+  src/main/res/    strings, drawables, themes, a few XML layouts (values = English, values-* from Weblate)
   src/main/play/   Play Store listing metadata
   src/main/cpp/    empty ndk-build stub so AGP packages the ABIs
   src/test/        JUnit/Robolectric tests (java/), fixtures + golden files (resources/),
@@ -144,12 +145,11 @@ docs/                        architecture, development rules, plans (this fork)
 
 Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
-- New code in Kotlin, new UI in Compose + Material 3 (`ApplicationTheme`). Java files and View
-  screens are being migrated, one PR per step ([docs/plans/KOTLIN-COMPOSE-MIGRATION.md](docs/plans/KOTLIN-COMPOSE-MIGRATION.md)).
+- Kotlin and Compose + Material 3 (`ApplicationTheme`) only; no new Java or View screens.
 - English everywhere (code, comments, logs, docs). Unix line endings. Match surrounding style.
 - Config access through `ConfigRouter` (REST when running, `config.xml` when stopped).
 - REST only to `127.0.0.1`; never weaken `ApiRequest`/`SyncthingTrustManager`.
-- New preferences: `PREF_*` constants in `Constants.java`; never rename existing keys.
+- New preferences: `PREF_*` constants in `Constants.kt`; never rename existing keys.
 - Strings only in `res/values/strings.xml`; translations come from Weblate.
 - Do not touch the changelog; do not bump Kotlin as a side effect.
 - Commits: Conventional Commits, lower case, component scope, `(fixes #N)`; `Signed-off-by` for
@@ -234,12 +234,11 @@ Next steps (to be confirmed with the owner):
    PR #55: `views/FolderRowState` and `views/DeviceRowState` (what a list row shows,
    `FolderRowStateTest`, `DeviceRowStateTest`); `FoldersAdapter` and `DevicesAdapter` in Kotlin.
    PR #56: `MainActivityTest` (17) and `MainActivityPermissionTest` through the `MainScreen`
-   driver. Branch `refactor/compose-main-screen`: the main screen in Compose (`MainActivity`,
-   `MainContent`, `MainRows`, `MainDrawer`, `SystemFigures`), only the driver changed.
-   **Resume here:** left, in order:
-   c. Wrap-up: `SyncthingActivity`/`ThemedAppCompatActivity` to Kotlin, `enableEdgeToEdge()` in
-      the base class (drop `EdgeToEdgeTest`), delete the unused `EnhancedEditText`,
-      `TipListAdapter` and orphan layouts.
+   driver. PR #57: the main screen in Compose (`MainActivity`, `MainContent`, `MainRows`,
+   `MainDrawer`, `SystemFigures`). Branch `refactor/kotlin-base-activities`: `SyncthingActivity`
+   and `ThemedAppCompatActivity` in Kotlin, `enableEdgeToEdge()` in the base class, unused
+   `EnhancedEditText`/`TipListAdapter` and orphan resources removed: no Java left in the app.
+   **Resume here:** left:
    d. Milestone: native debug build, install on the Pixel 8, walk through every new screen.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 

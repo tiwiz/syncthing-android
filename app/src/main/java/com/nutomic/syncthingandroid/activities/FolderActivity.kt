@@ -14,7 +14,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
@@ -171,7 +170,6 @@ class FolderActivity : SyncthingActivity() {
             }
         }
 
-        enableEdgeToEdge()
         setContent {
             ApplicationTheme {
                 form?.let {
