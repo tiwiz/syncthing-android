@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,7 +53,6 @@ class SettingsActivity : SyncthingActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         (application as SyncthingApp).component().inject(this)
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
         val activityScope = this.lifecycleScope
         prefFlow = createPreferenceFlow(sharedPreferences, activityScope)

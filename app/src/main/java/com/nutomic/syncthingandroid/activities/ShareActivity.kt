@@ -9,7 +9,6 @@ import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,7 +79,6 @@ class ShareActivity : SyncthingActivity(), SyncthingService.OnServiceStateChange
         shared.associateWithTo(files) { displayNameFor(this, it) }
         names = files.values.joinToString("\n")
 
-        enableEdgeToEdge()
         setContent {
             ApplicationTheme {
                 ShareScreen(

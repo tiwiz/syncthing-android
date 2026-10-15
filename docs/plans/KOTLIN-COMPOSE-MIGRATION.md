@@ -51,10 +51,10 @@ One topic per PR, each with the gate and CI green before merging.
    - Folder: `FolderForm` + `FolderEditScreen` + `FolderFiles.kt`; shared parts in
      `EditComponents.kt`. Done (#53).
    - Main screen: row states and Kotlin adapters (#55), characterization tests through the
-     `MainScreen` driver (#56), the Compose screen (`refactor/compose-main-screen`). Every screen
-     is Compose now.
-3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
-   layouts and Views go, then the milestone and a run on the phone.
+     `MainScreen` driver (#56), the Compose screen (#57). Every screen is Compose now.
+3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity`, the base activities go
+   to Kotlin, unused layouts and Views go (`refactor/kotlin-base-activities`); then the
+   milestone and a run on the phone.
 
 ## Conversion rules
 

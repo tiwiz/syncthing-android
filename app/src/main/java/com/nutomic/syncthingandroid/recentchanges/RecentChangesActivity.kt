@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +56,6 @@ class RecentChangesActivity : SyncthingActivity(), SyncthingService.OnServiceSta
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
         // Same store the Dagger-provided SharedPreferences wraps, read directly so this screen does
         // not need to be added to the injector for one boolean.
