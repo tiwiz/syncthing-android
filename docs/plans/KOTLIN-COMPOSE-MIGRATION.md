@@ -49,7 +49,8 @@ One topic per PR, each with the gate and CI green before merging.
    - Web page: `WebViewScreen` (WebView in `AndroidView`, Compose certificate notice). Done (#51).
    - Device: `DeviceForm` + `DeviceEditScreen`. Done (#52).
    - Folder: `FolderForm` + `FolderEditScreen` + `FolderFiles.kt`; shared parts in
-     `EditComponents.kt`. Done (`refactor/compose-folder`).
+     `EditComponents.kt`. Done (#53).
+   - Main screen: in progress, see AGENTS.md "Resume here".
 3. **Wrap-up.** `enableEdgeToEdge()` moves to `ThemedAppCompatActivity` (see TECH-DEBT.md), unused
    layouts and Views go, then the milestone and a run on the phone.
 

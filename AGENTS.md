@@ -229,9 +229,21 @@ Next steps (to be confirmed with the owner):
    folder picker. PR #50 share
    screen. PR #51 web
    page. PR #52
-   device screen (`DeviceActivityTest` through the `DeviceScreen` driver). Branch
-   `refactor/compose-folder`: folder screen (`FolderActivityTest` through `FolderScreen`). Next:
-   main screen (drawer, lists, status tab, adapters, views).
+   device screen (`DeviceActivityTest` through the `DeviceScreen` driver). PR #53
+   folder screen (`FolderActivityTest` through `FolderScreen`).
+   **Resume here (2026-10-14):** local branch `refactor/compose-main` has a WIP commit that extracts
+   `views/FolderRowState.kt` from `FoldersAdapter` (compiles, screenshots unchanged; no tests, no
+   PR yet). Left, in order:
+   a. Main screen, PR 1: `FolderRowState` + `DeviceRowState` (from `DevicesAdapter`) with unit
+      tests; the Java adapters use them; `running/main_*` screenshots must not change.
+   b. Main screen, PR 2: first characterization tests through a `MainScreen` driver (no behaviour
+      tests exist yet), then Compose: tabs (folders, devices, status with force start/stop),
+      drawer, total sync progress, usage reporting and restart dialogs, exit FAB, `ACTION_EXIT`.
+      Removes `MainActivity`, the three list fragments, the adapters and `SegmentedButton`.
+   c. Wrap-up: `SyncthingActivity`/`ThemedAppCompatActivity` to Kotlin, `enableEdgeToEdge()` in
+      the base class (drop `EdgeToEdgeTest`), delete the unused `EnhancedEditText`,
+      `TipListAdapter` and orphan layouts.
+   d. Milestone: native debug build, install on the Pixel 8, walk through every new screen.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF
