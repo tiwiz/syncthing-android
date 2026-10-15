@@ -231,12 +231,12 @@ Next steps (to be confirmed with the owner):
    page. PR #52
    device screen (`DeviceActivityTest` through the `DeviceScreen` driver). PR #53
    folder screen (`FolderActivityTest` through `FolderScreen`).
-   Branch `refactor/compose-main`: `views/FolderRowState` and `views/DeviceRowState` (what a
-   list row shows, `FolderRowStateTest`, `DeviceRowStateTest`); `FoldersAdapter` and
-   `DevicesAdapter` in Kotlin on top of them; screenshots unchanged.
+   PR #55: `views/FolderRowState` and `views/DeviceRowState` (what a list row shows,
+   `FolderRowStateTest`, `DeviceRowStateTest`); `FoldersAdapter` and `DevicesAdapter` in Kotlin.
+   Branch `test/main-screen`: `MainActivityTest` (17) and `MainActivityPermissionTest` through
+   the `MainScreen` driver, still on the View screen.
    **Resume here:** left, in order:
-   b. Main screen, PR 2: first characterization tests through a `MainScreen` driver (no behaviour
-      tests exist yet), then Compose: tabs (folders, devices, status with force start/stop),
+   b. Main screen in Compose (the tests above stay, only the driver changes): tabs (folders, devices, status with force start/stop),
       drawer, total sync progress, usage reporting and restart dialogs, exit FAB, `ACTION_EXIT`.
       Removes `MainActivity`, the three list fragments, the adapters and `SegmentedButton`.
    c. Wrap-up: `SyncthingActivity`/`ThemedAppCompatActivity` to Kotlin, `enableEdgeToEdge()` in
