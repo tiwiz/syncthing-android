@@ -231,11 +231,10 @@ Next steps (to be confirmed with the owner):
    page. PR #52
    device screen (`DeviceActivityTest` through the `DeviceScreen` driver). PR #53
    folder screen (`FolderActivityTest` through `FolderScreen`).
-   **Resume here (2026-10-14):** local branch `refactor/compose-main` has a WIP commit that extracts
-   `views/FolderRowState.kt` from `FoldersAdapter` (compiles, screenshots unchanged; no tests, no
-   PR yet). Left, in order:
-   a. Main screen, PR 1: `FolderRowState` + `DeviceRowState` (from `DevicesAdapter`) with unit
-      tests; the Java adapters use them; `running/main_*` screenshots must not change.
+   Branch `refactor/compose-main`: `views/FolderRowState` and `views/DeviceRowState` (what a
+   list row shows, `FolderRowStateTest`, `DeviceRowStateTest`); `FoldersAdapter` and
+   `DevicesAdapter` in Kotlin on top of them; screenshots unchanged.
+   **Resume here:** left, in order:
    b. Main screen, PR 2: first characterization tests through a `MainScreen` driver (no behaviour
       tests exist yet), then Compose: tabs (folders, devices, status with force start/stop),
       drawer, total sync progress, usage reporting and restart dialogs, exit FAB, `ACTION_EXIT`.
