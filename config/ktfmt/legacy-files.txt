@@ -1,7 +1,6 @@
 # Kotlin files in app/src/main that are not ktfmt-clean yet (paths relative to the repo root).
 # Remove a file from this list the first time it is refactored, after running ktfmtFormatMain.
 app/src/main/java/com/nutomic/syncthingandroid/fragments/DeviceIdDialogFragment.kt
-app/src/main/java/com/nutomic/syncthingandroid/fragments/DrawerFragment.kt
 app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingActivity.kt
 app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingPage.kt
 app/src/main/java/com/nutomic/syncthingandroid/onboarding/OnboardingScaffold.kt

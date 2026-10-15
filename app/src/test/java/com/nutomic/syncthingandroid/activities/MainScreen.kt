@@ -1,31 +1,22 @@
 package com.nutomic.syncthingandroid.activities
 
 import android.app.Application
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Looper
-import android.view.View
-import android.widget.ListView
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.ListFragment
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.viewpager.widget.ViewPager
-import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.fragments.DeviceListFragment
-import com.nutomic.syncthingandroid.fragments.FolderListFragment
-import com.nutomic.syncthingandroid.fragments.StatusFragment
-import com.nutomic.syncthingandroid.model.Device
-import com.nutomic.syncthingandroid.model.Folder
-import com.nutomic.syncthingandroid.views.SegmentedButton
 import java.time.Duration
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.fakes.RoboMenuItem
-import org.robolectric.shadows.ShadowDialog
 
 /**
  * Drives the main screen the way a user would, so the tests stay the same whatever the screen is
@@ -33,13 +24,13 @@ import org.robolectric.shadows.ShadowDialog
  */
 internal class MainScreen(
     private val scenario: ActivityScenario<MainActivity>,
-    @Suppress("unused") private val compose: ComposeTestRule,
+    private val compose: ComposeTestRule,
 ) : AutoCloseable {
 
-    enum class Tab {
-        FOLDERS,
-        DEVICES,
-        STATUS,
+    enum class Tab(val title: String) {
+        FOLDERS("Folders"),
+        DEVICES("Devices"),
+        STATUS("Status"),
     }
 
     /** What the status light in the top bar says. */
@@ -53,180 +44,158 @@ internal class MainScreen(
     fun idle(millis: Long = 0) {
         val looper = shadowOf(Looper.getMainLooper())
         if (millis > 0) looper.idleFor(Duration.ofMillis(millis)) else looper.idle()
+        compose.waitForIdle()
     }
-
-    private fun <T> on(block: (MainActivity) -> T): T {
-        var result: T? = null
-        scenario.onActivity { result = block(it) }
-        idle()
-        @Suppress("UNCHECKED_CAST")
-        return result as T
-    }
-
-    private inline fun <reified F : ListFragment> MainActivity.fragment(): F =
-        supportFragmentManager.fragments.filterIsInstance<F>().first()
 
     fun showTab(tab: Tab) {
-        on { it.findViewById<ViewPager>(R.id.pager).currentItem = tab.ordinal }
-        // The lists refresh on a timer while their tab is shown.
+        compose.onNode(hasText(tab.title) and hasClickAction()).performClick()
+        // The screen refreshes on a timer.
         idle(millis = REFRESH_MILLIS)
     }
 
-    private fun MainActivity.list(tab: Tab): ListView =
-        when (tab) {
-            Tab.FOLDERS -> fragment<FolderListFragment>()
-            Tab.DEVICES -> fragment<DeviceListFragment>()
-            Tab.STATUS -> fragment<StatusFragment>()
-        }.listView
-
-    private fun MainActivity.row(tab: Tab, position: Int): View {
-        val list = list(tab)
-        return list.adapter.getView(position, null, list)
-    }
-
-    private fun MainActivity.position(tab: Tab, title: String): Int {
-        val adapter = list(tab).adapter
-        return (0 until adapter.count).single {
-            when (val item = adapter.getItem(it)) {
-                is Folder -> item.toString() == title
-                is Device -> item.displayName == title
-                else -> item.toString() == title
-            }
+    private fun texts(tagPrefix: String): List<String> =
+        compose.onAllNodes(hasTestTagStartingWith(tagPrefix)).fetchSemanticsNodes().map {
+            it.config[SemanticsProperties.TestTag].removePrefix(tagPrefix)
         }
-    }
+
+    private fun hasTestTagStartingWith(prefix: String) =
+        SemanticsMatcher("TestTag starts with $prefix") {
+            it.config.getOrElseNullable(SemanticsProperties.TestTag) { null }?.startsWith(prefix) ==
+                true
+        }
 
     /** The folders listed, by label. */
-    fun folders(): List<String> = on { a ->
-        val adapter = a.list(Tab.FOLDERS).adapter
-        (0 until adapter.count).map { (adapter.getItem(it) as Folder).toString() }
-    }
+    fun folders(): List<String> = texts("folder:")
 
     /** The state a folder's row shows, or null without one. */
-    fun folderState(label: String): String? = on { a ->
-        val state =
-            a.row(Tab.FOLDERS, a.position(Tab.FOLDERS, label)).findViewById<TextView>(R.id.state)
-        state.text.toString().takeIf { state.visibility == View.VISIBLE }
-    }
+    fun folderState(label: String): String? =
+        compose
+            .onAllNodesWithTag("folderState:$label", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
 
-    fun devices(): List<String> = on { a ->
-        val adapter = a.list(Tab.DEVICES).adapter
-        (0 until adapter.count).map { (adapter.getItem(it) as Device).displayName }
-    }
+    fun devices(): List<String> = texts("device:")
 
-    fun deviceStatus(name: String): String = on { a ->
-        a.row(Tab.DEVICES, a.position(Tab.DEVICES, name))
-            .findViewById<TextView>(R.id.status)
-            .text
-            .toString()
-    }
+    fun deviceStatus(name: String): String =
+        compose
+            .onNodeWithTag("deviceStatus:$name", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .joinToString()
 
     private fun nextStarted(): Intent? =
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
 
     /** Taps the row with [title] on [tab] and returns the screen it started. */
     fun open(tab: Tab, title: String): Intent? {
-        on { a ->
-            val list = a.list(tab)
-            val position = a.position(tab, title)
-            list.performItemClick(a.row(tab, position), position, 0)
-        }
+        val tag = if (tab == Tab.FOLDERS) "folder:$title" else "device:$title"
+        compose.onNodeWithTag(tag).performClick()
+        idle()
         return nextStarted()
     }
 
     /** The actions in the top bar of each tab. */
-    enum class Action(val tab: Tab, val id: Int) {
-        ADD_FOLDER(Tab.FOLDERS, R.id.add_folder),
-        RESCAN_ALL(Tab.FOLDERS, R.id.rescan_all),
-        ADD_DEVICE(Tab.DEVICES, R.id.add_device),
-        SETTINGS(Tab.STATUS, R.id.open_preferences),
+    enum class Action(val description: String) {
+        ADD_FOLDER("Add Folder"),
+        RESCAN_ALL("Rescan All"),
+        ADD_DEVICE("Add Device"),
+        SETTINGS("Settings"),
     }
 
     /** Runs [action] and returns the screen it started, if any. */
     fun run(action: Action): Intent? {
-        on { a ->
-            when (action.tab) {
-                Tab.FOLDERS -> a.fragment<FolderListFragment>()
-                Tab.DEVICES -> a.fragment<DeviceListFragment>()
-                Tab.STATUS -> a.fragment<StatusFragment>()
-            }.onOptionsItemSelected(RoboMenuItem(action.id))
-        }
+        compose.onNodeWithContentDescription(action.description).performClick()
+        idle()
         return nextStarted()
     }
 
-    fun statusLines(): List<String> = on { a ->
-        val adapter = a.list(Tab.STATUS).adapter
-        (0 until adapter.count).map { adapter.getItem(it).toString() }
-    }
+    fun statusLines(): List<String> =
+        compose.onAllNodesWithTag("statusLine").fetchSemanticsNodes().map {
+            it.config[SemanticsProperties.Text].joinToString()
+        }
 
     /** Which of "follow run conditions", "force start", "force stop" is chosen. */
-    fun forceStartStop(): Int = on {
-        it.findViewById<SegmentedButton>(R.id.forceStartStop).selectedButtonIndex
-    }
-
-    fun chooseForceStartStop(index: Int) = on {
-        it.findViewById<SegmentedButton>(R.id.forceStartStop).getChildAt(index).performClick()
-    }
-
-    fun light(): Light = on { a ->
-        Light.entries.single {
-            val id =
-                when (it) {
-                    Light.ACTIVE -> R.id.btnActive
-                    Light.STARTING -> R.id.btnStarting
-                    Light.DISABLED -> R.id.btnDisabled
-                }
-            a.findViewById<View>(id).visibility == View.VISIBLE
+    fun forceStartStop(): Int =
+        (0..2).single {
+            compose
+                .onNodeWithTag("force:$it")
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.Selected]
         }
+
+    fun chooseForceStartStop(index: Int) {
+        compose.onNodeWithTag("force:$index").performClick()
+        idle()
     }
+
+    fun light(): Light =
+        Light.entries.single {
+            compose.onAllNodesWithTag("light:${it.name}").fetchSemanticsNodes().isNotEmpty()
+        }
 
     /** The overall sync progress shown in the top bar, or null when hidden. */
-    fun totalProgress(): String? = on { a ->
-        a.findViewById<TextView>(R.id.tvTotalSyncComplete).text.toString().takeIf {
-            a.findViewById<View>(R.id.topRelTotalSyncProgress).visibility == View.VISIBLE
+    fun totalProgress(): String? =
+        compose
+            .onAllNodesWithTag("totalProgress")
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
+
+    fun exitShown(): Boolean =
+        compose.onAllNodes(hasContentDescription("Exit")).fetchSemanticsNodes().any {
+            it.boundsInRoot.width > 0 && it.boundsInRoot.left >= 0
         }
+
+    fun exit() {
+        compose.onNodeWithContentDescription("Exit").performClick()
+        idle()
     }
 
-    fun exitShown(): Boolean = on { it.findViewById<View>(R.id.fabExit).visibility == View.VISIBLE }
-
-    fun exit() = on { it.findViewById<View>(R.id.fabExit).performClick() }
-
     fun usageReportingAsked(): Boolean =
-        (ShadowDialog.getLatestDialog() as? AlertDialog)?.isShowing == true
+        compose
+            .onAllNodes(hasText("Allow Anonymous Usage Reporting?"))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
     /** Answers the usage reporting question: yes, no, or open the website. */
     fun answerUsageReporting(answer: Int) {
-        val button =
+        val text =
             when (answer) {
-                YES -> DialogInterface.BUTTON_POSITIVE
-                NO -> DialogInterface.BUTTON_NEGATIVE
-                else -> DialogInterface.BUTTON_NEUTRAL
+                YES -> "Yes"
+                NO -> "No"
+                else -> "Open Website"
             }
-        (ShadowDialog.getLatestDialog() as AlertDialog).getButton(button).performClick()
+        compose.onNode(hasText(text) and hasClickAction()).performClick()
         idle()
     }
 
-    fun openDrawer() = on {
-        it.findViewById<DrawerLayout>(R.id.drawer_layout).openDrawer(GravityCompat.START, false)
+    fun openDrawer() {
+        compose.onNodeWithContentDescription("Open Main Menu").performClick()
+        idle()
     }
 
-    fun drawerOpen(): Boolean = on {
-        it.findViewById<DrawerLayout>(R.id.drawer_layout).isDrawerOpen(GravityCompat.START)
-    }
+    fun drawerOpen(): Boolean =
+        compose
+            .onNodeWithTag("drawer", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .boundsInRoot
+            .right > 0
 
     fun back() {
-        on { it.onBackPressedDispatcher.onBackPressed() }
-        // The drawer closes with an animation, which runs as the drawer is drawn: Robolectric
-        // does not draw, so step it here.
-        repeat(ANIMATION_STEPS) {
-            idle(millis = ANIMATION_STEP_MILLIS)
-            scenario.onActivity { activity ->
-                activity.findViewById<DrawerLayout>(R.id.drawer_layout).computeScroll()
-            }
-        }
+        scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         idle()
     }
 
-    fun finishing(): Boolean = on { it.isFinishing }
+    fun finishing(): Boolean {
+        var finishing = false
+        scenario.onActivity { finishing = it.isFinishing }
+        return finishing
+    }
 
     override fun close() = scenario.close()
 
@@ -235,10 +204,7 @@ internal class MainScreen(
         const val NO = 1
         const val WEBSITE = 2
 
-        /** Long enough for the lists' timer to refresh them once. */
+        /** Long enough for the screen's timer to refresh it once. */
         private const val REFRESH_MILLIS = 1_100L
-
-        private const val ANIMATION_STEPS = 30
-        private const val ANIMATION_STEP_MILLIS = 20L
     }
 }
