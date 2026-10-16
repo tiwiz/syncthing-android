@@ -63,6 +63,9 @@ panes split on the hinge of an unfolded foldable.
    at compact (411 dp), medium (700 dp), expanded (840 dp, foldable) and large (1280 dp, tablet
    landscape). Records today's layouts at those sizes as the baseline, plus Italian variants. No
    app change.
+   Done: `WindowSizeScreenshotTest` (30 goldens in `screenshots/windows/`, sharing
+   `RunningScreenRecorder` with `RunningScreenshotTest`). The adaptive dependencies come with the
+   first PR that uses them (step 4), so no unused dependency is added here.
 3. **Shared components** in `theme/` or a new `ui/` package:
    - `StateStyle`: one pure mapping from `FolderRowState`/`DeviceRowState` to shape (cookie,
      flower, sunny), container color, icon and label. Unit tested for every state.
