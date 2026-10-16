@@ -83,6 +83,9 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
     /** Whether the overflow menu is open; hoisted so the menu key can toggle it. */
     private var menuOpen by mutableStateOf(false)
 
+    /** Folders and devices next to their list on large windows. */
+    private val panes = DetailPanes(this, { preferences }, { refresh() })
+
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -108,8 +111,10 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                 showWebGui = Constants.isDebuggable(this) || !resources.configuration.isTelevision
             )
 
+        panes.restoreState(savedInstanceState)
         setContent {
             ApplicationTheme {
+                BackHandler(enabled = panes.detail != null && panes.twoPanes) { panes.back() }
                 BackHandler(enabled = menuOpen) { menuOpen = false }
                 MainContent(
                     state = uiState,
@@ -117,6 +122,8 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                     onMenuOpenChange = { menuOpen = it },
                     menuActions = menuActions,
                     actions = actions,
+                    detail = panes.detail,
+                    onTwoPanesChange = { panes.twoPanes = it },
                 )
             }
         }
@@ -163,6 +170,12 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
     override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
         super.onServiceConnected(componentName, iBinder)
         (iBinder as SyncthingServiceBinder).service.registerOnServiceStateChangeListener(this)
+        api?.let(panes::onApiAvailable)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        panes.saveState(outState)
     }
 
     override fun onServiceStateChange(currentState: SyncthingService.State) {
@@ -363,6 +376,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
             }
 
             override fun onOpenFolder(folderId: String) {
+                if (panes.open(DetailPanes.FOLDER + folderId)) return
                 startActivity(
                     Intent(this@MainActivity, FolderActivity::class.java)
                         .putExtra(FolderActivity.EXTRA_IS_CREATE, false)
@@ -380,6 +394,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                 sendFolderAction(SyncthingService.ACTION_REVERT_LOCAL_CHANGES, folderId)
 
             override fun onOpenDevice(deviceId: String) {
+                if (panes.open(DetailPanes.DEVICE + deviceId)) return
                 startActivity(
                     Intent(this@MainActivity, DeviceActivity::class.java)
                         .putExtra(DeviceActivity.EXTRA_IS_CREATE, false)

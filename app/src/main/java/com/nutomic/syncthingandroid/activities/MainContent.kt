@@ -44,12 +44,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -182,8 +184,12 @@ internal fun MainContent(
     menuActions: MenuActions,
     actions: MainActions,
     modifier: Modifier = Modifier,
+    detail: Detail? = null,
+    onTwoPanesChange: (Boolean) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
+    val directive = paneDirective()
+    SideEffect(directive.twoPanes) { onTwoPanesChange(directive.twoPanes) }
     val type = navigationType()
     NavigationSuiteScaffold(
         navigationSuiteType = type,
@@ -203,19 +209,44 @@ internal fun MainContent(
             }
         },
     ) {
-        MainScaffold(state, tab, menuOpen, onMenuOpenChange, menuActions, actions)
+        MainScaffold(
+            state = state,
+            tab = tab,
+            panes = Panes(directive, detail),
+            menu = MenuState(menuOpen, onMenuOpenChange, menuActions),
+            actions = actions,
+        )
     }
     state.usageReport?.let { UsageReportingDialog(it, actions) }
 }
+
+/** The list and detail panes of the current window. */
+private class Panes(val directive: PaneScaffoldDirective, val detail: Detail?) {
+    val detailShown: Boolean
+        get() = detail != null && directive.twoPanes
+
+    fun detailOf(tab: MainTab): Detail? =
+        when (tab) {
+            MainTab.FOLDERS -> detail as? Detail.FolderDetail
+            MainTab.DEVICES -> detail as? Detail.DeviceDetail
+            MainTab.STATUS -> null
+        }
+}
+
+/** The overflow menu's state, hoisted to the activity. */
+private class MenuState(
+    val open: Boolean,
+    val onOpenChange: (Boolean) -> Unit,
+    val actions: MenuActions,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScaffold(
     state: MainUiState,
     tab: MainTab,
-    menuOpen: Boolean,
-    onMenuOpenChange: (Boolean) -> Unit,
-    menuActions: MenuActions,
+    panes: Panes,
+    menu: MenuState,
     actions: MainActions,
 ) {
     Scaffold(
@@ -229,22 +260,30 @@ private fun MainScaffold(
                         Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
                     }
                     MainMenu(
-                        open = menuOpen,
-                        onOpenChange = onMenuOpenChange,
+                        open = menu.open,
+                        onOpenChange = menu.onOpenChange,
                         running = state.serviceState == SyncthingService.State.ACTIVE,
                         showWebGui = state.showWebGui,
                         runningAsService = state.runningAsService,
-                        actions = menuActions,
+                        actions = menu.actions,
                     )
                 },
             )
         },
-        floatingActionButton = { if (tab != MainTab.STATUS) AddMenu(actions) },
+        floatingActionButton = {
+            if (tab != MainTab.STATUS && !panes.detailShown) AddMenu(actions)
+        },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
-                MainTab.FOLDERS -> FolderList(state.folders, state.totalProgress, actions)
-                MainTab.DEVICES -> DeviceList(state.devices, actions)
+                MainTab.FOLDERS ->
+                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
+                        FolderList(state.folders, state.totalProgress, actions)
+                    }
+                MainTab.DEVICES ->
+                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
+                        DeviceList(state.devices, actions)
+                    }
                 MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
             }
         }

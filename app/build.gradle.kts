@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.android.material)
     implementation(libs.compose.material3)
+    implementation(libs.compose.material3.adaptive.layout)
     implementation(libs.compose.material3.navigation.suite)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.ui)
@@ -157,6 +158,7 @@ android {
             // Material 3 Expressive is still experimental; opted in once for the whole module
             // (docs/plans/M3-EXPRESSIVE.md).
             optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+            optIn.add("androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi")
         }
     }
 

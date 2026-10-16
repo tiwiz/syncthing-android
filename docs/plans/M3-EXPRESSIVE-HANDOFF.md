@@ -166,6 +166,11 @@ list; on an unfolded foldable the panes split on the hinge. Compact and medium k
   unsaved changes ask before switching; compact still starts `FolderActivity`. Extend the
   drivers (`MainScreen.openInPane`, `detailShown`). Goldens: the window matrix (expanded, large)
   changes; add `windows/*_detail_*` captures with a selection.
+  Done: `MainDetail.kt` (`ListWithDetail`, `paneDirective`, the scaffold value computed from the
+  selection, `VerticalDragHandle`), `DetailPanes.kt` (`Detail`, selection, both hosts, result
+  launchers, saved state), `MainActivityListDetailTest` (4), `windows/main_*_detail_*` (4).
+  The pane opens only with two partitions (`calculatePaneScaffoldDirective`, hinge avoided by
+  default); the list is `movableContentOf` so it keeps its scroll.
 
 ### Step 9 — folder and device screens (A, 1–2 PRs, after 8)
 

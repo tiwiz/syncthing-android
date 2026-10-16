@@ -105,7 +105,8 @@ internal fun FolderEditScreen(
                     Text(
                         stringResource(
                             if (info.createMode) R.string.create_folder else R.string.edit_folder
-                        )
+                        ),
+                        modifier = Modifier.testTag("editTitle"),
                     )
                 },
                 navigationIcon = {

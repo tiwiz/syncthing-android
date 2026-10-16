@@ -76,11 +76,21 @@ class WindowSizeScreenshotTest(
                 RunningScreen.DEVICE_EDIT,
             )
 
+        /** A row open in the detail pane: only windows with room for two panes. */
+        private val DETAIL_SCREENS =
+            listOf(RunningScreen.MAIN_FOLDERS_DETAIL, RunningScreen.MAIN_DEVICES_DETAIL)
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} {1} {2}")
-        fun parameters(): List<Array<Any>> = SCREENS.flatMap { screen ->
-            Window.entries.map { arrayOf<Any>(screen, it, Locale.EN) } +
-                listOf(Window.COMPACT, Window.LARGE).map { arrayOf<Any>(screen, it, Locale.IT) }
-        }
+        fun parameters(): List<Array<Any>> =
+            SCREENS.flatMap { screen ->
+                Window.entries.map { arrayOf<Any>(screen, it, Locale.EN) } +
+                    listOf(Window.COMPACT, Window.LARGE).map { arrayOf<Any>(screen, it, Locale.IT) }
+            } +
+                DETAIL_SCREENS.flatMap { screen ->
+                    listOf(Window.EXPANDED, Window.LARGE).map {
+                        arrayOf<Any>(screen, it, Locale.EN)
+                    }
+                }
     }
 }
