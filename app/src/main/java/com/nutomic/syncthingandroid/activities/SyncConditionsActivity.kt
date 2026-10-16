@@ -11,8 +11,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import me.zhanghai.compose.preference.ProvidePreferenceTheme
 
@@ -20,6 +20,7 @@ import me.zhanghai.compose.preference.ProvidePreferenceTheme
  * The run conditions of one folder or device. They are saved whenever the screen pauses, also
  * unchanged: conditions turned off globally since then must be saved off.
  */
+@AndroidEntryPoint
 class SyncConditionsActivity : SyncthingActivity() {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -29,7 +30,6 @@ class SyncConditionsActivity : SyncthingActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         if (
             !intent.hasExtra(EXTRA_OBJECT_PREFIX_AND_ID) ||
                 !intent.hasExtra(EXTRA_OBJECT_READABLE_NAME)

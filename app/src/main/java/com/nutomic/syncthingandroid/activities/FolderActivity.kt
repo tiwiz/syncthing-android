@@ -13,15 +13,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.ConfigRouter
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 
 /** Shows a folder's details and changes them, or adds a new folder ([FolderEditController]). */
+@AndroidEntryPoint
 class FolderActivity : SyncthingActivity(), FolderEditHost {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -65,7 +66,6 @@ class FolderActivity : SyncthingActivity(), FolderEditHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         val created =
             FolderEditController.create(
                 this,

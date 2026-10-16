@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktfmt) apply false
     alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.hilt) apply false
     alias(libs.plugins.roborazzi) apply false
     alias(libs.plugins.jetbrains.kotlin.serialization) apply false
 }

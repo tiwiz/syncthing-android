@@ -17,6 +17,7 @@ import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.activities.ShareActivity
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.http.GetRequest
 import com.nutomic.syncthingandroid.http.PostRequest
 import com.nutomic.syncthingandroid.model.CachedFolderStatus
@@ -54,7 +55,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.concurrent.Executors
-import javax.inject.Inject
 import kotlin.math.floor
 
 /**
@@ -98,7 +98,7 @@ class RestApi(
         fun onDone(lastId: Long)
     }
 
-    @Inject lateinit var notificationHandler: NotificationHandler
+    lateinit var notificationHandler: NotificationHandler
 
     private val enableVerboseLog: Boolean = AppPrefs.getPrefVerboseLog(context)
 
@@ -143,7 +143,7 @@ class RestApi(
     private val executorService = Executors.newSingleThreadExecutor()
 
     init {
-        (context.applicationContext as SyncthingApp).component().inject(this)
+        notificationHandler = context.appDependencies().notificationHandler()
     }
 
     private val preferences

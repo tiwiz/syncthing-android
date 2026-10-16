@@ -11,7 +11,7 @@ Read it at the start of every task and keep it current.
   (itself forked from `syncthing/syncthing-android`). Application id
   `com.github.catfriend1.syncthingfork`, namespace `com.nutomic.syncthingandroid`.
 - Kotlin only, every screen in Jetpack Compose + Material 3 (migrated from Java/Views in
-  October 2026). Dagger 2 via KSP, Volley + Gson for HTTP, Navigation 3 in settings. Go for the native part.
+  October 2026). Hilt (Dagger 2.60, KSP), Volley + Gson for HTTP, Navigation 3 in settings. Go for the native part.
 - minSdk 30 (Android 11), compileSdk/targetSdk 37, JDK 21, AGP 9.4, Kotlin 2.4, Gradle 9.8.
 
 ## SOURCE OF TRUTH DOCS
@@ -114,7 +114,7 @@ Useful on a device: `adb forward tcp:18384 tcp:8384` (8385 for debug) then
 ```
 app/                         Android application (only Gradle module with code)
   src/main/java/com/nutomic/syncthingandroid/
-    SyncthingApp, DaggerComponent, SyncthingModule   Application + Dagger graph
+    SyncthingApp, SyncthingModule   @HiltAndroidApp application, app-wide module, AppDependencies
     service/       SyncthingService, SyncthingRunnable, RestApi, EventProcessor,
                    RunConditionMonitor, NotificationHandler, QS tiles, Constants (PREF_* keys)
     http/          Volley requests to the REST API (loopback only, custom trust manager)

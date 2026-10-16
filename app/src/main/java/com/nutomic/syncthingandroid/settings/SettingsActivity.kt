@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.settings
 
+import dagger.hilt.android.AndroidEntryPoint
 import android.content.ComponentName
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -12,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.activities.SyncthingActivity
 import com.nutomic.syncthingandroid.service.NotificationHandler
 import com.nutomic.syncthingandroid.service.SyncthingService
@@ -35,6 +35,7 @@ class SyncthingServiceState {
         internal set
 }
 
+@AndroidEntryPoint
 class SettingsActivity : SyncthingActivity() {
 
     @Inject
@@ -51,7 +52,6 @@ class SettingsActivity : SyncthingActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        (application as SyncthingApp).component().inject(this)
         super.onCreate(savedInstanceState)
 
         val activityScope = this.lifecycleScope

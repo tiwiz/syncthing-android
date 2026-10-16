@@ -38,13 +38,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.onboarding.OnboardingIcon
 import com.nutomic.syncthingandroid.onboarding.OnboardingScaffold
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.FileUtils
 import com.nutomic.syncthingandroid.util.PermissionUtil
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -56,6 +56,7 @@ import javax.inject.Inject
  * Syncthing Camera: takes a picture with the system camera app into the camera folder. The first
  * time, an intro asks for consent and the storage and camera permissions.
  */
+@AndroidEntryPoint
 class PhotoShootActivity : ThemedAppCompatActivity() {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -73,7 +74,6 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             Toast.makeText(this, R.string.photo_shoot_intro_no_camera, Toast.LENGTH_LONG).show()
             finish()

@@ -18,7 +18,6 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.service.AppPrefs
 import com.nutomic.syncthingandroid.service.Constants
@@ -29,11 +28,13 @@ import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.ConfigRouter
 import com.nutomic.syncthingandroid.util.ConfigXml
 import com.nutomic.syncthingandroid.util.formatPath
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
 /** Saves files shared from other apps into a Syncthing folder. */
+@AndroidEntryPoint
 class ShareActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -66,7 +67,6 @@ class ShareActivity : SyncthingActivity(), SyncthingService.OnServiceStateChange
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         configRouter = ConfigRouter(this)
 
