@@ -32,7 +32,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /** The screens a folder screen opens for a result. */
-enum class FolderRequest {
+internal enum class FolderRequest {
     /** The system directory picker (SAF). */
     TREE,
     /** The built-in directory picker, when SAF is missing or for advanced paths. */
@@ -44,7 +44,7 @@ enum class FolderRequest {
 }
 
 /** Where a folder screen lives: its own activity, or a pane of the main screen. */
-interface FolderEditHost {
+internal interface FolderEditHost {
     /** The REST API, or null while Syncthing does not run. */
     val restApi: RestApi?
 

@@ -81,9 +81,16 @@ internal fun ListWithDetail(
 
 @Composable
 private fun DetailContent(detail: Detail) {
+    val callbacks = detail.callbacks
     when (detail) {
         is Detail.FolderDetail -> {
-            val controller = detail.controller
+            val viewModel = detail.viewModel
+            val controller = viewModel.controller ?: return
+            EditEffects(
+                viewModel.events,
+                FolderRequest.entries,
+                EditCallbacks(viewModel::onResult, callbacks.onClose, callbacks.onLeave),
+            )
             controller.form?.let {
                 FolderEditScreen(
                     form = it,
@@ -94,7 +101,18 @@ private fun DetailContent(detail: Detail) {
             }
         }
         is Detail.DeviceDetail -> {
-            val controller = detail.controller
+            val viewModel = detail.viewModel
+            val controller = viewModel.controller ?: return
+            EditEffects(
+                viewModel.events,
+                DeviceRequest.entries,
+                EditCallbacks(
+                    viewModel::onResult,
+                    callbacks.onClose,
+                    callbacks.onLeave,
+                    callbacks.onShowDeviceId,
+                ),
+            )
             controller.form?.let {
                 DeviceEditScreen(
                     form = it,
