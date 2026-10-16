@@ -25,7 +25,6 @@ app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsSyncthingOptions
 app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsTroubleShootingScreen.kt
 app/src/main/java/com/nutomic/syncthingandroid/settings/SettingsUserInterfaceScreen.kt
 app/src/main/java/com/nutomic/syncthingandroid/settings/SharedPreferenceFlow.kt
-app/src/main/java/com/nutomic/syncthingandroid/theme/ApplicationTheme.kt
 app/src/main/java/com/nutomic/syncthingandroid/util/CertificateValidator.kt
 app/src/main/java/com/nutomic/syncthingandroid/webgui/WebGuiActivity.kt
 app/src/main/java/com/nutomic/syncthingandroid/webgui/WebGuiScreen.kt

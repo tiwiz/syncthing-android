@@ -24,8 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -394,7 +394,7 @@ private fun WifiSsidPreference(
     val isPermissionGranted = permissionState.status == PermissionStatus.Granted
     val isLocationEnabled = LocationManagerCompat.isLocationEnabled(locationManager)
 
-    LaunchedEffect(isPermissionGranted) {
+    SideEffect(isPermissionGranted) {
         val currentSsid = getCurrentWifiSsid(context)
         var updatedKnown = knownSsids
         var updatedSelection = specifiedSsids

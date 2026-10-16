@@ -247,7 +247,9 @@ Next steps (to be confirmed with the owner):
    (PR #61). TECH-DEBT has no TODOs left.
 6. 2026-10-16: Material 3 Expressive and adaptive layouts (phone, foldable, tablet) proposed in
    [docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md), with the approved design canvas.
-   Decisions taken the same day (in the plan). **Resume here:** PR 1 (theme foundation).
+   Decisions taken the same day (in the plan), plus minSdk 30 (PR #64). PR 1 theme foundation
+   (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). **Resume here:** PR 2 (window size
+   screenshot matrix).
 
 ## HANDOFF
 
