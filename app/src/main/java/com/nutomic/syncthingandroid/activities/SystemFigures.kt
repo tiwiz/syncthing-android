@@ -7,10 +7,11 @@ import com.nutomic.syncthingandroid.model.SystemStatus
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.util.readableFileSize
 import com.nutomic.syncthingandroid.util.readableTransferRate
+import com.nutomic.syncthingandroid.views.StateTone
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-// The lines of the main screen's status tab.
+// What the main screen's status tab shows.
 
 /** What Syncthing reports about itself while it runs, as the status tab shows it. */
 internal data class SystemFigures(
@@ -72,42 +73,65 @@ internal fun readableUptime(seconds: Long): String {
     }
 }
 
-/**
- * The status tab's lines: what Syncthing is doing, why it runs or not ([runDecisionExplanation]),
- * and while it runs the [figures] received so far.
- */
+/** What the status tab shows: what Syncthing does, why, and while it runs its figures. */
+internal data class StatusInfo(
+    val headline: String,
+    val tone: StateTone,
+    /** Why Syncthing runs or not, one per item; none while it starts or after a crash. */
+    val reasons: List<String>,
+    /** Label and value of each figure, only while it runs. */
+    val figures: List<Pair<String, String>>,
+)
+
+/** The status tab's blocks; [runDecisionExplanation] has one reason per line. */
+internal fun statusInfo(
+    context: Context,
+    state: SyncthingService.State,
+    runDecisionExplanation: String,
+    figures: SystemFigures?,
+): StatusInfo {
+    val (headline, tone) =
+        when (state) {
+            SyncthingService.State.INIT,
+            SyncthingService.State.STARTING -> R.string.syncthing_starting to StateTone.BUSY
+            SyncthingService.State.ACTIVE -> R.string.syncthing_running to StateTone.OK
+            SyncthingService.State.DISABLED -> R.string.syncthing_not_running to StateTone.OFFLINE
+            SyncthingService.State.ERROR -> R.string.syncthing_has_crashed to StateTone.ERROR
+        }
+    val explained =
+        state == SyncthingService.State.ACTIVE || state == SyncthingService.State.DISABLED
+    val shown =
+        if (state == SyncthingService.State.ACTIVE && figures != null) {
+            listOf(
+                    R.string.uptime to figures.uptime,
+                    R.string.ram_usage to figures.ramUsage,
+                    R.string.download_title to figures.download,
+                    R.string.upload_title to figures.upload,
+                    R.string.announce_server to figures.announceServer,
+                )
+                .filter { it.second.isNotEmpty() }
+                .map { context.getString(it.first) to it.second }
+        } else {
+            emptyList()
+        }
+    return StatusInfo(
+        headline = context.getString(headline),
+        tone = tone,
+        reasons = if (explained) runDecisionExplanation.trim().split("\n") else emptyList(),
+        figures = shown,
+    )
+}
+
+/** The status tab as lines of text: the headline, "Reason:" with the reasons, the figures. */
 internal fun statusLines(
     context: Context,
     state: SyncthingService.State,
     runDecisionExplanation: String,
     figures: SystemFigures?,
 ): List<String> {
-    val lines = mutableListOf<String>()
-    lines +=
-        context.getString(
-            when (state) {
-                SyncthingService.State.INIT,
-                SyncthingService.State.STARTING -> R.string.syncthing_starting
-                SyncthingService.State.ACTIVE -> R.string.syncthing_running
-                SyncthingService.State.DISABLED -> R.string.syncthing_not_running
-                SyncthingService.State.ERROR -> R.string.syncthing_has_crashed
-            }
-        )
-    if (state == SyncthingService.State.ACTIVE || state == SyncthingService.State.DISABLED) {
-        lines +=
-            context.getString(R.string.reason) +
-                "\n- " +
-                runDecisionExplanation.trim().replace("\n", "\n- ")
-    }
-    if (state == SyncthingService.State.ACTIVE && figures != null) {
-        fun add(label: Int, value: String) {
-            if (value.isNotEmpty()) lines += context.getString(label) + ": " + value
-        }
-        add(R.string.uptime, figures.uptime)
-        add(R.string.ram_usage, figures.ramUsage)
-        add(R.string.download_title, figures.download)
-        add(R.string.upload_title, figures.upload)
-        add(R.string.announce_server, figures.announceServer)
-    }
-    return lines
+    val info = statusInfo(context, state, runDecisionExplanation, figures)
+    val reasons =
+        if (info.reasons.isEmpty()) emptyList()
+        else listOf(context.getString(R.string.reason) + "\n- " + info.reasons.joinToString("\n- "))
+    return listOf(info.headline) + reasons + info.figures.map { "${it.first}: ${it.second}" }
 }

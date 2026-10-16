@@ -253,8 +253,8 @@ Next steps (to be confirmed with the owner):
    matrix (`WindowSizeScreenshotTest`). PR 3 shared components (`ui/`,
    `StateTone`). PR 4 navigation bar/rail and
    overflow menu. PR 5 folders list and add FAB
-   menu. PR 6 devices list. **Resume here:**
-   PR 7 (status tab).
+   menu. PR 6 devices list. PR 7 status tab. **Resume here:**
+   phone milestone of the main screen, then PR 8 (list-detail).
 
 ## HANDOFF
 

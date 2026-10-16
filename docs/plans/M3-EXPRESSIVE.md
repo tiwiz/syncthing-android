@@ -99,6 +99,10 @@ panes split on the hinge of an unfolded foldable.
 7. **Status tab.** Running hero with shape, connected `ButtonGroup` with the new labels, run
    conditions as a grouped list with met/not met icons, figures as a three-tile grid.
    `StatusLinesTest` and the force start/stop tests stay as they are.
+   Done: `StatusInfo` (headline, tone, reasons, figures; `statusLines()` is its text form, so
+   `StatusLinesTest` is unchanged), hero card, connected `ToggleButton` group without icons (with
+   one "Automatic" does not fit a phone), run conditions and figure tiles. The old
+   `button_*` strings stay unused with `tools:ignore` (decision 4).
 8. **List-detail on large windows**, in three PRs:
    1. Extract the folder screen's state and actions from `FolderActivity` into a controller the
       activity hosts (pure refactor, `FolderActivityTest` unchanged).
