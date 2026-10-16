@@ -33,7 +33,7 @@ SDK 37 image; the app targets 37.
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
 | Screens driven by hand | Robolectric (+ Compose test for onboarding) | `WebGuiActivityTest`, `WebViewActivityTest`, `EditScreensTest`, `FolderDialogsTest`, `QrScanTest`, `ShareActivityTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
 | Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
-| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
+| Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `WindowSizeScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
 | WebView screens on a device | AndroidJUnitRunner + Espresso-Web, HTTPS MockWebServer | `WebGuiActivityWebTest`, `WebViewActivityWebTest` |
 
 ```bash
@@ -125,6 +125,11 @@ shutdown ends the process as it would on a device.
 - `RunningScreenshotTest` (`screenshots/running/`) shows the main tabs, folder and device screens and
   some settings with Syncthing running: `RunningSyncthingService` sets the service to ACTIVE with a
   `RestApi` loaded from `FakeSyncthing`. It pins the time zone to UTC for "last seen" times.
+  `RunningScreenRecorder` (`RunningScreens.kt`) opens and captures these screens for both tests.
+- `WindowSizeScreenshotTest` (`screenshots/windows/`): main tabs, folder and device screens at
+  each window size class the adaptive layouts target: compact 411×891, medium 700×960, expanded
+  840×900 (unfolded foldable), large 1280×800 (tablet landscape), at mdpi, in English and, for
+  compact and large, Italian. Light theme only.
 - `OtherScreensScreenshotTest` (`screenshots/other/`): log (fake logcat from the shell shadow), sync
   conditions, photo shoot, share, recent changes (exact times) and the device id dialog, with
   Syncthing running.

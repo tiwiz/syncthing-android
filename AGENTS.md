@@ -248,8 +248,8 @@ Next steps (to be confirmed with the owner):
 6. 2026-10-16: Material 3 Expressive and adaptive layouts (phone, foldable, tablet) proposed in
    [docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md), with the approved design canvas.
    Decisions taken the same day (in the plan), plus minSdk 30 (PR #64). PR 1 theme foundation
-   (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). **Resume here:** PR 2 (window size
-   screenshot matrix).
+   (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). PR 2 window size screenshot
+   matrix (`WindowSizeScreenshotTest`). **Resume here:** PR 3 (shared components).
 
 ## HANDOFF
 
