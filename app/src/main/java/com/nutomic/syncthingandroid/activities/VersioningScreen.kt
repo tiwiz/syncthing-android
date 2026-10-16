@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.activities
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,14 +29,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 import java.util.concurrent.TimeUnit
 
 internal const val KEY_TYPE = "type"
@@ -76,14 +76,11 @@ internal fun VersioningScreen(
 ) {
     val type = params[KEY_TYPE]
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         TypeChoice(type = type, onTypeChange = onTypeChange)
-        Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             when (type) {
                 "none" -> Description(R.string.no_versioning_description)
                 "trashcan" -> {
@@ -115,10 +112,7 @@ internal fun VersioningScreen(
                 }
             }
         }
-        TextButton(
-            onClick = onFinish,
-            modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp),
-        ) {
+        TextButton(onClick = onFinish, modifier = Modifier.align(Alignment.End)) {
             Text(stringResource(R.string.finish))
         }
     }
@@ -127,28 +121,17 @@ internal fun VersioningScreen(
 @Composable
 private fun TypeChoice(type: String?, onTypeChange: (String) -> Unit) {
     val names = stringArrayResource(R.array.versioning_types)
-    Column(modifier = Modifier.selectableGroup()) {
-        for ((value, label) in VERSIONING_TYPES.zip(names)) {
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .selectable(
-                            selected = value == type,
-                            role = Role.RadioButton,
-                            onClick = { if (value != type) onTypeChange(value) },
-                        )
-                        .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(selected = value == type, onClick = null)
-                Text(
-                    text = label,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+    Column(
+        modifier = Modifier.selectableGroup(),
+        verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
+    ) {
+        VERSIONING_TYPES.zip(names).forEachIndexed { index, (value, label) ->
+            ChoiceOption(
+                label = label,
+                selected = value == type,
+                onSelect = { if (value != type) onTypeChange(value) },
+                shape = groupedItemShape(index, VERSIONING_TYPES.size),
+            )
         }
     }
 }
@@ -209,11 +192,14 @@ private fun StaggeredParams(params: Map<String, String>, onParamChange: (String,
                 modifier =
                     Modifier.fillMaxWidth()
                         .heightIn(min = 48.dp)
+                        .clip(groupedItemShape(0, 1))
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .clickable {
                             picker.launch(
                                 FolderPickerActivity.createIntent(context, versionsPath, null)
                             )
                         }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .testTag("versionsPath"),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
