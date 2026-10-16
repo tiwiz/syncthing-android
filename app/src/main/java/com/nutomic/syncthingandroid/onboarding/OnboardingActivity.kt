@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.onboarding
 
+import dagger.hilt.android.AndroidEntryPoint
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 import android.Manifest
 import android.content.Intent
@@ -18,7 +19,6 @@ import androidx.core.os.BundleCompat
 import java.io.Serializable
 import androidx.lifecycle.lifecycleScope
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
@@ -46,6 +46,7 @@ data class OnboardingUiState(
     }
 }
 
+@AndroidEntryPoint
 class OnboardingActivity : ThemedAppCompatActivity() {
 
     companion object {
@@ -116,7 +117,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         super.onCreate(savedInstanceState)
         // Not in ThemedAppCompatActivity: below Android 15 the View screens keep a coloured status
         // bar that needs light icons (EdgeToEdgeTest). Move it there once every activity uses Compose.
-        (application as SyncthingApp).component().inject(this)
 
         val isRunningOnTv = isRunningOnTV(this)
         Log.d(TAG, if (isRunningOnTv) "Running on a TV Device" else "Running on a non-TV Device")

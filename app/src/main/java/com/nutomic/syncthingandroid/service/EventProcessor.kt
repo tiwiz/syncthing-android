@@ -17,13 +17,12 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Event
 import com.nutomic.syncthingandroid.model.FolderStatus
 import com.nutomic.syncthingandroid.util.splitLikeJava
 import java.io.File
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 /**
  * Polls Syncthing's events through [RestApi] every few seconds and applies them: caches in RestApi,
@@ -32,8 +31,8 @@ import javax.inject.Inject
 class EventProcessor(private val context: Context, private val restApi: RestApi) :
     Runnable, RestApi.OnReceiveEventListener {
 
-    @Inject lateinit var preferences: SharedPreferences
-    @Inject lateinit var notificationHandler: NotificationHandler
+    lateinit var preferences: SharedPreferences
+    lateinit var notificationHandler: NotificationHandler
 
     private val enableVerboseLog: Boolean
 
@@ -110,7 +109,8 @@ class EventProcessor(private val context: Context, private val restApi: RestApi)
         )
 
     init {
-        (context.applicationContext as SyncthingApp).component().inject(this)
+        preferences = context.appDependencies().preferences()
+        notificationHandler = context.appDependencies().notificationHandler()
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
     }
 

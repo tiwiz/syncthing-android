@@ -12,15 +12,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.ConfigRouter
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /** Shows a device's details and changes them, or adds a new device ([DeviceEditController]). */
+@AndroidEntryPoint
 class DeviceActivity : SyncthingActivity(), DeviceEditHost {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -64,7 +65,6 @@ class DeviceActivity : SyncthingActivity(), DeviceEditHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         val created =
             DeviceEditController.create(
                 this,

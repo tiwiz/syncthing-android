@@ -16,10 +16,9 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.util.JobUtils
 import java.util.Locale
-import javax.inject.Inject
 
 /**
  * Decides whether Syncthing should run, from the run condition preferences and the device state,
@@ -41,7 +40,7 @@ class RunConditionMonitor(
         fun onSyncPreconditionChanged(runConditionMonitor: RunConditionMonitor)
     }
 
-    @Inject lateinit var preferences: SharedPreferences
+    lateinit var preferences: SharedPreferences
 
     private val enableVerboseLog: Boolean
     private val checks: RunConditionChecks
@@ -75,7 +74,7 @@ class RunConditionMonitor(
     private var lastDeterminedShouldRun = false
 
     init {
-        (context.applicationContext as SyncthingApp).component().inject(this)
+        preferences = context.appDependencies().preferences()
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         checks = RunConditionChecks(context, preferences, ::logV)
         logV("Created new instance")

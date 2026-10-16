@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.http.PollWebGuiAvailableTask
 import com.nutomic.syncthingandroid.util.CertificateValidator
 import com.nutomic.syncthingandroid.util.ConfigRouter
@@ -16,6 +15,7 @@ import com.nutomic.syncthingandroid.util.ConfigXml
 import com.nutomic.syncthingandroid.util.PermissionUtil
 import com.nutomic.syncthingandroid.util.isTcpPortListening
 import com.nutomic.syncthingandroid.util.killProcess
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
@@ -24,6 +24,7 @@ import javax.inject.Inject
 // One method per intent action, lifecycle step and backup or certificate operation; the file
 // handling lives in ConfigBackup.kt and HttpsCertFiles.kt.
 @Suppress("TooManyFunctions")
+@AndroidEntryPoint
 class SyncthingService : Service() {
 
     fun interface OnServiceStateChangeListener {
@@ -121,7 +122,6 @@ class SyncthingService : Service() {
     /** Starts the native binary. */
     override fun onCreate() {
         super.onCreate()
-        (application as SyncthingApp).component().inject(this)
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         logV("onCreate")
         configRouter = ConfigRouter(this)

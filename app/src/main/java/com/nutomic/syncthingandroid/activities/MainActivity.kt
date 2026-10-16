@@ -21,7 +21,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.onboarding.OnboardingActivity
@@ -42,6 +41,7 @@ import com.nutomic.syncthingandroid.util.testPathEllipsis
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -52,6 +52,7 @@ import kotlinx.coroutines.launch
  * The main screen: the folders, devices and status destinations, the overflow menu, and the
  * questions Syncthing asks once it runs.
  */
+@AndroidEntryPoint
 class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
 
     @Inject lateinit var preferences: SharedPreferences
@@ -100,7 +101,6 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as SyncthingApp).component().inject(this)
         configRouter = ConfigRouter(this)
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         if (enableVerboseLog) {

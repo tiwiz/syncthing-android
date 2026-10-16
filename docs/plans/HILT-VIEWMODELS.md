@@ -80,6 +80,11 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   - `@HiltAndroidApp`, `@AndroidEntryPoint` and the module as above;
   - field injection stays where it is (`@Inject lateinit var`) and `DaggerComponent` goes;
   - no behaviour change, every test green.
+
+  Done: Hilt 2.60.1 (plugin and `hilt-compiler` with KSP work with AGP 9.4); `SyncthingModule` is
+  an `object` in `SingletonComponent`; `AppDependencies` (`@EntryPoint`, `Context.appDependencies()`)
+  serves the four plain classes until H2; `ApplicationContextTest` checks the Hilt graph. All 615
+  unit tests pass with the real `@HiltAndroidApp` under Robolectric, no test application needed.
 - **H2** `refactor(service): plain classes get their dependencies, not the component` (A):
   - `RestApi`, `EventProcessor`, `RunConditionMonitor` and `SyncthingRunnable` take them in their
     constructors from `SyncthingService` (injected);

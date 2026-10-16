@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.detekt)
@@ -26,7 +27,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
-    implementation(libs.dagger)
+    implementation(libs.hilt.android)
     implementation(libs.documentfile)
     implementation(libs.fragment.ktx)
     implementation(libs.gson)
@@ -45,7 +46,7 @@ dependencies {
     implementation(libs.zhanghai.compose.preference)
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
-    ksp(libs.dagger.compiler)
+    ksp(libs.hilt.compiler)
 
     detektPlugins(libs.compose.rules.detekt)
 

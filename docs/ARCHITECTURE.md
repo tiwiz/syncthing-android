@@ -37,7 +37,7 @@ The namespace is inherited from the original app. The application id is
 
 | Package | Language | Role |
 |---|---|---|
-| (root) | Kotlin | `SyncthingApp` (Application, builds the Dagger graph), `DaggerComponent`, `SyncthingModule` |
+| (root) | Kotlin | `SyncthingApp` (`@HiltAndroidApp`), `SyncthingModule` (Hilt module, `AppDependencies` entry point) |
 | `service` | Kotlin | The core: `SyncthingService` (+ `ConfigBackup`, `HttpsCertFiles`), `SyncthingRunnable`, `RestApi` (+ `RestApiSupport`), `EventProcessor`, `RunConditionMonitor` (+ `RunConditionChecks`, `DeviceState`, `ObjectRunConditions`), `NotificationHandler`, Quick Settings tiles, `SyncTriggerJobService`, `Constants`, `AppPrefs` |
 | `http` | Kotlin | Volley requests to the REST API: `ApiRequest`, `GetRequest`, `PostRequest`, `PollWebGuiAvailableTask`, `SyncthingTrustManager` |
 | `model` | Kotlin | Gson models mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
@@ -58,11 +58,11 @@ preview (zxing) and the WebViews are Views hosted in `AndroidView`.
 
 ## Dependency injection
 
-Dagger 2 (compiled with KSP), one `@Singleton` component. `SyncthingModule` provides only the
-default `SharedPreferences` and `NotificationHandler`. Classes inject themselves through field
-injection: `((SyncthingApp) getApplication()).component().inject(this)`. Every class that does this
-must have an `inject(...)` method in `DaggerComponent`. Everything else is created by hand with
-`new`, mostly inside `SyncthingService`.
+Hilt (Dagger 2.60, KSP). `SyncthingModule` (`SingletonComponent`) provides the default
+`SharedPreferences` and `NotificationHandler`. Activities and `SyncthingService` are
+`@AndroidEntryPoint` and use field injection (`@Inject lateinit var`). Classes Hilt does not
+create (`RestApi`, `EventProcessor`, `RunConditionMonitor`, `SyncthingRunnable`) are built by hand,
+mostly inside `SyncthingService`; plan: [docs/plans/HILT-VIEWMODELS.md](plans/HILT-VIEWMODELS.md).
 
 ## Runtime components
 
