@@ -143,6 +143,8 @@ list; on an unfolded foldable the panes split on the hinge. Compact and medium k
   versioning and sync conditions screens and get their results back, show toasts, send the
   local broadcast, close. `FolderActivity` becomes a thin host. Test: `FolderActivityTest`,
   `FolderDialogsTest`, `EditScreensTest` and all goldens unchanged (pure refactor).
+  Done: `FolderEditController` + `FolderEditHost` + `FolderRequest` + `FolderEditArgs`
+  (`FolderEditController.kt`); `FolderActivity` is the host, one result launcher per request.
 - **8b `refactor(device): device screen state outside the activity` (M).** Same for
   `DeviceActivity` → `DeviceEditController` + `DeviceEditHost` (QR scanner result, share, close).
   Tests unchanged.
