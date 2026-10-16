@@ -150,7 +150,8 @@ Summary; details in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 - Config access through `ConfigRouter` (REST when running, `config.xml` when stopped).
 - REST only to `127.0.0.1`; never weaken `ApiRequest`/`SyncthingTrustManager`.
 - New preferences: `PREF_*` constants in `Constants.kt`; never rename existing keys.
-- Strings only in `res/values/strings.xml`; translations come from Weblate.
+- Strings only in `res/values/strings.xml`; translations come from upstream's Weblate, so fork-only
+  strings stay English ([docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md)).
 - Do not touch the changelog; do not bump Kotlin as a side effect.
 - Commits: Conventional Commits, lower case, component scope, `(fixes #N)`; `Signed-off-by` for
   upstream PRs. One topic per branch, squash merge.
@@ -246,7 +247,7 @@ Next steps (to be confirmed with the owner):
    (PR #61). TECH-DEBT has no TODOs left.
 6. 2026-10-16: Material 3 Expressive and adaptive layouts (phone, foldable, tablet) proposed in
    [docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md), with the approved design canvas.
-   **Resume here:** the owner answers the plan's five decisions, then PR 1 (theme foundation).
+   Decisions taken the same day (in the plan). **Resume here:** PR 1 (theme foundation).
 
 ## HANDOFF
 
