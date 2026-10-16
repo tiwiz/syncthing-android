@@ -1,6 +1,6 @@
 # Material 3 Expressive and adaptive layouts
 
-Proposed on 2026-10-16, after the Kotlin/Compose migration
+Proposed and approved on 2026-10-16, after the Kotlin/Compose migration
 ([KOTLIN-COMPOSE-MIGRATION.md](KOTLIN-COMPOSE-MIGRATION.md)). The target is the design canvas the
 owner approved: <https://claude.ai/artifact/BzMQAgmqaUHNL16zdTXfvf> (phone, foldable, tablet and a
 system sheet with colors, type, shapes and window size classes).
@@ -10,26 +10,27 @@ button groups, wavy progress, FAB menu, grouped lists) and adapts to the window:
 phones, rail on foldables and small tablets, expanded rail and list-detail panes on large screens,
 panes split on the hinge of an unfolded foldable.
 
-## Decisions for the owner (before PR 1)
+## Decisions (owner, 2026-10-16)
 
-1. **Experimental APIs.** Most expressive components are `@ExperimentalMaterial3ExpressiveApi`
-   in material3 1.4.x. Proposal: bump `compose-material3` to the newest release that has them, and
-   opt in once for the module (`-opt-in` compiler flag in `app/build.gradle.kts`) instead of
-   annotating every file. API churn is accepted; each bump is its own PR.
-2. **New dependencies.** `androidx.compose.material3.adaptive:adaptive`, `adaptive-layout`,
+1. **Experimental APIs: yes.** `compose-material3` is bumped to the newest release with the
+   expressive components and the module opts in once (`-opt-in` compiler flag in
+   `app/build.gradle.kts`) instead of annotating every file. API churn is accepted; each later
+   bump is its own PR.
+2. **New dependencies: yes.** `androidx.compose.material3.adaptive:adaptive`, `adaptive-layout`,
    `adaptive-navigation` (window size classes, `ListDetailPaneScaffold`, hinge-aware pane
    directive) and `material3-adaptive-navigation-suite` (`NavigationSuiteScaffold`).
-3. **Font.** The app ships on F-Droid, so downloadable fonts through Google Play services are not
-   an option. Either bundle Roboto Flex (variable, about 1.7 MB, width axis for display text as
-   in the design) or keep the system font and get the expressive feel from weight and size only.
-   Proposal: bundle Roboto Flex.
-4. **Run mode labels.** The status tab's three choices become "Automatic", "Run", "Stop" with a
-   helper line, as in the design. These are new string keys (existing keys are never renamed);
-   the old three keys are deleted with their translations once unused, and Weblate translates the
-   new ones (until then other languages show English).
-5. **Main screen menu.** The drawer goes. Its entries (device ID, recent changes, web GUI,
-   settings, restart, exit) move to the navigation rail on medium and larger windows and to a
-   modal expanded rail opened from the menu button on phones.
+3. **Font: Roboto Flex is bundled** (variable font, width axis for display text). F-Droid rules out
+   downloadable fonts through Google Play services; the Play Store build is looked at later.
+4. **Run mode labels:** "Automatic", "Run", "Stop" with a helper line, as new string keys.
+   **New fork strings stay English only.** The `syncthing-fork` Weblate project translates
+   upstream (`researchxxl`) strings, so fork-only keys are never translated there. The old three
+   keys are not deleted while the fork merges upstream: a merge would bring their translations
+   back and Lint's `ExtraTranslation` would fail. They stay unused, with the reason next to them.
+5. **Main screen menu.** The drawer goes. On phones the navigation bar has three destinations
+   (folders, devices, status); the top bar has the settings icon and an overflow menu with recent
+   changes, device ID, web GUI, restart and exit. Medium windows get a rail with the same three
+   destinations and the same top bar; large windows an expanded rail that also lists the overflow
+   entries, as in the tablet design.
 
 ## Rules for every PR
 
@@ -61,8 +62,9 @@ panes split on the hinge of an unfolded foldable.
      `SectionHeader`, wavy progress wrappers.
    - A component gallery screenshot in light and dark.
 4. **Main screen navigation.** Tabs, pager and drawer become `NavigationSuiteScaffold`: bar on
-   compact, rail on medium/expanded, expanded rail with labels on large. Drawer entries move as in
-   decision 5. Driver: `openDrawer()` becomes `openMenu()`; every `MainActivityTest` stays.
+   compact, rail on medium/expanded, expanded rail with labels on large. Drawer entries move to
+   the overflow menu as in decision 5. Driver: `openDrawer()` becomes `openMenu()`; every
+   `MainActivityTest` stays.
 5. **Folders list.** Large headline, total progress card with wavy indicator and rates, grouped
    rows with state shapes, FAB menu (add folder, add device, scan QR). The FAB menu's actions start
    the same intents as today's buttons (existing tests).
