@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -28,12 +29,17 @@ enum class RunningScreen(
     val tab: Int? = null,
     val extras: Intent.() -> Unit = {},
     val locale: String? = null,
+    /** The test tag of a row to tap once the tab shows, opening it in the detail pane. */
+    val select: String? = null,
 ) {
     MAIN_FOLDERS(MainActivity::class.java, tab = 0),
     MAIN_DEVICES(MainActivity::class.java, tab = 1),
     MAIN_STATUS(MainActivity::class.java, tab = 2),
     /** Italian has the longest force start/stop labels. */
     MAIN_STATUS_ITALIAN(MainActivity::class.java, tab = 2, locale = "it-rIT"),
+    /** Large windows only: on a phone the row opens a screen of its own. */
+    MAIN_FOLDERS_DETAIL(MainActivity::class.java, tab = 0, select = "folder:Camera"),
+    MAIN_DEVICES_DETAIL(MainActivity::class.java, tab = 1, select = "device:laptop"),
     FOLDER_EDIT(
         FolderActivity::class.java,
         extras = {
@@ -106,6 +112,10 @@ internal class RunningScreenRecorder(private val compose: ComposeTestRule) : Aut
             screen.tab?.let { tab ->
                 val title = context.getString(TAB_TITLES[tab])
                 compose.onNode(hasText(title) and hasClickAction()).performClick()
+                settleAll()
+            }
+            screen.select?.let {
+                compose.onNodeWithTag(it).performClick()
                 settleAll()
             }
             scenario.onActivity { it.window.decorView.hideTextCursors() }

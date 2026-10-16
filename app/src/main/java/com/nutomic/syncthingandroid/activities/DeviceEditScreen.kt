@@ -109,7 +109,8 @@ internal fun DeviceEditScreen(
                     Text(
                         stringResource(
                             if (info.createMode) R.string.add_device else R.string.edit_device
-                        )
+                        ),
+                        modifier = Modifier.testTag("editTitle"),
                     )
                 },
                 navigationIcon = {

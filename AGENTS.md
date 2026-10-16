@@ -119,7 +119,7 @@ app/                         Android application (only Gradle module with code)
     http/          Volley requests to the REST API (loopback only, custom trust manager)
     model/         Gson POJOs for Syncthing's JSON + local caches
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
-    activities/    Compose screens: Main (+ overflow menu), Folder, Device, pickers, dialogs, Share,
+    activities/    Compose screens: Main (+ overflow menu, detail pane on large windows), Folder, Device, pickers, dialogs, Share,
                    PhotoShoot, QR scanner, Log, web page; base classes for theme and service
     fragments/     DeviceIdDialogFragment (Compose)
     views/         FolderRowState, DeviceRowState (main screen list rows)

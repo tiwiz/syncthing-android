@@ -16,6 +16,8 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import java.time.Duration
@@ -235,6 +237,33 @@ internal class MainScreen(
                 KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MENU),
             )
         }
+        idle()
+    }
+
+    /** The title of the screen in the detail pane, or null without one. */
+    fun detailTitle(): String? =
+        compose
+            .onAllNodes(
+                hasTestTag("editTitle") and hasAnyAncestor(hasTestTag("detailPane")),
+                useUnmergedTree = true,
+            )
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
+
+    /** Types [label] into the folder screen in the detail pane. */
+    fun setDetailFolderLabel(label: String) {
+        compose.onNodeWithTag("label").performScrollTo().performTextReplacement(label)
+        idle()
+    }
+
+    fun discardAsked(): Boolean =
+        compose.onAllNodes(hasText("Discard your changes?")).fetchSemanticsNodes().isNotEmpty()
+
+    fun confirmDiscard() {
+        compose.onNode((hasText("OK") or hasText("Yes")) and hasClickAction()).performClick()
         idle()
     }
 

@@ -44,8 +44,8 @@ class RunningScreenshotTest(private val screen: RunningScreen, private val dark:
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} dark={1}")
         fun parameters(): List<Array<Any>> =
-            RunningScreen.entries.flatMap {
-                listOf(arrayOf<Any>(it, false), arrayOf<Any>(it, true))
-            }
+            RunningScreen.entries
+                .filter { it.select == null }
+                .flatMap { listOf(arrayOf<Any>(it, false), arrayOf<Any>(it, true)) }
     }
 }
