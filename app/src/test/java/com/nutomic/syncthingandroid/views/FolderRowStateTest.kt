@@ -98,7 +98,6 @@ class FolderRowStateTest {
         val row = row()
 
         assertEquals("Up to Date", row.state)
-        assertEquals(R.color.text_green, row.stateColor)
         assertEquals(StateTone.OK, row.tone)
     }
 
@@ -107,7 +106,6 @@ class FolderRowStateTest {
         val row = row(folder(sharedWith = 1))
 
         assertEquals("Unshared", row.state)
-        assertEquals(R.color.text_orange, row.stateColor)
         assertEquals(StateTone.ATTENTION, row.tone)
     }
 
@@ -116,7 +114,6 @@ class FolderRowStateTest {
         val row = row(folder(Constants.FOLDER_TYPE_SEND_ONLY)) { needFiles = 2 }
 
         assertEquals("Out of Sync", row.state)
-        assertEquals(R.color.text_red, row.stateColor)
         assertEquals(StateTone.ERROR, row.tone)
         assertTrue(row.showOverride)
     }
@@ -131,7 +128,6 @@ class FolderRowStateTest {
         val row = row { errors = 3 }
 
         assertEquals("Failed Items (3)", row.state)
-        assertEquals(R.color.text_red, row.stateColor)
         assertEquals(StateTone.ERROR, row.tone)
     }
 
@@ -140,7 +136,6 @@ class FolderRowStateTest {
         val row = row(folder(paused = true)) { state = "scanning" }
 
         assertEquals("Paused", row.state)
-        assertEquals(R.color.text_purple, row.stateColor)
         assertEquals(StateTone.PAUSED, row.tone)
         assertNull(row.items)
     }
@@ -151,33 +146,28 @@ class FolderRowStateTest {
             row(cached = CachedFolderStatus().apply { completion = 42.7 }) { state = "syncing" }
 
         assertEquals("Syncing (42%)", row.state)
-        assertEquals(R.color.text_blue, row.stateColor)
         assertEquals(StateTone.BUSY, row.tone)
         assertEquals(42, row.progress)
     }
 
     @Test
-    fun `each other Syncthing state has its text and colour`() {
+    fun `each other Syncthing state has its text and tone`() {
         val expected =
             mapOf(
-                "clean-waiting" to
-                    Triple("Waiting to Clean", R.color.text_orange, StateTone.ATTENTION),
-                "cleaning" to Triple("Cleaning Versions", R.color.text_blue, StateTone.BUSY),
-                "scan-waiting" to
-                    Triple("Waiting to Scan", R.color.text_orange, StateTone.ATTENTION),
-                "scanning" to Triple("Scanning", R.color.text_blue, StateTone.BUSY),
-                "sync-waiting" to
-                    Triple("Waiting to Sync", R.color.text_orange, StateTone.ATTENTION),
-                "sync-preparing" to Triple("Preparing to Sync", R.color.text_blue, StateTone.BUSY),
-                "error" to Triple("Error", R.color.text_red, StateTone.ERROR),
-                "unknown" to Triple("Unknown", R.color.text_red, StateTone.ERROR),
-                "brand-new" to Triple("brand-new", R.color.text_red, StateTone.ERROR),
+                "clean-waiting" to ("Waiting to Clean" to StateTone.ATTENTION),
+                "cleaning" to ("Cleaning Versions" to StateTone.BUSY),
+                "scan-waiting" to ("Waiting to Scan" to StateTone.ATTENTION),
+                "scanning" to ("Scanning" to StateTone.BUSY),
+                "sync-waiting" to ("Waiting to Sync" to StateTone.ATTENTION),
+                "sync-preparing" to ("Preparing to Sync" to StateTone.BUSY),
+                "error" to ("Error" to StateTone.ERROR),
+                "unknown" to ("Unknown" to StateTone.ERROR),
+                "brand-new" to ("brand-new" to StateTone.ERROR),
             )
-        for ((state, textColorAndTone) in expected) {
+        for ((state, textAndTone) in expected) {
             val row = row { this.state = state }
-            assertEquals(state, textColorAndTone.first, row.state)
-            assertEquals(state, textColorAndTone.second, row.stateColor)
-            assertEquals(state, textColorAndTone.third, row.tone)
+            assertEquals(state, textAndTone.first, row.state)
+            assertEquals(state, textAndTone.second, row.tone)
             assertNull(state, row.progress)
         }
     }

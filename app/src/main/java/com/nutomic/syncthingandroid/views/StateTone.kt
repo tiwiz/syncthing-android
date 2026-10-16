@@ -1,19 +1,16 @@
 package com.nutomic.syncthingandroid.views
 
-import androidx.annotation.ColorRes
-import com.nutomic.syncthingandroid.R
-
-/** What kind of state a folder or device is in: picks its color, and later its shape and icon. */
-enum class StateTone(@param:ColorRes @get:ColorRes val textColor: Int) {
+/** What kind of state a folder or device is in: picks its badge and text color (`ui/StateLook`). */
+enum class StateTone {
     /** Up to date. */
-    OK(R.color.text_green),
+    OK,
     /** Syncing, scanning, cleaning. */
-    BUSY(R.color.text_blue),
+    BUSY,
     /** Waiting for its turn, or not shared with anyone. */
-    ATTENTION(R.color.text_orange),
-    PAUSED(R.color.text_purple),
+    ATTENTION,
+    PAUSED,
     /** Failed items, out of sync, errors. */
-    ERROR(R.color.text_red),
+    ERROR,
     /** Disconnected, or Syncthing not running. */
-    OFFLINE(R.color.text_red),
+    OFFLINE,
 }

@@ -1,7 +1,6 @@
 package com.nutomic.syncthingandroid.views
 
 import android.content.Context
-import androidx.annotation.ColorRes
 import androidx.annotation.StringRes
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.model.CachedFolderStatus
@@ -35,11 +34,6 @@ data class FolderRowState(
     val items: String?,
     val invalid: String?,
 ) {
-    /** The color of [state]. */
-    @get:ColorRes
-    val stateColor: Int
-        get() = tone.textColor
-
     companion object {
         /** The row of [folder]; [status] is null while Syncthing is not running. */
         @JvmStatic
