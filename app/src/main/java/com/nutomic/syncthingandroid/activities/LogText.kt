@@ -149,8 +149,8 @@ private val NOISE =
 private val PID = Regex("\\(\\s?[0-9]+\\):")
 private val DATE = Regex("^[0-9]{2}-[0-9]{2}\\s")
 
-// Also takes the space after the milliseconds, as it always did.
-private val MILLISECONDS = Regex("^([0-9]{2}:[0-9]{2}:[0-9]{2})\\.[0-9]{3}\\s")
+// With the spaces after them: the native code's lines have two, once its tag is gone.
+private val MILLISECONDS = Regex("^([0-9]{2}:[0-9]{2}:[0-9]{2})\\.[0-9]{3}\\s+")
 
 /**
  * The logcat output without other components' noise, the native code's tag, process ids, dates and
@@ -162,7 +162,7 @@ internal fun filterAndroidLog(logcat: String): String =
         .replace(PID, "")
         .split("\n")
         .filter { line -> NOISE.none { line.contains(it) } }
-        .joinToString("\n") { it.replaceFirst(DATE, "").replaceFirst(MILLISECONDS, "$1") }
+        .joinToString("\n") { it.replaceFirst(DATE, "").replaceFirst(MILLISECONDS, "$1 ") }
 
 /** The file's text, or "" when it is missing or unreadable. */
 internal fun readLogFile(file: File): String {

@@ -241,8 +241,9 @@ Next steps (to be confirmed with the owner):
    2026-10-16, milestone 1 (PRs #31–#58) closed: native debug build installed on the Pixel 8
    (Android 17) over the existing data, every migrated screen walked through (main tabs, drawer,
    device ID, web GUI, usage reporting, folder/device create, recent changes, settings, log); no
-   crashes in logcat, native process running. Follow-ups found are in
-   [docs/TECH-DEBT.md](docs/TECH-DEBT.md#todos). The migration is complete.
+   crashes in logcat, native process running. The migration is complete. Follow-ups fixed:
+   status tab labels in Italian (PR #60), missing space after the time in the Android log
+   (PR #61). TECH-DEBT has no TODOs left.
 3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
 
 ## HANDOFF

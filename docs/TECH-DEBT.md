@@ -27,6 +27,4 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
-| Where | What |
-|---|---|
-| `activities/LogText.kt` | Removing the milliseconds from Android log lines also removes the space before the tag (`10:00:00I/Tag`), as the Java version did; pinned by `LogActivityTest`. |
+None.
