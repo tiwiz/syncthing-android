@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.DeviceActivity
 import com.nutomic.syncthingandroid.activities.FolderActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
@@ -58,10 +59,13 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         val activity: Class<out Activity>,
         val tab: Int? = null,
         val extras: Intent.() -> Unit = {},
+        val locale: String? = null,
     ) {
         MAIN_FOLDERS(MainActivity::class.java, tab = 0),
         MAIN_DEVICES(MainActivity::class.java, tab = 1),
         MAIN_STATUS(MainActivity::class.java, tab = 2),
+        /** Italian has the longest force start/stop labels. */
+        MAIN_STATUS_ITALIAN(MainActivity::class.java, tab = 2, locale = "it-rIT"),
         FOLDER_EDIT(
             FolderActivity::class.java,
             extras = {
@@ -111,6 +115,7 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         System.setProperty("os.version", "6.1.0-android")
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
         if (dark) RuntimeEnvironment.setQualifiers("+night")
+        screen.locale?.let { RuntimeEnvironment.setQualifiers("+$it") }
         ConfigFixture.install(context)
         syncthing = FakeSyncthing(context)
         RunningSyncthingService.install(syncthing)
@@ -118,7 +123,8 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         ActivityScenario.launch<Activity>(intent).use { scenario ->
             settleAll()
             screen.tab?.let { tab ->
-                compose.onNode(hasText(TAB_TITLES[tab]) and hasClickAction()).performClick()
+                val title = context.getString(TAB_TITLES[tab])
+                compose.onNode(hasText(title) and hasClickAction()).performClick()
                 settleAll()
             }
             scenario.onActivity { it.window.decorView.hideTextCursors() }
@@ -135,7 +141,12 @@ class RunningScreenshotTest(private val screen: Screen, private val dark: Boolea
         private const val SETTLE_ROUNDS = 20
 
         /** The main screen's tab titles, by index. */
-        private val TAB_TITLES = listOf("Folders", "Devices", "Status")
+        private val TAB_TITLES =
+            listOf(
+                R.string.folders_fragment_title,
+                R.string.devices_fragment_title,
+                R.string.status_fragment_title,
+            )
 
         private fun Intent.settingsRoute(route: String) {
             putExtra(SettingsActivity.EXTRA_START_DESTINATION, route)
