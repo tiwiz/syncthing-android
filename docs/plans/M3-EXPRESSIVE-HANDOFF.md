@@ -148,6 +148,8 @@ list; on an unfolded foldable the panes split on the hinge. Compact and medium k
 - **8b `refactor(device): device screen state outside the activity` (M).** Same for
   `DeviceActivity` → `DeviceEditController` + `DeviceEditHost` (QR scanner result, share, close).
   Tests unchanged.
+  Done: `DeviceEditController.kt` (`DeviceEditController`, `DeviceEditHost`, `DeviceRequest`,
+  `DeviceEditArgs`); the host also shows the device ID dialog and passes the REST API once bound.
 - **8c `feat(main): list and detail side by side on large windows` (L).** Add
   `androidx.compose.material3.adaptive:adaptive-layout` and `adaptive-navigation` (1.3.0, stable)
   to the catalog. In `MainContent`, wrap the folders and devices destinations in
