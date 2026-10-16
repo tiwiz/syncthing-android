@@ -88,6 +88,10 @@ panes split on the hinge of an unfolded foldable.
 5. **Folders list.** Large headline, total progress card with wavy indicator and rates, grouped
    rows with state shapes, FAB menu (add folder, add device, scan QR). The FAB menu's actions start
    the same intents as today's buttons (existing tests).
+   Done: title, total progress card (moved from the top bar), grouped rows with `StateBadge` and
+   state text in Material roles (the old green failed contrast), the add FAB menu on folders and
+   devices. The exit FAB is gone as in the design: exit is in the overflow menu, which asks first
+   when running as a service (test updated).
 6. **Devices list.** Same pattern: state shapes per `DeviceRowState.Status`, connected rows show
    rates, disconnected rows the last seen time.
 7. **Status tab.** Running hero with shape, connected `ButtonGroup` with the new labels, run

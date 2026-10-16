@@ -252,7 +252,8 @@ Next steps (to be confirmed with the owner):
    (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). PR 2 window size screenshot
    matrix (`WindowSizeScreenshotTest`). PR 3 shared components (`ui/`,
    `StateTone`). PR 4 navigation bar/rail and
-   overflow menu. **Resume here:** PR 5 (folders list).
+   overflow menu. PR 5 folders list and add FAB
+   menu. **Resume here:** PR 6 (devices list).
 
 ## HANDOFF
 

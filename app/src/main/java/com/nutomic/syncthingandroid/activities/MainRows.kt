@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
@@ -33,38 +37,50 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.ui.StateBadge
+import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.stateTextColor
 
-/** A folder: label, path, state, progress and what it offers to do; a tap opens it. */
+/**
+ * A folder: its state badge, label, path, state, progress and what it offers to do; a tap opens it.
+ * [shape] places it in the grouped list.
+ */
 @Composable
-internal fun FolderRow(item: FolderItem, actions: MainActions, modifier: Modifier = Modifier) {
+internal fun FolderRow(
+    item: FolderItem,
+    actions: MainActions,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+) {
     val row = item.row
     var confirm by rememberSaveable { mutableStateOf<String?>(null) }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable { actions.onOpenFolder(item.folderId) }
-                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
-                .testTag("folder:${row.label}")
+                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp)
+                .testTag("folder:${row.label}"),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        IconButton(onClick = { actions.onOpenFolderInFiles(item.path) }) {
-            Icon(folderIcon(row.type), stringResource(R.string.open_file_manager))
-        }
+        StateBadge(row.tone, modifier = Modifier.padding(top = 4.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(row.label, style = MaterialTheme.typography.titleMedium)
             OptionalText(row.directory)
             row.state?.let {
                 Text(
                     it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(row.stateColor),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = row.tone.stateTextColor,
                     modifier = Modifier.testTag("folderState:${row.label}"),
                 )
             }
             row.progress?.let {
-                LinearProgressIndicator(
-                    progress = { it / PERCENT },
-                    modifier = Modifier.fillMaxWidth(),
+                SyncProgress(
+                    progress = it / PERCENT,
+                    modifier = Modifier.padding(vertical = 4.dp),
                 )
             }
             OptionalText(row.items)
@@ -82,6 +98,9 @@ internal fun FolderRow(item: FolderItem, actions: MainActions, modifier: Modifie
                     Text(stringResource(row.revertLabel))
                 }
             }
+        }
+        IconButton(onClick = { actions.onOpenFolderInFiles(item.path) }) {
+            Icon(folderIcon(row.type), stringResource(R.string.open_file_manager))
         }
     }
     confirm?.let { what ->

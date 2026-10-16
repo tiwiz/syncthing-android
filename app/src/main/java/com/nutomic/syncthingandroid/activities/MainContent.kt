@@ -1,10 +1,12 @@
 package com.nutomic.syncthingandroid.activities
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,24 +17,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ExitToApp
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,8 +46,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
@@ -65,6 +72,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
+import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -86,7 +95,6 @@ internal data class MainUiState(
     val forceStartStop: Int,
     /** The overall progress in percent, or null when hidden. */
     val totalProgress: Int?,
-    val exitVisible: Boolean,
     val runningAsService: Boolean,
     val showWebGui: Boolean,
     /** The usage report to ask about, or null when not asking. */
@@ -221,7 +229,6 @@ private fun MainScaffold(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    state.totalProgress?.let { TotalProgress(it) }
                     StatusLight(state.serviceState)
                     TabActions(tab, actions)
                     IconButton(onClick = actions::onSettings) {
@@ -238,17 +245,11 @@ private fun MainScaffold(
                 },
             )
         },
-        floatingActionButton = {
-            if (state.exitVisible) {
-                FloatingActionButton(onClick = actions::onExit) {
-                    Icon(Icons.AutoMirrored.Outlined.ExitToApp, stringResource(R.string.exit))
-                }
-            }
-        },
+        floatingActionButton = { if (tab != MainTab.STATUS) AddMenu(actions) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
-                MainTab.FOLDERS -> FolderList(state.folders, actions)
+                MainTab.FOLDERS -> FolderList(state.folders, state.totalProgress, actions)
                 MainTab.DEVICES -> DeviceList(state.devices, actions)
                 MainTab.STATUS -> StatusTab(state.statusLines, state.forceStartStop, actions)
             }
@@ -260,21 +261,14 @@ private fun MainScaffold(
 private fun TabActions(tab: MainTab, actions: MainActions) {
     Row {
         when (tab) {
-            MainTab.FOLDERS -> {
+            MainTab.FOLDERS ->
                 IconButton(onClick = actions::onRescanAll) {
                     Icon(
                         Icons.Outlined.Refresh,
                         stringResource(R.string.activity_main_bottom_navigation_rescan_all),
                     )
                 }
-                IconButton(onClick = actions::onAddFolder) {
-                    Icon(Icons.Outlined.Add, stringResource(R.string.add_folder))
-                }
-            }
-            MainTab.DEVICES ->
-                IconButton(onClick = actions::onAddDevice) {
-                    Icon(Icons.Outlined.Add, stringResource(R.string.add_device))
-                }
+            MainTab.DEVICES,
             MainTab.STATUS -> Unit
         }
     }
@@ -299,31 +293,95 @@ private fun StatusLight(state: SyncthingService.State) {
     )
 }
 
+/** Adds a folder or a device: a FAB that opens into a menu. */
 @Composable
-private fun TotalProgress(percent: Int) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(PROGRESS_SIZE.dp)) {
-        CircularProgressIndicator(
-            progress = { percent / PERCENT },
-            modifier = Modifier.fillMaxSize(),
+private fun AddMenu(actions: MainActions) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = expanded) { expanded = false }
+    FloatingActionButtonMenu(
+        expanded = expanded,
+        button = {
+            ToggleFloatingActionButton(checked = expanded, onCheckedChange = { expanded = it }) {
+                Icon(
+                    if (expanded) Icons.Filled.Close else Icons.Filled.Add,
+                    stringResource(R.string.add),
+                )
+            }
+        },
+    ) {
+        FloatingActionButtonMenuItem(
+            onClick = {
+                expanded = false
+                actions.onAddFolder()
+            },
+            icon = { Icon(Icons.Outlined.CreateNewFolder, null) },
+            text = { Text(stringResource(R.string.add_folder)) },
         )
-        Text(
-            percent.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.testTag("totalProgress"),
+        FloatingActionButtonMenuItem(
+            onClick = {
+                expanded = false
+                actions.onAddDevice()
+            },
+            icon = { Icon(Icons.Outlined.Devices, null) },
+            text = { Text(stringResource(R.string.add_device)) },
         )
     }
 }
 
+/** The overall progress of the devices in sync, above the folders. */
 @Composable
-private fun FolderList(folders: List<FolderItem>, actions: MainActions) {
+private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(CARD_CORNER.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(
+                    if (percent < PERCENT) R.string.state_syncing_general
+                    else R.string.state_up_to_date
+                ),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                "$percent%",
+                style = MaterialTheme.typography.displayMediumEmphasized,
+                modifier = Modifier.testTag("totalProgress"),
+            )
+            SyncProgress(progress = percent / PERCENT.toFloat())
+        }
+    }
+}
+
+/** A list's title, with room above it under the top bar. */
+@Composable
+private fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
+    Text(
+        stringResource(tab.title),
+        style = MaterialTheme.typography.displaySmallEmphasized,
+        modifier = modifier.padding(start = 8.dp, top = 8.dp, bottom = 16.dp),
+    )
+}
+
+@Composable
+private fun FolderList(folders: List<FolderItem>, totalProgress: Int?, actions: MainActions) {
     if (folders.isEmpty()) {
         EmptyList(R.string.folder_list_empty)
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(folders, key = { it.folderId }) { item ->
-            FolderRow(item, actions)
-            HorizontalDivider()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
+        verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
+    ) {
+        item { ListTitle(MainTab.FOLDERS) }
+        totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
+        itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
+            FolderRow(item, actions, shape = groupedItemShape(index, folders.size))
         }
     }
 }
@@ -434,6 +492,12 @@ private fun UsageReportingDialog(report: String, actions: MainActions) {
 }
 
 private const val LIGHT_SIZE = 12
-private const val PROGRESS_SIZE = 32
-private const val PERCENT = 100f
+private const val PERCENT = 100
+private const val CARD_CORNER = 32
+
+/** Room below the last item, so the add button never covers it. */
+private const val LIST_BOTTOM_PADDING = 96
+
+/** The gap between the items of a grouped list. */
+private const val GROUP_GAP = 3
 private const val REPORT_MAX_HEIGHT = 240
