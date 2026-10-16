@@ -112,6 +112,19 @@ class FolderActivityTest {
     }
 
     @Test
+    fun `unsaved changes survive recreation`() {
+        editFolder().use { screen ->
+            screen.setLabel("Photos")
+
+            screen.recreate()
+            assertEquals("Photos", screen.label())
+
+            screen.save()
+            assertEquals("Photos", savedFolder().label)
+        }
+    }
+
+    @Test
     fun `saving an unchanged folder writes nothing`() {
         editFolder().use { screen ->
             screen.save()

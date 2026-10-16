@@ -259,6 +259,15 @@ internal class MainScreen(
         idle()
     }
 
+    /** The label in the folder screen in the detail pane. */
+    fun detailFolderLabel(): String =
+        compose
+            .onNodeWithTag("label")
+            .performScrollTo()
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.EditableText]
+            .text
+
     fun discardAsked(): Boolean =
         compose.onAllNodes(hasText("Discard your changes?")).fetchSemanticsNodes().isNotEmpty()
 
