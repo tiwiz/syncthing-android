@@ -131,7 +131,8 @@ shutdown ends the process as it would on a device.
   840×900 (unfolded foldable), large 1280×800 (tablet landscape), at mdpi, in English and, for
   compact and large, Italian. Light theme only.
 - `OtherScreensScreenshotTest` (`screenshots/other/`): log (fake logcat from the shell shadow), sync
-  conditions, photo shoot, share, recent changes (exact times) and the device id dialog, with
+  conditions, folder picker (a fixed root under `/tmp`, so the golden does not depend on the
+  machine), photo shoot, share, recent changes (exact times) and the device id dialog, with
   Syncthing running.
 - `WebGuiScreenshotTest` (`screenshots/webgui/`): the web GUI screen's load error. The loading
   spinner never stops moving, and web content is left to the instrumented tests.

@@ -1,20 +1,39 @@
 package com.nutomic.syncthingandroid.activities
 
 import android.content.SharedPreferences
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.settings.SettingsScaffold
-import me.zhanghai.compose.preference.ListPreference
-import me.zhanghai.compose.preference.Preference
-import me.zhanghai.compose.preference.SwitchPreference
+import com.nutomic.syncthingandroid.ui.SectionHeader
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 
 /**
  * The global run conditions a folder's or device's own conditions can only narrow: what is off
@@ -131,6 +150,24 @@ internal data class ObjectRunConditions(
     }
 }
 
+/** One row of the conditions group: a switch, or a notice without one. */
+private sealed interface ConditionsRow {
+    val key: String
+
+    /** A condition the user can turn on and off, unless [enabled] is false. */
+    data class Switch(
+        override val key: String,
+        val title: String,
+        val summary: String?,
+        val checked: Boolean,
+        val enabled: Boolean,
+        val onCheckedChange: (Boolean) -> Unit,
+    ) : ConditionsRow
+
+    /** A line the screen shows in place of the whitelisted networks. */
+    data class Notice(override val key: String, val text: String) : ConditionsRow
+}
+
 /** The run conditions of one folder or device, within the global ones. */
 @Composable
 internal fun SyncConditionsScreen(
@@ -142,87 +179,185 @@ internal fun SyncConditionsScreen(
 ) {
     val powerSourceNames = stringArrayResource(R.array.power_source_entries)
     val powerSourceValues = stringArrayResource(R.array.power_source_values)
+    val rows = conditionRows(global, conditions, onConditionsChange)
     SettingsScaffold(
         title = stringResource(R.string.custom_sync_conditions_dialog),
         description = stringResource(R.string.run_conditions_summary),
         onNavigateBack = onNavigateBack,
         modifier = modifier,
     ) {
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_wifi_summary)) },
-                value = conditions.wifi,
-                onValueChange = { onConditionsChange(conditions.copy(wifi = it)) },
-                enabled = global.wifi,
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_whitelisted_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_whitelisted_wifi_summary)) },
-                value = conditions.whitelistedWifi,
-                onValueChange = { onConditionsChange(conditions.copy(whitelistedWifi = it)) },
-                enabled = global.whitelist && conditions.wifi,
-            )
-        }
-        if (!global.whitelist) {
-            item {
-                Preference(
-                    title = { Text(stringResource(R.string.custom_wifi_ssid_whitelist_empty)) },
-                    enabled = false,
-                )
-            }
-        } else {
-            for (ssid in global.whitelistedSsids) {
-                item(key = "ssid:$ssid") {
-                    SwitchPreference(
-                        title = { Text(ssid.removePrefix("\"").removeSuffix("\"")) },
-                        value = ssid in conditions.selectedSsids,
-                        onValueChange = { selected ->
-                            val ssids =
-                                if (selected) conditions.selectedSsids + ssid
-                                else conditions.selectedSsids - ssid
-                            onConditionsChange(conditions.copy(selectedSsids = ssids))
-                        },
-                        enabled = conditions.wifi && conditions.whitelistedWifi,
-                    )
+        item(key = "conditions") {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
+            ) {
+                rows.forEachIndexed { index, row ->
+                    when (row) {
+                        is ConditionsRow.Switch ->
+                            ConditionSwitchRow(row, groupedItemShape(index, rows.size))
+                        is ConditionsRow.Notice ->
+                            ConditionNoticeRow(row.text, groupedItemShape(index, rows.size))
+                    }
+                }
+                SectionHeader(stringResource(R.string.power_source_title))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                ) {
+                    powerSourceValues.forEachIndexed { index, value ->
+                        val checked = value == conditions.powerSource
+                        ToggleButton(
+                            checked = checked,
+                            onCheckedChange = {
+                                if (!checked) {
+                                    onConditionsChange(conditions.copy(powerSource = value))
+                                }
+                            },
+                            enabled = global.anyPowerSource,
+                            shapes =
+                                when (index) {
+                                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    powerSourceValues.lastIndex ->
+                                        ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                },
+                            modifier =
+                                Modifier.weight(1f).semantics {
+                                    role = Role.RadioButton
+                                    selected = checked
+                                },
+                        ) {
+                            Text(
+                                powerSourceNames.getOrNull(index).orEmpty(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 }
             }
         }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_metered_wifi_title)) },
-                summary = { Text(stringResource(R.string.run_on_metered_wifi_summary)) },
-                value = conditions.meteredWifi,
-                onValueChange = { onConditionsChange(conditions.copy(meteredWifi = it)) },
-                enabled = global.meteredWifi,
-            )
+    }
+}
+
+/** The condition rows the screen shows: the global ones narrow what it offers. */
+@Composable
+private fun conditionRows(
+    global: GlobalRunConditions,
+    conditions: ObjectRunConditions,
+    onConditionsChange: (ObjectRunConditions) -> Unit,
+): List<ConditionsRow> {
+    val rows = mutableListOf<ConditionsRow>()
+    rows +=
+        ConditionsRow.Switch(
+            key = "wifi",
+            title = stringResource(R.string.run_on_wifi_title),
+            summary = stringResource(R.string.run_on_wifi_summary),
+            checked = conditions.wifi,
+            enabled = global.wifi,
+        ) {
+            onConditionsChange(conditions.copy(wifi = it))
         }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.run_on_mobile_data_title)) },
-                summary = { Text(stringResource(R.string.run_on_mobile_data_summary)) },
-                value = conditions.mobileData,
-                onValueChange = { onConditionsChange(conditions.copy(mobileData = it)) },
-                enabled = global.mobileData,
-            )
+    rows +=
+        ConditionsRow.Switch(
+            key = "whitelist",
+            title = stringResource(R.string.run_on_whitelisted_wifi_title),
+            summary = stringResource(R.string.run_on_whitelisted_wifi_summary),
+            checked = conditions.whitelistedWifi,
+            enabled = global.whitelist && conditions.wifi,
+        ) {
+            onConditionsChange(conditions.copy(whitelistedWifi = it))
         }
-        item {
-            val name = powerSourceNames.getOrNull(powerSourceValues.indexOf(conditions.powerSource))
-            ListPreference(
-                title = { Text(stringResource(R.string.power_source_title)) },
-                summary = { Text(name.orEmpty()) },
-                value = conditions.powerSource,
-                onValueChange = { onConditionsChange(conditions.copy(powerSource = it)) },
-                values = powerSourceValues.toList(),
-                valueToText = { value ->
-                    AnnotatedString(
-                        powerSourceNames.getOrNull(powerSourceValues.indexOf(value)).orEmpty()
-                    )
-                },
-                enabled = global.anyPowerSource,
+    if (!global.whitelist) {
+        rows +=
+            ConditionsRow.Notice(
+                key = "whitelist-empty",
+                text = stringResource(R.string.custom_wifi_ssid_whitelist_empty),
             )
+    } else {
+        for (ssid in global.whitelistedSsids) {
+            rows +=
+                ConditionsRow.Switch(
+                    key = "ssid:$ssid",
+                    title = ssid.removePrefix("\"").removeSuffix("\""),
+                    summary = null,
+                    checked = ssid in conditions.selectedSsids,
+                    enabled = conditions.wifi && conditions.whitelistedWifi,
+                ) { selected ->
+                    val ssids =
+                        if (selected) conditions.selectedSsids + ssid
+                        else conditions.selectedSsids - ssid
+                    onConditionsChange(conditions.copy(selectedSsids = ssids))
+                }
         }
     }
+    rows +=
+        ConditionsRow.Switch(
+            key = "metered",
+            title = stringResource(R.string.run_on_metered_wifi_title),
+            summary = stringResource(R.string.run_on_metered_wifi_summary),
+            checked = conditions.meteredWifi,
+            enabled = global.meteredWifi,
+        ) {
+            onConditionsChange(conditions.copy(meteredWifi = it))
+        }
+    rows +=
+        ConditionsRow.Switch(
+            key = "mobile",
+            title = stringResource(R.string.run_on_mobile_data_title),
+            summary = stringResource(R.string.run_on_mobile_data_summary),
+            checked = conditions.mobileData,
+            enabled = global.mobileData,
+        ) {
+            onConditionsChange(conditions.copy(mobileData = it))
+        }
+    return rows
+}
+
+/** A condition the user can turn on and off, as a group item; [shape] places it in the group. */
+@Composable
+private fun ConditionSwitchRow(row: ConditionsRow.Switch, shape: Shape) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .toggleable(
+                    value = row.checked,
+                    enabled = row.enabled,
+                    role = Role.Switch,
+                ) {
+                    row.onCheckedChange(it)
+                }
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(row.title, style = MaterialTheme.typography.bodyLarge)
+            row.summary?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Switch(checked = row.checked, onCheckedChange = null, enabled = row.enabled)
+    }
+}
+
+/** A line the screen shows in place of the whitelisted networks, as a group item. */
+@Composable
+private fun ConditionNoticeRow(text: String, shape: Shape) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow, shape)
+                .padding(16.dp),
+    )
 }

@@ -11,6 +11,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.nutomic.syncthingandroid.activities.FolderPickerActivity
 import com.nutomic.syncthingandroid.activities.FolderTypeDialogActivity
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
@@ -29,6 +30,7 @@ import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import java.io.File
 import java.util.TimeZone
 import org.junit.After
 import org.junit.Test
@@ -101,6 +103,12 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
             extras = { putExtra(PullOrderDialogActivity.EXTRA_PULL_ORDER, "oldestFirst") },
             wholeScreen = true,
         ),
+        FOLDER_PICKER(
+            FolderPickerActivity::class.java,
+            extras = { context ->
+                putExtras(FolderPickerActivity.createIntent(context, null, pickerRoot().path))
+            },
+        ),
         DEVICE_ID_DIALOG(
             MainActivity::class.java,
             onLaunched = {
@@ -122,6 +130,7 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
     fun tearDown() {
         syncthing.close()
         TimeZone.setDefault(savedTimeZone)
+        File(PICKER_ROOT).deleteRecursively()
     }
 
     @Test
@@ -160,4 +169,19 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
         fun parameters(): List<Array<Any>> =
             Screen.entries.flatMap { listOf(arrayOf<Any>(it, false), arrayOf<Any>(it, true)) }
     }
+}
+
+/**
+ * The picker's root for the golden: a fixed path with fixed contents, so the image does not depend
+ * on the machine's file system.
+ */
+private const val PICKER_ROOT = "/tmp/syncthing-folder-picker-golden"
+
+/** Creates [PICKER_ROOT] with two folders and a file, and returns it. */
+private fun pickerRoot(): File {
+    val root = File(PICKER_ROOT)
+    for (folder in listOf("Camera", "Documents")) File(root, folder).mkdirs()
+    val notes = File(root, "notes.txt")
+    if (!notes.exists()) notes.createNewFile()
+    return root
 }
