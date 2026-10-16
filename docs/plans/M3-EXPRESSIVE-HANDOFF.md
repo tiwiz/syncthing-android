@@ -222,6 +222,12 @@ pixel_fold` and `-d pixel_tablet`. Walk every screen in light/dark, English/Ital
 landscape, folded/unfolded; record results in AGENTS.md; create a GitHub milestone with the PRs.
 Phone screenshots show the real device ID and API key: keep them in the scratchpad.
 
+## Hilt and ViewModels
+
+A second plan runs alongside this one: [HILT-VIEWMODELS.md](HILT-VIEWMODELS.md) (steps H1–H9,
+same ownership). Its "Order with the Material 3 Expressive plan" section says when each H step
+comes; screens move to ViewModels after their restyle, never in the same PR.
+
 ## Ownership while two agents work
 
 | Area | Owner |
