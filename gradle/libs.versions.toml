@@ -42,6 +42,7 @@ junit4 = "4.13.2"
 kotlin = "2.4.20"
 kotlinSerialization = "2.4.20"
 kotlinxSerializationCore = "1.11.0"
+kotlinx-coroutines = "1.9.0"
 ksp = "2.3.12"
 ktfmt = "0.27.0"
 lingala-zip4j = "2.11.6"
@@ -95,6 +96,7 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
 jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
 lingala-zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "lingala-zip4j" }
 localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "localbroadcastmanager" }

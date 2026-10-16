@@ -11,7 +11,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /** App-wide dependencies. */
 @Module
@@ -25,9 +29,18 @@ object SyncthingModule {
 
     @Provides
     @Singleton
+    @ApplicationScope
+    fun getApplicationScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    @Provides
+    @Singleton
     fun getNotificationHandler(@ApplicationContext context: Context): NotificationHandler =
         NotificationHandler(context)
 }
+
+/** Lives as long as the app: for app-wide flows such as the service connection. */
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class ApplicationScope
 
 /**
  * The app-wide dependencies for classes Hilt does not create (the REST client, the event processor,
