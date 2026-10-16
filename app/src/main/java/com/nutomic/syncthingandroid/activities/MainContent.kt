@@ -340,11 +340,23 @@ private fun StatusTab(lines: List<String>, forceStartStop: Int, actions: MainAct
                 SegmentedButton(
                     selected = index == forceStartStop,
                     onClick = { if (index != forceStartStop) actions.onForceStartStop(index) },
-                    shape = SegmentedButtonDefaults.itemShape(index, titles.size),
+                    // Long labels (Italian) wrap to several lines: a pill shape would cut them.
+                    shape =
+                        SegmentedButtonDefaults.itemShape(
+                            index,
+                            titles.size,
+                            baseShape = MaterialTheme.shapes.medium,
+                        ),
                     modifier = Modifier.fillMaxHeight().testTag("force:$index"),
                     // The fill shows the choice; a check mark would wrap its label differently.
                     icon = {},
-                    label = { Text(stringResource(title).trim(), textAlign = TextAlign.Center) },
+                    label = {
+                        Text(
+                            stringResource(title).trim(),
+                            style = MaterialTheme.typography.labelMedium,
+                            textAlign = TextAlign.Center,
+                        )
+                    },
                 )
             }
         }
