@@ -255,9 +255,10 @@ Next steps (to be confirmed with the owner):
    matrix (`WindowSizeScreenshotTest`). PR 3 shared components (`ui/`,
    `StateTone`). PR 4 navigation bar/rail and
    overflow menu. PR 5 folders list and add FAB
-   menu. PR 6 devices list. PR 7 status tab. **Resume here:**
-   owner's phone test of the main screen, then steps 8–13 as planned in
-   [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md).
+   menu. PR 6 devices list. PR 7 status tab. **Resume here:** owner's phone test of the main
+   screen, then steps 8–13 as planned in
+   [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md); 10a (choice
+   dialogs, versioning) done, next 10b–10e, then 11a–11b.
 7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
    [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
    steps (order at the end of that file).

@@ -178,9 +178,10 @@ behaviour tests unchanged. Goldens: `activities/folder_*`, `device_*`, `running/
 
 ### Step 10 — secondary screens (B, 5 PRs, independent of 8–9, any order)
 
-One PR each, same recipe: grouped lists, `SectionHeader`, expressive top bars
-(`MediumFlexibleTopAppBar` where the screen has a title worth showing), shapes from `ui/`;
-existing behaviour tests unchanged; goldens of that screen re-recorded and reviewed.
+One PR each, same recipe: grouped lists, `SectionHeader`, expressive top bars (the classic
+`TopAppBar`/`MediumTopAppBar`/`LargeTopAppBar`: the flexible ones are not in material3
+1.5.0-beta01, only their tokens), shapes from `ui/`; existing behaviour tests unchanged; goldens
+of that screen re-recorded and reviewed.
 
 - **10a** `SingleChoiceDialogActivity` (folder type, pull order) and `VersioningScreen`
   (versioning dialog). Goldens: `versioning/`, `other/folder_type*`, `other/pull_order*`.

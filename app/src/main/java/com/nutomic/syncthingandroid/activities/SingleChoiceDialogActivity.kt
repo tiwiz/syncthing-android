@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.annotation.ArrayRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,12 +26,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 
 /**
  * A dialog-styled screen that picks one of a few values and hands it back as its result, on
@@ -85,7 +89,7 @@ abstract class SingleChoiceDialogActivity : ThemedAppCompatActivity() {
     }
 }
 
-/** Radio buttons for [options] (value to label), and a "Finish" button. */
+/** Radio buttons for [options] (value to label) as a grouped list, and a "Finish" button. */
 @Composable
 internal fun SingleChoiceList(
     options: List<Pair<String, String>>,
@@ -94,37 +98,59 @@ internal fun SingleChoiceList(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
-        Column(modifier = Modifier.selectableGroup()) {
-            for ((value, label) in options) {
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .selectable(
-                                selected = value == selected,
-                                role = Role.RadioButton,
-                                onClick = { onSelect(value) },
-                            )
-                            .padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = value == selected, onClick = null)
-                    // The dialog window draws the background; the text follows the theme.
-                    Text(
-                        text = label,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
+    Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Column(
+            modifier = Modifier.selectableGroup(),
+            verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
+        ) {
+            options.forEachIndexed { index, (value, label) ->
+                ChoiceOption(
+                    label = label,
+                    selected = value == selected,
+                    onSelect = { onSelect(value) },
+                    shape = groupedItemShape(index, options.size),
+                )
             }
         }
         TextButton(
             onClick = onFinish,
-            modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp),
+            modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
         ) {
             Text(stringResource(R.string.finish))
         }
+    }
+}
+
+/**
+ * One choice of a grouped list: a radio button and its label on a group item; [shape] places it in
+ * the group.
+ */
+@Composable
+internal fun ChoiceOption(
+    label: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    shape: Shape,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        // The dialog window draws the background; the text follows the theme.
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyLarge,
+        )
     }
 }
