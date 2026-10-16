@@ -10,6 +10,7 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.recentchanges.RecentChangesActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.SyncthingService
@@ -23,6 +24,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.awaitMain
+import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -224,16 +226,75 @@ class MainActivityTest {
     }
 
     @Test
-    fun `back closes the drawer first, then keeps the screen in the background`() {
+    fun `back closes the menu first, then keeps the screen in the background`() {
         stopped().use { screen ->
-            screen.openDrawer()
-            assertTrue(screen.drawerOpen())
+            screen.openMenu()
+            assertTrue(screen.menuOpen())
 
             screen.back()
-            assertFalse(screen.drawerOpen())
+            assertFalse(screen.menuOpen())
 
             screen.back()
             assertFalse(screen.finishing())
+        }
+    }
+
+    @Test
+    fun `the settings button is on every tab`() {
+        stopped().use { screen ->
+            for (tab in MainScreen.Tab.entries) {
+                screen.showTab(tab)
+                val settings = checkNotNull(screen.run(MainScreen.Action.SETTINGS))
+                assertEquals(
+                    tab.name,
+                    SettingsActivity::class.java.name,
+                    settings.component?.className,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `the menu offers import and export, and needs Syncthing running for the rest`() {
+        stopped().use { screen ->
+            screen.openMenu()
+            assertTrue(screen.menuItemEnabled(MainScreen.MenuItem.DEVICE_ID))
+            assertFalse(screen.menuItemEnabled(MainScreen.MenuItem.RECENT_CHANGES))
+            assertFalse(screen.menuItemEnabled(MainScreen.MenuItem.WEB_GUI))
+            assertFalse(screen.menuItemEnabled(MainScreen.MenuItem.RESTART))
+            assertTrue(screen.menuItemEnabled(MainScreen.MenuItem.EXIT))
+
+            val backup = checkNotNull(screen.choose(MainScreen.MenuItem.BACKUP))
+            assertEquals(SettingsActivity::class.java.name, backup.component?.className)
+            assertEquals(
+                "ImportExport",
+                backup.getStringExtra(SettingsActivity.EXTRA_START_DESTINATION),
+            )
+            assertFalse(screen.menuOpen())
+        }
+    }
+
+    @Test
+    fun `with Syncthing running the menu opens recent changes and the web GUI`() {
+        running().use { screen ->
+            screen.openMenu()
+            val recent = checkNotNull(screen.choose(MainScreen.MenuItem.RECENT_CHANGES))
+            assertEquals(RecentChangesActivity::class.java.name, recent.component?.className)
+
+            screen.openMenu()
+            val webGui = checkNotNull(screen.choose(MainScreen.MenuItem.WEB_GUI))
+            assertEquals(WebGuiActivity::class.java.name, webGui.component?.className)
+        }
+    }
+
+    @Test
+    fun `the menu key opens and closes the menu`() {
+        stopped().use { screen ->
+            screen.pressMenuKey()
+            assertTrue(screen.menuOpen())
+
+            screen.pressMenuKey()
+            assertFalse(screen.menuOpen())
         }
     }
 

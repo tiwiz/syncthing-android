@@ -3,10 +3,13 @@ package com.nutomic.syncthingandroid.activities
 import android.app.Application
 import android.content.Intent
 import android.os.Looper
+import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -174,17 +177,49 @@ internal class MainScreen(
         idle()
     }
 
-    fun openDrawer() {
-        compose.onNodeWithContentDescription("Open Main Menu").performClick()
+    /** The entries of the top bar's overflow menu, by label. */
+    enum class MenuItem(val label: String) {
+        DEVICE_ID("Show device ID"),
+        RECENT_CHANGES("Recent changes"),
+        WEB_GUI("Web GUI"),
+        BACKUP("Import and Export"),
+        RESTART("Restart"),
+        EXIT("Exit"),
+    }
+
+    fun openMenu() {
+        compose.onNodeWithContentDescription("More options").performClick()
         idle()
     }
 
-    fun drawerOpen(): Boolean =
-        compose
-            .onNodeWithTag("drawer", useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .boundsInRoot
-            .right > 0
+    fun menuOpen(): Boolean =
+        compose.onAllNodesWithTag("mainMenu").fetchSemanticsNodes().isNotEmpty()
+
+    private fun menuNode(item: MenuItem) =
+        compose.onNode(
+            hasText(item.label) and hasClickAction() and hasAnyAncestor(hasTestTag("mainMenu"))
+        )
+
+    fun menuItemEnabled(item: MenuItem): Boolean =
+        SemanticsProperties.Disabled !in menuNode(item).fetchSemanticsNode().config
+
+    /** Chooses [item] in the open menu and returns the screen it started, if any. */
+    fun choose(item: MenuItem): Intent? {
+        menuNode(item).performClick()
+        idle()
+        return nextStarted()
+    }
+
+    /** The hardware menu key, as on a TV remote. */
+    fun pressMenuKey() {
+        scenario.onActivity {
+            it.onKeyDown(
+                KeyEvent.KEYCODE_MENU,
+                KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MENU),
+            )
+        }
+        idle()
+    }
 
     fun back() {
         scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }

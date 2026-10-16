@@ -118,7 +118,7 @@ app/                         Android application (only Gradle module with code)
     http/          Volley requests to the REST API (loopback only, custom trust manager)
     model/         Gson POJOs for Syncthing's JSON + local caches
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
-    activities/    Compose screens: Main (+ drawer), Folder, Device, pickers, dialogs, Share,
+    activities/    Compose screens: Main (+ overflow menu), Folder, Device, pickers, dialogs, Share,
                    PhotoShoot, QR scanner, Log, web page; base classes for theme and service
     fragments/     DeviceIdDialogFragment (Compose)
     views/         FolderRowState, DeviceRowState (main screen list rows)
@@ -251,7 +251,8 @@ Next steps (to be confirmed with the owner):
    Decisions taken the same day (in the plan), plus minSdk 30 (PR #64). PR 1 theme foundation
    (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). PR 2 window size screenshot
    matrix (`WindowSizeScreenshotTest`). PR 3 shared components (`ui/`,
-   `StateTone`). **Resume here:** PR 4 (main screen navigation).
+   `StateTone`). PR 4 navigation bar/rail and
+   overflow menu. **Resume here:** PR 5 (folders list).
 
 ## HANDOFF
 

@@ -79,6 +79,7 @@ espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref =
 espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espresso" }
 espresso-web = { module = "androidx.test.espresso:espresso-web", version.ref = "espresso" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
+compose-material3-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "compose-material3" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-material-icons" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose-ui" }
 constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }

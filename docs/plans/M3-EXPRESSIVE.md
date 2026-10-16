@@ -80,6 +80,11 @@ panes split on the hinge of an unfolded foldable.
    compact, rail on medium/expanded, expanded rail with labels on large. Drawer entries move to
    the overflow menu as in decision 5. Driver: `openDrawer()` becomes `openMenu()`; every
    `MainActivityTest` stays.
+   Done: `NavigationSuiteScaffold` (material3-adaptive-navigation-suite): short bar below 600 dp,
+   collapsed rail, expanded rail from 1200 dp; `MainMenu` (overflow) replaces `MainDrawer`; the
+   settings icon is on every tab; the menu key opens the menu. The expanded rail lists the three
+   destinations only, the overflow entries stay in the menu on every size. Swiping between tabs
+   and the D-pad-right-closes-drawer shortcut are gone with the pager and the drawer.
 5. **Folders list.** Large headline, total progress card with wavy indicator and rates, grouped
    rows with state shapes, FAB menu (add folder, add device, scan QR). The FAB menu's actions start
    the same intents as today's buttons (existing tests).
