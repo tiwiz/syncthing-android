@@ -9,7 +9,6 @@ import android.text.TextUtils
 import android.util.Log
 import com.google.common.io.Files
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.util.FileUtils
 import java.io.File
 import java.io.FileOutputStream
@@ -20,10 +19,12 @@ import java.net.Inet4Address
 import java.util.concurrent.atomic.AtomicReference
 
 /** Runs the Syncthing binary with one of its [Command]s. */
-class SyncthingRunnable(private val context: Context, command: Command) : Runnable {
-
-    lateinit var preferences: SharedPreferences
-    lateinit var notificationHandler: NotificationHandler
+class SyncthingRunnable(
+    private val context: Context,
+    command: Command,
+    private val preferences: SharedPreferences,
+    private val notificationHandler: NotificationHandler,
+) : Runnable {
 
     private val enableVerboseLog: Boolean
     // e.g. "/data/app/${applicationId}-8HsN-IsVtZXc8GrE5-Hepw==/lib/x86/libsyncthingnative.so"
@@ -47,8 +48,6 @@ class SyncthingRunnable(private val context: Context, command: Command) : Runnab
     class ExecutableNotFoundException(message: String) : Exception(message)
 
     init {
-        preferences = context.appDependencies().preferences()
-        notificationHandler = context.appDependencies().notificationHandler()
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         val binary = syncthingBinary.path
         commandLine =

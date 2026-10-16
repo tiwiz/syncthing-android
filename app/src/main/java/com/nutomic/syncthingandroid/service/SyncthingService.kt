@@ -145,7 +145,12 @@ class SyncthingService : Service() {
             // Created on the first onStartCommand. After collecting the initial run conditions,
             // it sends its first decision to onShouldRunDecisionChanged.
             runConditionMonitor =
-                RunConditionMonitor(this, ::onShouldRunDecisionChanged, ::applyCustomRunConditions)
+                RunConditionMonitor(
+                    this,
+                    preferences,
+                    ::onShouldRunDecisionChanged,
+                    ::applyCustomRunConditions,
+                )
         }
         notificationHandler.updatePersistentNotification(this)
         if (intent == null) {
@@ -232,7 +237,13 @@ class SyncthingService : Service() {
             // Shutdown synchronously.
             shutdown(State.DISABLED)
         }
-        SyncthingRunnable(this, SyncthingRunnable.Command.RESET_DATABASE).run()
+        SyncthingRunnable(
+                this,
+                SyncthingRunnable.Command.RESET_DATABASE,
+                preferences,
+                notificationHandler,
+            )
+            .run()
         if (lastDeterminedShouldRun) {
             launchStartupTask(SyncthingRunnable.Command.MAIN)
         }
@@ -359,7 +370,13 @@ class SyncthingService : Service() {
 
         if (api == null) {
             api =
-                RestApi(this, loadedConfig.webGuiUrl, loadedConfig.apiKey, ::onApiAvailable) {
+                RestApi(
+                    this,
+                    notificationHandler,
+                    loadedConfig.webGuiUrl,
+                    loadedConfig.apiKey,
+                    ::onApiAvailable,
+                ) {
                     onServiceStateChange(currentState)
                 }
             Log.i(TAG, "Web GUI will be available at " + loadedConfig.webGuiUrl)
@@ -370,7 +387,7 @@ class SyncthingService : Service() {
             Log.e(TAG, "onStartupTaskCompleteListener: Syncthing binary lifecycle violated")
             return
         }
-        val runnable = SyncthingRunnable(this, srCommand)
+        val runnable = SyncthingRunnable(this, srCommand, preferences, notificationHandler)
         syncthingRunnable = runnable
 
         // An old instance still runs after an in-place app upgrade: end it.
@@ -424,7 +441,8 @@ class SyncthingService : Service() {
             onServiceStateChange(State.ACTIVE)
         }
         if (eventProcessor == null) {
-            eventProcessor = EventProcessor(this, restApi).also { it.start() }
+            eventProcessor =
+                EventProcessor(this, restApi, preferences, notificationHandler).also { it.start() }
         }
     }
 

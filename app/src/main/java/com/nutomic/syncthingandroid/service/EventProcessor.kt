@@ -17,7 +17,6 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Event
 import com.nutomic.syncthingandroid.model.FolderStatus
 import com.nutomic.syncthingandroid.util.splitLikeJava
@@ -28,11 +27,12 @@ import java.util.concurrent.TimeUnit
  * Polls Syncthing's events through [RestApi] every few seconds and applies them: caches in RestApi,
  * the media store, and notifications. All callbacks run on the main thread.
  */
-class EventProcessor(private val context: Context, private val restApi: RestApi) :
-    Runnable, RestApi.OnReceiveEventListener {
-
-    lateinit var preferences: SharedPreferences
-    lateinit var notificationHandler: NotificationHandler
+class EventProcessor(
+    private val context: Context,
+    private val restApi: RestApi,
+    private val preferences: SharedPreferences,
+    private val notificationHandler: NotificationHandler,
+) : Runnable, RestApi.OnReceiveEventListener {
 
     private val enableVerboseLog: Boolean
 
@@ -109,8 +109,6 @@ class EventProcessor(private val context: Context, private val restApi: RestApi)
         )
 
     init {
-        preferences = context.appDependencies().preferences()
-        notificationHandler = context.appDependencies().notificationHandler()
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
     }
 

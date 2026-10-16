@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Device
 import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.model.FolderIgnoreList
@@ -45,6 +46,12 @@ import org.xml.sax.SAXException
 @Suppress("TooManyFunctions")
 class ConfigXml(private val context: Context) {
 
+    /** The native process runner, with the app-wide preferences and notifications. */
+    private fun runnable(command: SyncthingRunnable.Command) =
+        context.appDependencies().let {
+            SyncthingRunnable(context, command, it.preferences(), it.notificationHandler())
+        }
+
     class OpenConfigException : RuntimeException()
 
     fun interface OnResultListener1<T> {
@@ -71,7 +78,7 @@ class ConfigXml(private val context: Context) {
     @Throws(OpenConfigException::class, SyncthingRunnable.ExecutableNotFoundException::class)
     fun generateConfig() {
         Log.i(TAG, "(Re)Generating keys and config.")
-        SyncthingRunnable(context, SyncthingRunnable.Command.GENERATE).run(true)
+        runnable(SyncthingRunnable.Command.GENERATE).run(true)
         parseConfig()
         var changed = false
 
@@ -149,7 +156,7 @@ class ConfigXml(private val context: Context) {
 
     @Throws(SyncthingRunnable.ExecutableNotFoundException::class)
     private fun getLocalDeviceIDandStoreToPref(): String {
-        val logOutput = SyncthingRunnable(context, SyncthingRunnable.Command.DEVICE_ID).run(true)
+        val logOutput = runnable(SyncthingRunnable.Command.DEVICE_ID).run(true)
         val localDeviceID = logOutput.replace("\n", "")
         // Verify that local device ID is correctly formatted.
         if (!Device().apply { deviceID = localDeviceID }.checkDeviceID()) {

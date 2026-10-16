@@ -62,7 +62,9 @@ Hilt (Dagger 2.60, KSP). `SyncthingModule` (`SingletonComponent`) provides the d
 `SharedPreferences` and `NotificationHandler`. Activities and `SyncthingService` are
 `@AndroidEntryPoint` and use field injection (`@Inject lateinit var`). Classes Hilt does not
 create (`RestApi`, `EventProcessor`, `RunConditionMonitor`, `SyncthingRunnable`) are built by hand,
-mostly inside `SyncthingService`; plan: [docs/plans/HILT-VIEWMODELS.md](plans/HILT-VIEWMODELS.md).
+mostly inside `SyncthingService`, and get their dependencies in the constructor. Plain code with
+only a `Context` (`ConfigXml`, `ConfigBackup`) uses `Context.appDependencies()`. Plan:
+[docs/plans/HILT-VIEWMODELS.md](plans/HILT-VIEWMODELS.md).
 
 ## Runtime components
 

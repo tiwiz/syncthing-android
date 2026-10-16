@@ -16,7 +16,6 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.util.JobUtils
 import java.util.Locale
 
@@ -29,6 +28,7 @@ import java.util.Locale
 @Suppress("DEPRECATION") // ConnectivityManager.CONNECTIVITY_ACTION: what the monitor listens for.
 class RunConditionMonitor(
     private val context: Context,
+    private val preferences: SharedPreferences,
     private val onShouldRunChangedListener: OnShouldRunChangedListener?,
     private val onSyncPreconditionChangedListener: OnSyncPreconditionChangedListener?,
 ) {
@@ -39,8 +39,6 @@ class RunConditionMonitor(
     fun interface OnSyncPreconditionChangedListener {
         fun onSyncPreconditionChanged(runConditionMonitor: RunConditionMonitor)
     }
-
-    lateinit var preferences: SharedPreferences
 
     private val enableVerboseLog: Boolean
     private val checks: RunConditionChecks
@@ -74,7 +72,6 @@ class RunConditionMonitor(
     private var lastDeterminedShouldRun = false
 
     init {
-        preferences = context.appDependencies().preferences()
         enableVerboseLog = AppPrefs.getPrefVerboseLog(preferences)
         checks = RunConditionChecks(context, preferences, ::logV)
         logV("Created new instance")
