@@ -3,7 +3,6 @@ package com.nutomic.syncthingandroid.views
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.model.Device
 import com.nutomic.syncthingandroid.model.Folder
@@ -90,7 +89,6 @@ class DeviceRowStateTest {
                 running(Connection().apply { connected = true }, device = device(paused = true)),
             )) {
             assertEquals("Paused", row.status)
-            assertEquals(R.color.text_purple, row.statusColor)
             assertEquals(StateTone.PAUSED, row.tone)
             assertNull(row.progress)
             assertNull(row.bandwidth)
@@ -102,7 +100,6 @@ class DeviceRowStateTest {
         val row = DeviceRowState.of(context, device(), "", emptyList(), null)
 
         assertEquals("Disconnected", row.status)
-        assertEquals(R.color.text_red, row.statusColor)
         assertEquals(StateTone.OFFLINE, row.tone)
         assertNull(row.progress)
         assertNull(row.bandwidth)
@@ -120,7 +117,6 @@ class DeviceRowStateTest {
             )
 
         assertEquals("Up to Date", row.status)
-        assertEquals(R.color.text_green, row.statusColor)
         assertEquals(StateTone.OK, row.tone)
         assertNull(row.progress)
         assertEquals(
@@ -140,7 +136,6 @@ class DeviceRowStateTest {
             )
 
         assertEquals("Syncing", row.status)
-        assertEquals(R.color.text_blue, row.statusColor)
         assertEquals(StateTone.BUSY, row.tone)
         assertNull(row.progress)
     }
@@ -151,7 +146,6 @@ class DeviceRowStateTest {
             running(Connection().apply { connected = true }, completion = 40, needBytes = 2048.0)
 
         assertEquals("Syncing (40%, 2 KB)", row.status)
-        assertEquals(R.color.text_blue, row.statusColor)
         assertEquals(StateTone.BUSY, row.tone)
         assertEquals(40, row.progress)
     }
@@ -162,7 +156,6 @@ class DeviceRowStateTest {
         val row = running(needBytes = 2048.0)
 
         assertEquals("Disconnected (2 KB pending)", row.status)
-        assertEquals(R.color.text_red, row.statusColor)
         assertEquals(StateTone.OFFLINE, row.tone)
         assertNull(row.bandwidth)
     }

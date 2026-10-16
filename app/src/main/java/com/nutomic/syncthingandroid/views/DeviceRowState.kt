@@ -1,7 +1,6 @@
 package com.nutomic.syncthingandroid.views
 
 import android.content.Context
-import androidx.annotation.ColorRes
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.model.Device
@@ -27,11 +26,6 @@ data class DeviceRowState(
     /** Download and upload rates, or null when not connected. */
     val bandwidth: String?,
 ) {
-    /** The color of [status]. */
-    @get:ColorRes
-    val statusColor: Int
-        get() = tone.textColor
-
     /** What Syncthing knows about the device while it runs. */
     class Status(val connection: Connection, val completion: Int, val needBytes: Double)
 

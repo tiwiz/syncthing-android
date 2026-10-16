@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -142,33 +141,46 @@ internal fun FolderRow(
     }
 }
 
-/** A device: name, when it was last seen, its folders, state and rates; a tap opens it. */
+/**
+ * A device: its state badge, name, state, progress, rates, when it was last seen and its folders; a
+ * tap opens it. [shape] places it in the grouped list.
+ */
 @Composable
-internal fun DeviceRow(item: DeviceItem, actions: MainActions, modifier: Modifier = Modifier) {
+internal fun DeviceRow(
+    item: DeviceItem,
+    actions: MainActions,
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+) {
     val row = item.row
-    Column(
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable { actions.onOpenDevice(item.deviceId) }
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .testTag("device:${row.name}"),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(row.name, style = MaterialTheme.typography.titleMedium)
-        row.progress?.let {
-            LinearProgressIndicator(progress = { it / PERCENT }, modifier = Modifier.fillMaxWidth())
+        StateBadge(row.tone, modifier = Modifier.padding(top = 4.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(row.name, style = MaterialTheme.typography.titleMedium)
+            Text(
+                row.status,
+                style = MaterialTheme.typography.labelLarge,
+                color = row.tone.stateTextColor,
+                modifier = Modifier.testTag("deviceStatus:${row.name}"),
+            )
+            row.progress?.let {
+                SyncProgress(progress = it / PERCENT, modifier = Modifier.padding(vertical = 4.dp))
+            }
+            OptionalText(row.bandwidth)
+            OptionalText(row.lastSeen)
+            OptionalText(row.sharedFoldersTitle)
+            OptionalText(row.sharedFolders)
         }
-        OptionalText(row.lastSeen)
-        OptionalText(row.sharedFoldersTitle)
-        OptionalText(row.sharedFolders)
-        OptionalText(row.bandwidth)
-        Text(
-            row.status,
-            style = MaterialTheme.typography.bodyMedium,
-            color = colorResource(row.statusColor),
-            modifier = Modifier.testTag("deviceStatus:${row.name}"),
-        )
     }
 }
 

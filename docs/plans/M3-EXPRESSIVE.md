@@ -94,6 +94,8 @@ panes split on the hinge of an unfolded foldable.
    when running as a service (test updated).
 6. **Devices list.** Same pattern: state shapes per `DeviceRowState.Status`, connected rows show
    rates, disconnected rows the last seen time.
+   Done: title, grouped rows with `StateBadge` and `stateTextColor`. The Int text colors
+   (`stateColor`, `statusColor`, `StateTone.textColor`) are gone: nothing uses them any more.
 7. **Status tab.** Running hero with shape, connected `ButtonGroup` with the new labels, run
    conditions as a grouped list with met/not met icons, figures as a three-tile grid.
    `StatusLinesTest` and the force start/stop tests stay as they are.

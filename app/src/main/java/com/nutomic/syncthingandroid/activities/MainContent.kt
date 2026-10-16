@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -392,10 +391,14 @@ private fun DeviceList(devices: List<DeviceItem>, actions: MainActions) {
         EmptyList(R.string.no_devices_configured)
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(devices, key = { it.deviceId }) { item ->
-            DeviceRow(item, actions)
-            HorizontalDivider()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
+        verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
+    ) {
+        item { ListTitle(MainTab.DEVICES) }
+        itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
+            DeviceRow(item, actions, shape = groupedItemShape(index, devices.size))
         }
     }
 }
