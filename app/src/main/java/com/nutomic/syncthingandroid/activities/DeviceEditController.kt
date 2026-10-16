@@ -25,13 +25,13 @@ import com.nutomic.syncthingandroid.util.ConfigRouter
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 
 /** The screens a device screen opens for a result. */
-enum class DeviceRequest {
+internal enum class DeviceRequest {
     SCAN_QR,
     ADD_FOLDER,
 }
 
 /** Where a device screen lives: its own activity, or a pane of the main screen. */
-interface DeviceEditHost {
+internal interface DeviceEditHost {
     /** The REST API, or null while Syncthing does not run. */
     val restApi: RestApi?
 

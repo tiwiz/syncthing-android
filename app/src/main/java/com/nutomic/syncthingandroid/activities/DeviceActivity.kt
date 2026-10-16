@@ -4,90 +4,75 @@ import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
-import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.ConfigRouter
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import dagger.hilt.android.lifecycle.withCreationCallback
 
 /** Shows a device's details and changes them, or adds a new device ([DeviceEditController]). */
 @AndroidEntryPoint
-class DeviceActivity : SyncthingActivity(), DeviceEditHost {
+class DeviceActivity : SyncthingActivity() {
 
-    @Inject lateinit var preferences: SharedPreferences
-
-    private var controller: DeviceEditController? = null
+    private val viewModel: DeviceEditViewModel by
+        viewModels(
+            extrasProducer = {
+                defaultViewModelCreationExtras.withCreationCallback<DeviceEditViewModel.Factory> {
+                    it.create(DeviceEditArgs.of(intent))
+                }
+            }
+        )
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                controller?.actions?.onBack()
+                viewModel.controller?.actions?.onBack()
             }
         }
-
-    private val launchers =
-        DeviceRequest.entries.associateWith { request ->
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                controller?.onResult(request, it)
-            }
-        }
-
-    override val restApi: RestApi?
-        get() = api
-
-    override fun launch(request: DeviceRequest, intent: Intent) =
-        checkNotNull(launchers[request]).launch(intent)
-
-    override fun open(intent: Intent) = startActivity(intent)
-
-    override fun showDeviceId(name: String, deviceId: String) =
-        DeviceIdDialogFragment.show(supportFragmentManager, name, deviceId, false)
-
-    override fun close(saved: Boolean) {
-        setResult(if (saved) Activity.RESULT_OK else Activity.RESULT_CANCELED)
-        finish()
-    }
-
-    override fun leave() {
-        backPressedCallback.isEnabled = false
-        onBackPressedDispatcher.onBackPressed()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val created =
-            DeviceEditController.create(
-                this,
-                preferences,
-                ConfigRouter(this),
-                this,
-                DeviceEditArgs.of(intent),
-                savedInstanceState,
-            )
-        if (created == null) {
+        val controller = viewModel.controller
+        if (controller == null) {
             setResult(Activity.RESULT_CANCELED)
             finish()
             return
         }
-        controller = created
         setContent {
             ApplicationTheme {
-                created.form?.let {
+                EditEffects(
+                    viewModel.events,
+                    DeviceRequest.entries,
+                    EditCallbacks(
+                        onResult = viewModel::onResult,
+                        onClose = { saved ->
+                            setResult(if (saved) Activity.RESULT_OK else Activity.RESULT_CANCELED)
+                            finish()
+                        },
+                        onLeave = ::finish,
+                        onShowDeviceId = { name, id ->
+                            DeviceIdDialogFragment.show(
+                                supportFragmentManager,
+                                name,
+                                id,
+                                false,
+                            )
+                        },
+                    ),
+                )
+                controller.form?.let {
                     DeviceEditScreen(
                         form = it,
-                        info = created.info,
-                        dialog = created.dialog,
-                        actions = created.actions,
+                        info = controller.info,
+                        dialog = controller.dialog,
+                        actions = controller.actions,
                     )
                 }
             }
@@ -101,7 +86,6 @@ class DeviceActivity : SyncthingActivity(), DeviceEditHost {
         service.notificationHandler.cancelConsentNotification(
             intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
         )
-        service.api?.let { controller?.onApiAvailable(it) }
     }
 
     override fun onDestroy() {
@@ -109,11 +93,6 @@ class DeviceActivity : SyncthingActivity(), DeviceEditHost {
         service
             ?.notificationHandler
             ?.cancelConsentNotification(intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0))
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        controller?.saveState(outState)
     }
 
     companion object {

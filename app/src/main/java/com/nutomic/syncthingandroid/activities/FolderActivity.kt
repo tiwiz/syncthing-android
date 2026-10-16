@@ -4,91 +4,66 @@ import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
-import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.ConfigRouter
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
+import dagger.hilt.android.lifecycle.withCreationCallback
 
 /** Shows a folder's details and changes them, or adds a new folder ([FolderEditController]). */
 @AndroidEntryPoint
-class FolderActivity : SyncthingActivity(), FolderEditHost {
+class FolderActivity : SyncthingActivity() {
 
-    @Inject lateinit var preferences: SharedPreferences
-
-    private var controller: FolderEditController? = null
+    private val viewModel: FolderEditViewModel by
+        viewModels(
+            extrasProducer = {
+                defaultViewModelCreationExtras.withCreationCallback<FolderEditViewModel.Factory> {
+                    it.create(FolderEditArgs.of(intent))
+                }
+            }
+        )
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                controller?.actions?.onBack()
+                viewModel.controller?.actions?.onBack()
             }
         }
-
-    private val launchers =
-        FolderRequest.entries.associateWith { request ->
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                controller?.onResult(request, it)
-            }
-        }
-
-    override val restApi: RestApi?
-        get() = api
-
-    override val scope: CoroutineScope
-        get() = lifecycleScope
-
-    override fun launch(request: FolderRequest, intent: Intent) =
-        checkNotNull(launchers[request]).launch(intent)
-
-    override fun open(intent: Intent) = startActivity(intent)
-
-    override fun close(saved: Boolean) {
-        setResult(if (saved) Activity.RESULT_OK else Activity.RESULT_CANCELED)
-        finish()
-    }
-
-    override fun leave() {
-        backPressedCallback.isEnabled = false
-        onBackPressedDispatcher.onBackPressed()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val created =
-            FolderEditController.create(
-                this,
-                preferences,
-                ConfigRouter(this),
-                this,
-                FolderEditArgs.of(intent),
-                savedInstanceState,
-            )
-        if (created == null) {
+        val controller = viewModel.controller
+        if (controller == null) {
             setResult(Activity.RESULT_CANCELED)
             finish()
             return
         }
-        controller = created
         setContent {
             ApplicationTheme {
-                created.form?.let {
+                EditEffects(
+                    viewModel.events,
+                    FolderRequest.entries,
+                    EditCallbacks(
+                        onResult = viewModel::onResult,
+                        onClose = { saved ->
+                            setResult(if (saved) Activity.RESULT_OK else Activity.RESULT_CANCELED)
+                            finish()
+                        },
+                        onLeave = ::finish,
+                    ),
+                )
+                controller.form?.let {
                     FolderEditScreen(
                         form = it,
-                        info = created.info,
-                        dialog = created.dialog,
-                        actions = created.actions,
+                        info = controller.info,
+                        dialog = controller.dialog,
+                        actions = controller.actions,
                     )
                 }
             }
@@ -109,11 +84,6 @@ class FolderActivity : SyncthingActivity(), FolderEditHost {
         service
             ?.notificationHandler
             ?.cancelConsentNotification(intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0))
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        controller?.saveState(outState)
     }
 
     companion object {

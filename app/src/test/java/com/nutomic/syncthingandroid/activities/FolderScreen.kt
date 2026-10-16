@@ -66,6 +66,15 @@ internal class FolderScreen(
         tagged("label").performTextReplacement(label)
     }
 
+    fun label(): String =
+        tagged("label").fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+
+    /** Recreates the screen, as a rotation or a fold does. */
+    fun recreate() {
+        scenario.recreate()
+        idle()
+    }
+
     fun setId(id: String) {
         tagged("id").performTextReplacement(id)
     }

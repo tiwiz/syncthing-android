@@ -261,7 +261,9 @@ Next steps (to be confirmed with the owner):
    dialogs, versioning, sync conditions, folder picker) done, next 10c–10e, then 11a–11b.
 7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
    [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
-   steps (order at the end of that file).
+   steps (order at the end of that file). Done 2026-10-17: H1 Hilt (#78), H2 constructor
+   dependencies (#79), H3 `SyncthingConnection` (#81), H4 `MainViewModel` (#83), H5 folder and
+   device ViewModels. **Resume here (agent A):** M3 Expressive step 9, then 12, H9, 13.
 
 ## HANDOFF
 

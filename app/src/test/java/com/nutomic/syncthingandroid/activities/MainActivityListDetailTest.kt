@@ -97,6 +97,20 @@ class MainActivityListDetailTest {
     }
 
     @Test
+    fun `the pane and its unsaved changes survive recreation`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            screen.setDetailFolderLabel("Photos")
+
+            screen.recreate()
+
+            assertEquals("Edit Folder", screen.detailTitle())
+            assertEquals("Photos", screen.detailFolderLabel())
+        }
+    }
+
+    @Test
     fun `unsaved changes in the pane ask before it closes`() {
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)

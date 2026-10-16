@@ -122,6 +122,15 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   - the same ViewModels serve the activities and the detail pane; the selection moves from
     `DetailPanes` to `MainViewModel`'s `SavedStateHandle`, and `DetailPanes` goes;
   - recreation tests for both.
+
+  Done, adapted: the tested controllers stay as the screens' logic; `FolderEditViewModel` and
+  `DeviceEditViewModel` (`EditViewModels.kt`, assisted injection with the screen's args) hold
+  them, act as their host (requests become `EditEvent`s) and save them through
+  `SavedStateHandle.setSavedStateProvider`. `EditEffects` runs the events with
+  `rememberLauncherForActivityResult`, in the activities and in the detail pane alike;
+  `FolderActivity`/`DeviceActivity` no longer implement the hosts nor save state. `DetailPanes`
+  keeps the selection (saved instance state) and gets each opening's ViewModels from the
+  activity's store, keyed `<key>#<n>`. Recreation tests: folder, device, detail pane.
 - **H6** `refactor(onboarding): OnboardingViewModel` (B): the JSON `uiState` in the `Bundle`
   becomes ViewModel and `SavedStateHandle` state; recreation test.
 - **H7** `refactor(settings): ViewModels per category` (B): one per screen with state, scoped to

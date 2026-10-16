@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.activities
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Looper
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -37,6 +38,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -182,6 +184,17 @@ class DeviceActivityTest {
     }
 
     @Test
+    fun `unsaved changes survive recreation`() {
+        editLaptop().use { screen ->
+            screen.setName("desk")
+
+            screen.recreate()
+
+            assertEquals("desk", screen.name())
+        }
+    }
+
+    @Test
     fun `leaving without changes does not ask`() {
         editLaptop().use { screen ->
             screen.back()
@@ -255,6 +268,21 @@ internal class DeviceScreen(
 
     fun setName(name: String) {
         compose.onNodeWithTag("name").performScrollTo().performTextReplacement(name)
+    }
+
+    fun name(): String =
+        compose
+            .onNodeWithTag("name")
+            .performScrollTo()
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.EditableText]
+            .text
+
+    /** Recreates the screen, as a rotation or a fold does. */
+    fun recreate() {
+        scenario.recreate()
+        shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
     }
 
     fun setAddresses(addresses: String) {

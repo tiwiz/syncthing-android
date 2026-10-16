@@ -1,10 +1,8 @@
 package com.nutomic.syncthingandroid.activities
 
-import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
@@ -57,7 +55,7 @@ class MainActivity : SyncthingActivity() {
     private var menuOpen by mutableStateOf(false)
 
     /** Folders and devices next to their list on large windows. */
-    private val panes = DetailPanes(this, { preferences }, { viewModel.refresh() })
+    private val panes = DetailPanes(this) { viewModel.refresh() }
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
@@ -130,11 +128,6 @@ class MainActivity : SyncthingActivity() {
             finishAndRemoveTask()
         }
         super.onResume()
-    }
-
-    override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
-        super.onServiceConnected(componentName, iBinder)
-        api?.let(panes::onApiAvailable)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

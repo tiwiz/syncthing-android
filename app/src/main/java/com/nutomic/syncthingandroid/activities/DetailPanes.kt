@@ -1,18 +1,13 @@
 package com.nutomic.syncthingandroid.activities
 
-import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
-import com.nutomic.syncthingandroid.service.RestApi
-import com.nutomic.syncthingandroid.util.ConfigRouter
-import kotlinx.coroutines.CoroutineScope
+import dagger.hilt.android.lifecycle.withCreationCallback
 
 /** What the detail pane shows next to a list on a large window. */
 @Stable
@@ -20,21 +15,38 @@ internal sealed interface Detail {
     /** "folder:<id>" or "device:<id>": tells details apart and survives recreation. */
     val key: String
 
-    class FolderDetail(override val key: String, val controller: FolderEditController) : Detail
+    /** What the pane's screen does when it closes or goes back. */
+    val callbacks: PaneCallbacks
 
-    class DeviceDetail(override val key: String, val controller: DeviceEditController) : Detail
+    class FolderDetail(
+        override val key: String,
+        val viewModel: FolderEditViewModel,
+        override val callbacks: PaneCallbacks,
+    ) : Detail
+
+    class DeviceDetail(
+        override val key: String,
+        val viewModel: DeviceEditViewModel,
+        override val callbacks: PaneCallbacks,
+    ) : Detail
 }
 
+/** What the activity does for the screen in the detail pane. */
+internal class PaneCallbacks(
+    val onClose: (saved: Boolean) -> Unit,
+    val onLeave: () -> Unit,
+    val onShowDeviceId: (name: String, deviceId: String) -> Unit,
+)
+
 /**
- * The detail pane of the main screen on large windows: which folder or device it shows, and the
- * host its [FolderEditController] or [DeviceEditController] runs in. Create it while [activity] is
- * constructed, as it registers result launchers.
+ * The detail pane of the main screen on large windows: which folder or device it shows. Each
+ * opening gets ViewModels of its own in [activity]'s store, so they survive configuration changes
+ * and a reopened folder starts from the saved config, not from discarded edits.
  */
 internal class DetailPanes(
     private val activity: SyncthingActivity,
-    private val preferences: () -> SharedPreferences,
     /** Called when a folder or device was saved or removed. */
-    private val onChanged: () -> Unit,
+    onChanged: () -> Unit,
 ) {
     var detail by mutableStateOf<Detail?>(null)
         private set
@@ -45,21 +57,20 @@ internal class DetailPanes(
     /** A detail to open once the current one, with unsaved changes, is discarded. */
     private var pending: String? = null
 
-    private val configRouter by lazy { ConfigRouter(activity) }
+    /** How many details were opened: names each opening's ViewModels. */
+    private var opened = 0
 
-    private val folderLaunchers =
-        FolderRequest.entries.associateWith { request ->
-            activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                (detail as? Detail.FolderDetail)?.controller?.onResult(request, it)
-            }
-        }
-
-    private val deviceLaunchers =
-        DeviceRequest.entries.associateWith { request ->
-            activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                (detail as? Detail.DeviceDetail)?.controller?.onResult(request, it)
-            }
-        }
+    private val callbacks =
+        PaneCallbacks(
+            onClose = { saved ->
+                close()
+                if (saved) onChanged()
+            },
+            onLeave = ::close,
+            onShowDeviceId = { name, deviceId ->
+                DeviceIdDialogFragment.show(activity.supportFragmentManager, name, deviceId, false)
+            },
+        )
 
     /**
      * Shows the folder or device [key] in the pane; false when the window has no room for it. With
@@ -72,7 +83,8 @@ internal class DetailPanes(
             pending = key
             current.askDiscard()
         } else {
-            detail = create(key, null)
+            opened++
+            detail = create(key)
         }
         return true
     }
@@ -80,30 +92,22 @@ internal class DetailPanes(
     /** Back in the pane: its screen asks about unsaved changes, else closes. */
     fun back() {
         when (val current = detail) {
-            is Detail.FolderDetail -> current.controller.actions.onBack()
-            is Detail.DeviceDetail -> current.controller.actions.onBack()
+            is Detail.FolderDetail -> current.viewModel.controller?.actions?.onBack()
+            is Detail.DeviceDetail -> current.viewModel.controller?.actions?.onBack()
             null -> Unit
         }
     }
 
-    fun onApiAvailable(restApi: RestApi) {
-        (detail as? Detail.DeviceDetail)?.controller?.onApiAvailable(restApi)
-    }
-
     fun saveState(outState: Bundle) {
         val current = detail ?: return
-        val state = Bundle()
-        when (current) {
-            is Detail.FolderDetail -> current.controller.saveState(state)
-            is Detail.DeviceDetail -> current.controller.saveState(state)
-        }
         outState.putString(STATE_KEY, current.key)
-        outState.putBundle(STATE_DETAIL, state)
+        outState.putInt(STATE_OPENED, opened)
     }
 
     fun restoreState(savedState: Bundle?) {
         val key = savedState?.getString(STATE_KEY) ?: return
-        detail = create(key, savedState.getBundle(STATE_DETAIL))
+        opened = savedState.getInt(STATE_OPENED)
+        detail = create(key)
     }
 
     private fun close() {
@@ -114,91 +118,60 @@ internal class DetailPanes(
         }
     }
 
-    private fun create(key: String, savedState: Bundle?): Detail? {
+    private fun create(key: String): Detail? {
         val id = key.substringAfter(':')
+        val viewModelKey = "$key#$opened"
         return when {
-            key.startsWith(FOLDER) ->
-                FolderEditController.create(
-                        activity,
-                        preferences(),
-                        configRouter,
-                        folderHost,
-                        FolderEditArgs(create = false, folderId = id),
-                        savedState,
-                    )
-                    ?.let { Detail.FolderDetail(key, it) }
-            key.startsWith(DEVICE) ->
-                DeviceEditController.create(
-                        activity,
-                        preferences(),
-                        configRouter,
-                        deviceHost,
-                        DeviceEditArgs(create = false, deviceId = id),
-                        savedState,
-                    )
-                    ?.also { controller -> activity.api?.let(controller::onApiAvailable) }
-                    ?.let { Detail.DeviceDetail(key, it) }
+            key.startsWith(FOLDER) -> {
+                val extras =
+                    activity.defaultViewModelCreationExtras.withCreationCallback<
+                        FolderEditViewModel.Factory
+                    > {
+                        it.create(FolderEditArgs(create = false, folderId = id))
+                    }
+                ViewModelProvider.create(
+                        activity.viewModelStore,
+                        activity.defaultViewModelProviderFactory,
+                        extras,
+                    )[viewModelKey, FolderEditViewModel::class]
+                    .takeIf { it.controller != null }
+                    ?.let { Detail.FolderDetail(key, it, callbacks) }
+            }
+            key.startsWith(DEVICE) -> {
+                val extras =
+                    activity.defaultViewModelCreationExtras.withCreationCallback<
+                        DeviceEditViewModel.Factory
+                    > {
+                        it.create(DeviceEditArgs(create = false, deviceId = id))
+                    }
+                ViewModelProvider.create(
+                        activity.viewModelStore,
+                        activity.defaultViewModelProviderFactory,
+                        extras,
+                    )[viewModelKey, DeviceEditViewModel::class]
+                    .takeIf { it.controller != null }
+                    ?.let { Detail.DeviceDetail(key, it, callbacks) }
+            }
             else -> null
         }
     }
 
     private fun Detail.hasChanges(): Boolean =
         when (this) {
-            is Detail.FolderDetail -> controller.form?.changed == true
-            is Detail.DeviceDetail -> controller.form?.changed == true
+            is Detail.FolderDetail -> viewModel.controller?.form?.changed == true
+            is Detail.DeviceDetail -> viewModel.controller?.form?.changed == true
         }
 
     private fun Detail.askDiscard() =
         when (this) {
-            is Detail.FolderDetail -> controller.actions.onDialog(FolderDialog.DISCARD)
-            is Detail.DeviceDetail -> controller.actions.onDialog(DeviceDialog.DISCARD)
-        }
-
-    private fun closed(saved: Boolean) {
-        close()
-        if (saved) onChanged()
-    }
-
-    private val folderHost =
-        object : FolderEditHost {
-            override val restApi: RestApi?
-                get() = activity.api
-
-            override val scope: CoroutineScope
-                get() = activity.lifecycleScope
-
-            override fun launch(request: FolderRequest, intent: Intent) =
-                checkNotNull(folderLaunchers[request]).launch(intent)
-
-            override fun open(intent: Intent) = activity.startActivity(intent)
-
-            override fun close(saved: Boolean) = closed(saved)
-
-            override fun leave() = close()
-        }
-
-    private val deviceHost =
-        object : DeviceEditHost {
-            override val restApi: RestApi?
-                get() = activity.api
-
-            override fun launch(request: DeviceRequest, intent: Intent) =
-                checkNotNull(deviceLaunchers[request]).launch(intent)
-
-            override fun open(intent: Intent) = activity.startActivity(intent)
-
-            override fun showDeviceId(name: String, deviceId: String) =
-                DeviceIdDialogFragment.show(activity.supportFragmentManager, name, deviceId, false)
-
-            override fun close(saved: Boolean) = closed(saved)
-
-            override fun leave() = close()
+            is Detail.FolderDetail -> viewModel.controller?.actions?.onDialog(FolderDialog.DISCARD)
+            is Detail.DeviceDetail -> viewModel.controller?.actions?.onDialog(DeviceDialog.DISCARD)
         }
 
     companion object {
         const val FOLDER = "folder:"
         const val DEVICE = "device:"
         private const val STATE_KEY = "detailKey"
-        private const val STATE_DETAIL = "detailState"
+        private const val STATE_OPENED = "detailOpened"
     }
 }
