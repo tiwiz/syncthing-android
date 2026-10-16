@@ -2,7 +2,7 @@
 # Android SDK versions
 android-cmdline-tools = "11076708"
 compile-sdk = "37"
-min-sdk = "23"
+min-sdk = "30"
 ndk-version = "30.0.16248370"
 target-sdk = "37"
 
@@ -53,11 +53,11 @@ robolectric = "4.17"
 roborazzi = "1.76.0"
 stream = "1.2.2"
 volley = "1.2.1"
-# 1.16+ needs minSdk 24.
+# 1.16+ needed minSdk 24; possible since minSdk 30, in its own PR.
 webkit = "1.15.0"
 zhanghai-compose-preference = "2.2.0"
 zxing-android-embedded = "4.3.0"
-# Do not upgrade zxing:core beyond 3.3.0 to ensure Android 6.0 compatibility.
+# Held at 3.3.0 for Android 6.0; can be bumped since minSdk 30, in its own PR.
 zxing-core = "3.3.0"
 
 [libraries]

@@ -8,7 +8,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.onboarding.OnboardingActivity.Companion.REQUEST_WRITE_STORAGE
 import com.nutomic.syncthingandroid.onboarding.OnboardingIcon
 import com.nutomic.syncthingandroid.onboarding.OnboardingScaffold
 import com.nutomic.syncthingandroid.onboarding.OnboardingUiState
@@ -41,11 +40,7 @@ fun StoragePermissionPage(
         action = {
             PermissionButton(
                 granted = uiState.hasStoragePermission,
-                onClick = {
-                    activity?.let {
-                        PermissionUtil.requestStoragePermission(it, REQUEST_WRITE_STORAGE)
-                    }
-                },
+                onClick = { activity?.let { PermissionUtil.requestStoragePermission(it) } },
                 focusRequester = actionFocusRequester,
             )
         },

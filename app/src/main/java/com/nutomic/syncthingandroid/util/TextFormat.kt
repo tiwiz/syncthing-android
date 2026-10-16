@@ -3,7 +3,6 @@
 package com.nutomic.syncthingandroid.util
 
 import android.content.Context
-import android.os.Build
 import com.nutomic.syncthingandroid.R
 import java.io.File
 import java.text.DecimalFormat
@@ -114,9 +113,6 @@ fun formatDateTime(dateTime: String): String = formatLocal(dateTime, withDate = 
 fun formatTime(dateTime: String): String = formatLocal(dateTime, withDate = false)
 
 private fun formatLocal(dateTime: String, withDate: Boolean): String {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-        return dateTime
-    }
     val formatter =
         if (withDate) DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
         else DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM)
@@ -126,9 +122,6 @@ private fun formatLocal(dateTime: String, withDate: Boolean): String {
 
 /** The local time as an ISO offset timestamp in UTC, e.g. "2021-02-11T22:11:29.356Z". */
 fun getLocalZonedDateTime(): String {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-        return "2021-02-11T22:11:29.356Z"
-    }
     return ZonedDateTime.ofLocal(LocalDateTime.now(), ZoneId.of("UTC"), ZoneOffset.UTC)
         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 }

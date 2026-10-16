@@ -157,9 +157,7 @@ object Constants {
      * Interval in ms at which RestAPI is polled. As a rule of thumb: Poll faster on "modern"
      * devices.
      */
-    @JvmField
-    val REST_UPDATE_INTERVAL: Long =
-        TimeUnit.SECONDS.toMillis(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 3L else 5L)
+    @JvmField val REST_UPDATE_INTERVAL: Long = TimeUnit.SECONDS.toMillis(3L)
 
     @JvmField val GUI_UPDATE_INTERVAL: Long = TimeUnit.SECONDS.toMillis(1)
 
@@ -240,14 +238,6 @@ object Constants {
     @JvmStatic
     fun isDebuggable(context: Context): Boolean =
         context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-
-    /**
-     * Whether to enforce HTTPS when accessing the Web UI and REST API. Android 7.0 fails the SSL
-     * handshake for lack of support for elliptic curves
-     * (https://issuetracker.google.com/issues/37122132), so it falls back to an unencrypted HTTP
-     * connection to localhost.
-     */
-    @JvmStatic fun osSupportsTLS12(): Boolean = Build.VERSION.SDK_INT != Build.VERSION_CODES.N
 
     /**
      * Detects kernels with a bug causing kernel oops when Syncthing v1.3.0+ attempts to enable the

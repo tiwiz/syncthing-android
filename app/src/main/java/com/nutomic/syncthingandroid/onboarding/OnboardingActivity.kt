@@ -50,7 +50,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
 
     companion object {
         private const val TAG = "OnboardingActivity"
-        const val REQUEST_WRITE_STORAGE = 143
 
         // Key used to persist the whole UI state across configuration changes (e.g. rotation).
         private const val STATE_UI_STATE = "onboarding_ui_state"
@@ -87,19 +86,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         }
     }
 
-    private val coarseLocationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        refreshPermissionState()
-        if (isGranted) {
-            Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
-            Log.i(TAG, "User granted ACCESS_COARSE_LOCATION permission.")
-            advanceIfCurrentPage(OnboardingPage.LOCATION_PERMISSION)
-        } else {
-            Log.i(TAG, "User denied ACCESS_COARSE_LOCATION permission.")
-        }
-    }
-
     private val fineLocationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -110,11 +96,7 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         }
         Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
         Log.i(TAG, "User granted ACCESS_FINE_LOCATION permission.")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            backgroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        } else {
-            advanceIfCurrentPage(OnboardingPage.LOCATION_PERMISSION)
-        }
+        backgroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
     }
 
     private val backgroundLocationPermissionLauncher = registerForActivityResult(
@@ -127,19 +109,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
             advanceIfCurrentPage(OnboardingPage.LOCATION_PERMISSION)
         } else {
             Log.i(TAG, "User denied ACCESS_BACKGROUND_LOCATION permission.")
-        }
-    }
-
-    private val androidQLocationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        refreshPermissionState()
-        if (results[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
-            Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
-            Log.i(TAG, "User granted ACCESS_FINE_LOCATION permission.")
-            advanceIfCurrentPage(OnboardingPage.LOCATION_PERMISSION)
-        } else {
-            Log.i(TAG, "User denied ACCESS_FINE_LOCATION permission.")
         }
     }
 
@@ -275,25 +244,6 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-    ) {
-        if (requestCode == REQUEST_WRITE_STORAGE) {
-            refreshPermissionState()
-            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Log.i(TAG, "User denied WRITE_EXTERNAL_STORAGE permission.")
-            } else {
-                Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
-                Log.i(TAG, "User granted WRITE_EXTERNAL_STORAGE permission.")
-                advanceIfCurrentPage(OnboardingPage.STORAGE_PERMISSION)
-            }
-            return
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
-
     fun startApp() {
         val startIntoWebGui = prefs.getBoolean(Constants.PREF_START_INTO_WEB_GUI, false)
         val mainIntent = Intent(this, MainActivity::class.java)
@@ -359,22 +309,7 @@ class OnboardingActivity : ThemedAppCompatActivity() {
     }
 
     private fun requestLocationPermission() {
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                fineLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            Build.VERSION.SDK_INT == Build.VERSION_CODES.Q -> {
-                androidQLocationPermissionLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                    )
-                )
-            }
-            else -> {
-                coarseLocationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-            }
-        }
+        fineLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
     private fun requestNotificationPermission() {

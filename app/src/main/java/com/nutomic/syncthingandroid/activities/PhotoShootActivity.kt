@@ -95,9 +95,7 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
                 PhotoShootIntro(
                     haveStorage = haveStorage,
                     haveCamera = haveCamera,
-                    onGrantStorage = {
-                        PermissionUtil.requestStoragePermission(this, REQUEST_WRITE_STORAGE)
-                    },
+                    onGrantStorage = { PermissionUtil.requestStoragePermission(this) },
                     onGrantCamera = {
                         ActivityCompat.requestPermissions(
                             this,
@@ -113,7 +111,7 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
     }
 
     private fun updatePermissions() {
-        haveStorage = PermissionUtil.haveStoragePermission(this)
+        haveStorage = PermissionUtil.haveStoragePermission()
         haveCamera =
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
                 PackageManager.PERMISSION_GRANTED
@@ -220,16 +218,15 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray,
     ) {
-        if (requestCode != REQUEST_CAMERA && requestCode != REQUEST_WRITE_STORAGE) {
+        if (requestCode != REQUEST_CAMERA) {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             return
         }
-        val name = if (requestCode == REQUEST_CAMERA) "CAMERA" else "WRITE_EXTERNAL_STORAGE"
         if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "User denied $name permission.")
+            Log.i(TAG, "User denied CAMERA permission.")
         } else {
             Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
-            Log.i(TAG, "User granted $name permission.")
+            Log.i(TAG, "User granted CAMERA permission.")
             updatePermissions()
         }
     }
@@ -243,7 +240,6 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
     private companion object {
         const val TAG = "PhotoShootActivity"
         const val REQUEST_CAMERA = 140
-        const val REQUEST_WRITE_STORAGE = 142
     }
 }
 

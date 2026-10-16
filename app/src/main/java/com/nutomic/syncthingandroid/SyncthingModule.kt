@@ -16,6 +16,5 @@ class SyncthingModule(private val app: SyncthingApp) {
 
     @Provides
     @Singleton
-    fun getNotificationHandler(preferences: SharedPreferences): NotificationHandler =
-        NotificationHandler(app, preferences)
+    fun getNotificationHandler(): NotificationHandler = NotificationHandler(app)
 }

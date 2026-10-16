@@ -11,7 +11,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers
 
 /**
@@ -86,17 +85,6 @@ class ConstantsTest {
     @Test
     fun `the debug build is debuggable`() {
         assertTrue(Constants.isDebuggable(context))
-    }
-
-    @Test
-    fun `TLS 1_2 is used except on Android 7_0`() {
-        assertTrue(Constants.osSupportsTLS12())
-    }
-
-    @Test
-    @Config(sdk = [24])
-    fun `Android 7_0 falls back to plain http`() {
-        assertFalse(Constants.osSupportsTLS12())
     }
 
     @Test

@@ -138,12 +138,7 @@ private fun getAppVersion(context: Context): String? {
 }
 
 private fun getOpenFileLimit(): String? {
-    val shellCommand = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
-        "/system/bin/ulimit -n"
-    else
-        "ulimit -n"
-
-    val result = runShellCommandGetOutput(shellCommand)
+    val result = runShellCommandGetOutput("ulimit -n")
     return if (result.isBlank()) null else result.trim()
 }
 

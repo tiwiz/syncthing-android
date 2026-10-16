@@ -1,8 +1,6 @@
 package com.nutomic.syncthingandroid.util
 
-import android.Manifest
 import android.app.Activity
-import android.app.Application
 import android.app.job.JobScheduler
 import android.content.Context
 import android.content.Intent
@@ -69,35 +67,9 @@ class HelpersTest {
     // PermissionUtil
 
     @Test
-    @Config(sdk = [29])
-    fun `before Android 11 the storage permission is the write permission`() {
-        assertFalse(PermissionUtil.haveStoragePermission(context))
-
-        shadowOf(context as Application)
-            .grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-
-        assertTrue(PermissionUtil.haveStoragePermission(context))
-    }
-
-    @Test
     @Config(shadows = [ShadowEnvironmentWithAllFilesAccess::class])
     fun `from Android 11 the storage permission is all files access`() {
-        assertTrue(PermissionUtil.haveStoragePermission(context))
-    }
-
-    @Test
-    @Config(sdk = [29])
-    fun `before Android 11 the write permission is requested`() {
-        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
-
-        PermissionUtil.requestStoragePermission(activity, 42)
-
-        val request = checkNotNull(shadowOf(activity).lastRequestedPermission)
-        assertEquals(42, request.requestCode)
-        assertEquals(
-            listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-            request.requestedPermissions.toList(),
-        )
+        assertTrue(PermissionUtil.haveStoragePermission())
     }
 
     @Test
@@ -118,7 +90,7 @@ class HelpersTest {
             )
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
 
-        PermissionUtil.requestStoragePermission(activity, 42)
+        PermissionUtil.requestStoragePermission(activity)
 
         val started = checkNotNull(shadowOf(activity).nextStartedActivity)
         assertEquals(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, started.action)
@@ -130,7 +102,7 @@ class HelpersTest {
     fun `without an all files access screen a message is shown`() {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
 
-        PermissionUtil.requestStoragePermission(activity, 42)
+        PermissionUtil.requestStoragePermission(activity)
 
         assertNull(shadowOf(activity).nextStartedActivity)
         assertEquals(

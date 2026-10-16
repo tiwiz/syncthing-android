@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
@@ -20,81 +19,67 @@ import com.nutomic.syncthingandroid.onboarding.OnboardingActivity
 
 /**
  * The app's notifications: the persistent one that keeps the service in the foreground, crashes, a
- * missing permission, and the consent notifications for devices and folders. Gets SharedPreferences
- * through its constructor (Dagger) to avoid a circular dependency.
+ * missing permission, and the consent notifications for devices and folders.
  */
-class NotificationHandler(
-    private val context: Context,
-    private val preferences: SharedPreferences,
-) {
+class NotificationHandler(private val context: Context) {
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
-    private val persistentChannel: NotificationChannel?
-    private val persistentChannelWaiting: NotificationChannel?
-    private val infoChannel: NotificationChannel?
+    private val persistentChannel: NotificationChannel
+    private val persistentChannelWaiting: NotificationChannel
+    private val infoChannel: NotificationChannel
 
     private var lastNotificationText: String? = null
     private var lastStartForegroundService = false
     private var appShutdownInProgress = false
 
     init {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            persistentChannel =
-                NotificationChannel(
-                        CHANNEL_PERSISTENT,
-                        context.getString(R.string.notifications_persistent_channel),
-                        NotificationManager.IMPORTANCE_MIN,
-                    )
-                    .apply {
-                        enableLights(false)
-                        enableVibration(false)
-                        setSound(null, null)
-                        setShowBadge(false)
-                        lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
-                    }
-            notificationManager.createNotificationChannel(persistentChannel)
+        persistentChannel =
+            NotificationChannel(
+                    CHANNEL_PERSISTENT,
+                    context.getString(R.string.notifications_persistent_channel),
+                    NotificationManager.IMPORTANCE_MIN,
+                )
+                .apply {
+                    enableLights(false)
+                    enableVibration(false)
+                    setSound(null, null)
+                    setShowBadge(false)
+                    lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
+                }
+        notificationManager.createNotificationChannel(persistentChannel)
 
-            persistentChannelWaiting =
-                NotificationChannel(
-                        CHANNEL_PERSISTENT_WAITING,
-                        context.getString(R.string.notification_persistent_waiting_channel),
-                        NotificationManager.IMPORTANCE_MIN,
-                    )
-                    .apply {
-                        enableLights(false)
-                        enableVibration(false)
-                        setSound(null, null)
-                        setShowBadge(false)
-                    }
-            // Like the Java original, this sets the persistent channel again, not the waiting one.
-            persistentChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
-            notificationManager.createNotificationChannel(persistentChannelWaiting)
+        persistentChannelWaiting =
+            NotificationChannel(
+                    CHANNEL_PERSISTENT_WAITING,
+                    context.getString(R.string.notification_persistent_waiting_channel),
+                    NotificationManager.IMPORTANCE_MIN,
+                )
+                .apply {
+                    enableLights(false)
+                    enableVibration(false)
+                    setSound(null, null)
+                    setShowBadge(false)
+                }
+        // Like the Java original, this sets the persistent channel again, not the waiting one.
+        persistentChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
+        notificationManager.createNotificationChannel(persistentChannelWaiting)
 
-            infoChannel =
-                NotificationChannel(
-                        CHANNEL_INFO,
-                        context.getString(R.string.notifications_other_channel),
-                        NotificationManager.IMPORTANCE_LOW,
-                    )
-                    .apply {
-                        enableVibration(false)
-                        setSound(null, null)
-                        setShowBadge(true)
-                    }
-            notificationManager.createNotificationChannel(infoChannel)
-        } else {
-            persistentChannel = null
-            persistentChannelWaiting = null
-            infoChannel = null
-        }
+        infoChannel =
+            NotificationChannel(
+                    CHANNEL_INFO,
+                    context.getString(R.string.notifications_other_channel),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
+                .apply {
+                    enableVibration(false)
+                    setSound(null, null)
+                    setShowBadge(true)
+                }
+        notificationManager.createNotificationChannel(infoChannel)
     }
 
-    private fun getNotificationBuilder(channel: NotificationChannel?): NotificationCompat.Builder =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationCompat.Builder(context, checkNotNull(channel).id)
-        } else {
-            @Suppress("DEPRECATION") NotificationCompat.Builder(context)
-        }
+    private fun getNotificationBuilder(channel: NotificationChannel): NotificationCompat.Builder =
+        NotificationCompat.Builder(context, channel.id)
 
     /** Shows, updates or hides the notification, keeping the previous details. */
     fun updatePersistentNotification(service: SyncthingService) {
@@ -112,8 +97,9 @@ class NotificationHandler(
         val syncthingRunning =
             currentServiceState == SyncthingService.State.ACTIVE ||
                 currentServiceState == SyncthingService.State.STARTING
-        val startForegroundService =
-            !appShutdownInProgress && shouldStartForeground(syncthingRunning)
+        // Always in the foreground until shutdown, so the app is not killed and keeps receiving
+        // run condition broadcasts (https://stackoverflow.com/a/44505719/1837158).
+        val startForegroundService = !appShutdownInProgress
 
         // Check if we have to stopForeground.
         if (startForegroundService != lastStartForegroundService && !startForegroundService) {
@@ -184,22 +170,6 @@ class NotificationHandler(
         // Remember last notification visibility.
         lastStartForegroundService = startForegroundService
     }
-
-    /**
-     * Android 7 and lower: the app may run in the background and monitor run conditions without
-     * being a foreground service, so a sleeping Syncthing gets a normal notification.
-     *
-     * Android 8+: always startForeground. This makes sure the app is not killed and we don't miss
-     * run condition events; it is mandatory to receive broadcasts
-     * (https://stackoverflow.com/a/44505719/1837158). Foreground priority requires a notification,
-     * so there is always a "default" or "low_priority" one, never "none".
-     */
-    private fun shouldStartForeground(syncthingRunning: Boolean): Boolean =
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            preferences.getBoolean(Constants.PREF_START_SERVICE_ON_BOOT, false) || syncthingRunning
-        } else {
-            true
-        }
 
     private fun persistentText(
         state: SyncthingService.State,
