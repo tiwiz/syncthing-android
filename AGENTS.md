@@ -244,7 +244,9 @@ Next steps (to be confirmed with the owner):
    crashes in logcat, native process running. The migration is complete. Follow-ups fixed:
    status tab labels in Italian (PR #60), missing space after the time in the Android log
    (PR #61). TECH-DEBT has no TODOs left.
-3. Start refactoring; work through [docs/TECH-DEBT.md](docs/TECH-DEBT.md) one PR at a time.
+6. 2026-10-16: Material 3 Expressive and adaptive layouts (phone, foldable, tablet) proposed in
+   [docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md), with the approved design canvas.
+   **Resume here:** the owner answers the plan's five decisions, then PR 1 (theme foundation).
 
 ## HANDOFF
 
