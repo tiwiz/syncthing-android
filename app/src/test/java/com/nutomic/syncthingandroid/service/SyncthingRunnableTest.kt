@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.testutil.FakeSyncthingBinary
 import java.net.InetAddress
 import org.junit.Assert.assertEquals
@@ -45,7 +46,13 @@ class SyncthingRunnableTest {
 
     private fun run(command: SyncthingRunnable.Command, returnStdOut: Boolean = true): String {
         binary.install()
-        return SyncthingRunnable(context, command).run(returnStdOut)
+        return SyncthingRunnable(
+                context,
+                command,
+                context.appDependencies().preferences(),
+                context.appDependencies().notificationHandler(),
+            )
+            .run(returnStdOut)
     }
 
     @Test
@@ -132,7 +139,13 @@ class SyncthingRunnableTest {
         binary.remove()
 
         assertThrows(SyncthingRunnable.ExecutableNotFoundException::class.java) {
-            SyncthingRunnable(context, SyncthingRunnable.Command.MAIN).run(true)
+            SyncthingRunnable(
+                    context,
+                    SyncthingRunnable.Command.MAIN,
+                    context.appDependencies().preferences(),
+                    context.appDependencies().notificationHandler(),
+                )
+                .run(true)
         }
     }
 

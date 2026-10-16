@@ -12,6 +12,7 @@ import android.os.PowerManager
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.testutil.Golden
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import org.junit.Test
@@ -221,7 +222,13 @@ class RunConditionMonitorTest {
         Device().apply(scenario.setup)
         val decisions = mutableListOf<Boolean>()
         var preconditionCallbacks = 0
-        val monitor = RunConditionMonitor(context, { decisions += it }, { preconditionCallbacks++ })
+        val monitor =
+            RunConditionMonitor(
+                context,
+                context.appDependencies().preferences(),
+                { decisions += it },
+                { preconditionCallbacks++ },
+            )
         val explanation = monitor.runDecisionExplanation.replace("\n", " | ")
         monitor.shutdown()
         return "## ${scenario.name}\n" +
@@ -269,7 +276,8 @@ class RunConditionMonitorTest {
             cases.joinToString("\n") { (name, setup) ->
                 reset()
                 Device().apply(setup)
-                val monitor = RunConditionMonitor(context, {}, {})
+                val monitor =
+                    RunConditionMonitor(context, context.appDependencies().preferences(), {}, {})
                 val result = monitor.checkObjectSyncConditions(objectId)
                 monitor.shutdown()
                 "$name -> $result"

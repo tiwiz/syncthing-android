@@ -17,7 +17,6 @@ import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.nutomic.syncthingandroid.SyncthingApp
 import com.nutomic.syncthingandroid.activities.ShareActivity
-import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.http.GetRequest
 import com.nutomic.syncthingandroid.http.PostRequest
 import com.nutomic.syncthingandroid.model.CachedFolderStatus
@@ -67,6 +66,7 @@ import kotlin.math.floor
 @Suppress("TooManyFunctions", "LargeClass")
 class RestApi(
     private val context: Context,
+    private val notificationHandler: NotificationHandler,
     url: URL,
     val apiKey: String,
     private val onApiAvailableListener: OnApiAvailableListener,
@@ -97,8 +97,6 @@ class RestApi(
          */
         fun onDone(lastId: Long)
     }
-
-    lateinit var notificationHandler: NotificationHandler
 
     private val enableVerboseLog: Boolean = AppPrefs.getPrefVerboseLog(context)
 
@@ -141,10 +139,6 @@ class RestApi(
     private val mainThreadHandler = Handler(Looper.getMainLooper())
     private val gson: Gson = GsonBuilder().create()
     private val executorService = Executors.newSingleThreadExecutor()
-
-    init {
-        notificationHandler = context.appDependencies().notificationHandler()
-    }
 
     private val preferences
         get() = PreferenceManager.getDefaultSharedPreferences(context)

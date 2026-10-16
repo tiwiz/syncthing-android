@@ -14,6 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.activities.ShareActivity
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Event
 import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
@@ -76,7 +77,14 @@ class RestApiTest {
     }
 
     private fun newApi(url: URL = syncthing.url): RestApi =
-        RestApi(service, url, API_KEY, { apiAvailable++ }, { configChanged++ })
+        RestApi(
+            service,
+            service.appDependencies().notificationHandler(),
+            url,
+            API_KEY,
+            { apiAvailable++ },
+            { configChanged++ },
+        )
 
     private fun loadedApi(): RestApi {
         val api = newApi()
@@ -517,7 +525,9 @@ class RestApiTest {
         shadowOf(context.getSystemService(ConnectivityManager::class.java))
             .setActiveNetworkInfo(null)
 
-        api.applyCustomRunConditions(RunConditionMonitor(context, {}, {}))
+        api.applyCustomRunConditions(
+            RunConditionMonitor(context, context.appDependencies().preferences(), {}, {})
+        )
         awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
 
         val config = postedConfig()
@@ -535,7 +545,9 @@ class RestApiTest {
         shadowOf(context.getSystemService(ConnectivityManager::class.java))
             .setActiveNetworkInfo(null)
 
-        api.applyCustomRunConditions(RunConditionMonitor(context, {}, {}))
+        api.applyCustomRunConditions(
+            RunConditionMonitor(context, context.appDependencies().preferences(), {}, {})
+        )
         drainMain()
 
         assertTrue(syncthing.requests("/rest/system/config", "POST").isEmpty())

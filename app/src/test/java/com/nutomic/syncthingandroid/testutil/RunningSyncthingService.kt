@@ -1,6 +1,7 @@
 package com.nutomic.syncthingandroid.testutil
 
 import android.os.Looper
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingService
 import org.robolectric.Shadows.shadowOf
@@ -17,7 +18,15 @@ object RunningSyncthingService {
     fun install(syncthing: FakeSyncthing): SyncthingService {
         val service = StoppedSyncthingService.install()
         var available = false
-        val api = RestApi(service, syncthing.url, API_KEY, { available = true }, {})
+        val api =
+            RestApi(
+                service,
+                service.appDependencies().notificationHandler(),
+                syncthing.url,
+                API_KEY,
+                { available = true },
+                {},
+            )
         api.readConfigFromRestApi()
         awaitMain { available }
         // Let the follow-up queries of the config load (completion, connections, stats) land.

@@ -90,6 +90,10 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
     constructors from `SyncthingService` (injected);
   - tests build them with fakes;
   - no `inject(this)` left.
+
+  Done: the four classes take `SharedPreferences` / `NotificationHandler` in their constructors;
+  `SyncthingService` passes its injected ones; only `ConfigXml` and `ConfigBackup` (plain classes
+  with a `Context`) and test code reach the graph, through `Context.appDependencies()`.
 - **H3** `feat(service): SyncthingConnection` (A), tests first:
   - binds while collected, unbinds after the timeout;
   - reports state changes and the API;

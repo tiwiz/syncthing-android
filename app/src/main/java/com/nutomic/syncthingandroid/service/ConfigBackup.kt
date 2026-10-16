@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.service
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.util.ConfigXml
 import com.nutomic.syncthingandroid.util.FileUtils
@@ -155,7 +156,15 @@ private fun cleanupImportedFolderDatabases(context: Context) {
         return
     }
     if (importedFoldersNeedDatabaseReset(configXml.folders)) {
-        SyncthingRunnable(context, SyncthingRunnable.Command.RESET_DATABASE).run()
+        context.appDependencies().let {
+            SyncthingRunnable(
+                    context,
+                    SyncthingRunnable.Command.RESET_DATABASE,
+                    it.preferences(),
+                    it.notificationHandler(),
+                )
+                .run()
+        }
     }
 }
 

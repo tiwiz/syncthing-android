@@ -16,6 +16,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import java.time.Duration
 import org.junit.After
@@ -77,7 +78,13 @@ class RunConditionTimelineTest {
     }
 
     private fun start(): RunConditionMonitor =
-        RunConditionMonitor(context, { decisions += it }, {}).also { monitor = it }
+        RunConditionMonitor(
+                context,
+                context.appDependencies().preferences(),
+                { decisions += it },
+                {},
+            )
+            .also { monitor = it }
 
     private fun broadcast(intent: Intent) {
         context.sendBroadcast(intent)

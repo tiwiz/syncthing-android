@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.service
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.FolderStatus
 import com.nutomic.syncthingandroid.model.Options
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
@@ -52,7 +53,15 @@ class RestApiCacheTest {
         val service = StoppedSyncthingService.install()
         syncthing = FakeSyncthing(context)
         var available = false
-        api = RestApi(service, syncthing.url, API_KEY, { available = true }, { configChanged++ })
+        api =
+            RestApi(
+                service,
+                service.appDependencies().notificationHandler(),
+                syncthing.url,
+                API_KEY,
+                { available = true },
+                { configChanged++ },
+            )
         api.readConfigFromRestApi()
         awaitMain { available }
         awaitMain { syncthing.requests("/rest/stats/device").isNotEmpty() }

@@ -14,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Event
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
@@ -59,13 +60,27 @@ class EventProcessorTest {
         service = StoppedSyncthingService.install()
         syncthing = FakeSyncthing(context)
         var available = false
-        api = RestApi(service, syncthing.url, "fixture-api-key", { available = true }, {})
+        api =
+            RestApi(
+                service,
+                service.appDependencies().notificationHandler(),
+                syncthing.url,
+                "fixture-api-key",
+                { available = true },
+                {},
+            )
         api.readConfigFromRestApi()
         awaitMain { available }
         // Let the startup follow-ups (pending devices, completion, ...) finish first.
         awaitMain { syncthing.requests("/rest/stats/device").isNotEmpty() }
         drainMain()
-        processor = EventProcessor(service, api)
+        processor =
+            EventProcessor(
+                service,
+                api,
+                service.appDependencies().preferences(),
+                service.appDependencies().notificationHandler(),
+            )
     }
 
     @After
