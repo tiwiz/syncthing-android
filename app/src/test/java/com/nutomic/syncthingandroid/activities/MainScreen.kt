@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.os.Looper
 import android.view.KeyEvent
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
@@ -120,10 +121,24 @@ internal class MainScreen(
         return nextStarted()
     }
 
-    fun statusLines(): List<String> =
-        compose.onAllNodesWithTag("statusLine").fetchSemanticsNodes().map {
-            it.config[SemanticsProperties.Text].joinToString()
-        }
+    private fun tagged(tag: String): List<SemanticsNode> =
+        compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+
+    private fun SemanticsNode.texts(): List<String> =
+        config.getOrElseNullable(SemanticsProperties.Text) { null }?.map { it.text }
+            ?: children.flatMap { it.texts() }
+
+    /**
+     * The status tab as lines of text: the headline, "Reason:" with one "- " line per reason, then
+     * "label: value" per figure.
+     */
+    fun statusLines(): List<String> {
+        val reasons = tagged("statusReason").map { it.texts().joinToString() }
+        return tagged("statusHeadline").map { it.texts().joinToString() } +
+            (if (reasons.isEmpty()) emptyList()
+            else listOf("Reason:\n- " + reasons.joinToString("\n- "))) +
+            tagged("statusFigure").map { it.texts().joinToString(": ") }
+    }
 
     /** Which of "follow run conditions", "force start", "force stop" is chosen. */
     fun forceStartStop(): Int =

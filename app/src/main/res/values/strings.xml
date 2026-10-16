@@ -227,11 +227,20 @@
 
     <string name="status_fragment_title">Status</string>
 
-    <string name="button_follow_run_conditions">FOLLOW RUN CONDITIONS</string>
-    <string name="button_force_start">FORCE START
+    <!-- Replaced by the run_mode_* strings. Kept while the fork merges upstream, whose
+         translations of them would otherwise fail Lint's ExtraTranslation check. -->
+    <string name="button_follow_run_conditions" tools:ignore="UnusedResources">FOLLOW RUN CONDITIONS</string>
+    <string name="button_force_start" tools:ignore="UnusedResources">FORCE START
 \nIGNORE RUN CONDITIONS</string>
-    <string name="button_force_stop">FORCE STOP
+    <string name="button_force_stop" tools:ignore="UnusedResources">FORCE STOP
 \nIGNORE RUN CONDITIONS</string>
+
+    <!-- Run mode of the status tab; fork-only, so English only (docs/plans/M3-EXPRESSIVE.md). -->
+    <string name="run_mode_title">Run mode</string>
+    <string name="run_mode_automatic">Automatic</string>
+    <string name="run_mode_run">Run</string>
+    <string name="run_mode_stop">Stop</string>
+    <string name="run_mode_help">Automatic follows the run conditions. Run and Stop ignore them until you switch back.</string>
 
     <string name="syncthing_starting">Syncthing is starting.</string>
     <string name="syncthing_running">Syncthing is running.</string>

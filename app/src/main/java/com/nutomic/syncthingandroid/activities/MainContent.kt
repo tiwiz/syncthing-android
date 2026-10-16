@@ -5,13 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,14 +34,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,6 +60,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
@@ -89,7 +83,8 @@ internal data class MainUiState(
     val serviceState: SyncthingService.State,
     val folders: List<FolderItem>,
     val devices: List<DeviceItem>,
-    val statusLines: List<String>,
+    /** The status tab, or null without the service. */
+    val status: StatusInfo?,
     /** One of the Constants.BTNSTATE_* values. */
     val forceStartStop: Int,
     /** The overall progress in percent, or null when hidden. */
@@ -250,7 +245,7 @@ private fun MainScaffold(
             when (tab) {
                 MainTab.FOLDERS -> FolderList(state.folders, state.totalProgress, actions)
                 MainTab.DEVICES -> DeviceList(state.devices, actions)
-                MainTab.STATUS -> StatusTab(state.statusLines, state.forceStartStop, actions)
+                MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
             }
         }
     }
@@ -358,7 +353,7 @@ private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
 
 /** A list's title, with room above it under the top bar. */
 @Composable
-private fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
+internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
     Text(
         stringResource(tab.title),
         style = MaterialTheme.typography.displaySmallEmphasized,
@@ -415,53 +410,6 @@ private fun EmptyList(text: Int) {
 }
 
 @Composable
-private fun StatusTab(lines: List<String>, forceStartStop: Int, actions: MainActions) {
-    val titles =
-        listOf(
-            R.string.button_follow_run_conditions,
-            R.string.button_force_start,
-            R.string.button_force_stop,
-        )
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
-        ) {
-            titles.forEachIndexed { index, title ->
-                SegmentedButton(
-                    selected = index == forceStartStop,
-                    onClick = { if (index != forceStartStop) actions.onForceStartStop(index) },
-                    // Long labels (Italian) wrap to several lines: a pill shape would cut them.
-                    shape =
-                        SegmentedButtonDefaults.itemShape(
-                            index,
-                            titles.size,
-                            baseShape = MaterialTheme.shapes.medium,
-                        ),
-                    modifier = Modifier.fillMaxHeight().testTag("force:$index"),
-                    // The fill shows the choice; a check mark would wrap its label differently.
-                    icon = {},
-                    label = {
-                        Text(
-                            stringResource(title).trim(),
-                            style = MaterialTheme.typography.labelMedium,
-                            textAlign = TextAlign.Center,
-                        )
-                    },
-                )
-            }
-        }
-        for (line in lines) {
-            Text(
-                text = line,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag("statusLine"),
-            )
-            HorizontalDivider()
-        }
-    }
-}
-
-@Composable
 private fun UsageReportingDialog(report: String, actions: MainActions) {
     AlertDialog(
         onDismissRequest = {},
@@ -496,11 +444,11 @@ private fun UsageReportingDialog(report: String, actions: MainActions) {
 
 private const val LIGHT_SIZE = 12
 private const val PERCENT = 100
-private const val CARD_CORNER = 32
+internal const val CARD_CORNER = 32
 
 /** Room below the last item, so the add button never covers it. */
 private const val LIST_BOTTOM_PADDING = 96
 
 /** The gap between the items of a grouped list. */
-private const val GROUP_GAP = 3
+internal const val GROUP_GAP = 3
 private const val REPORT_MAX_HEIGHT = 240

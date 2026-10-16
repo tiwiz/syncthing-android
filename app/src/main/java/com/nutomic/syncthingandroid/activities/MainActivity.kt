@@ -71,7 +71,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                 serviceState = SyncthingService.State.INIT,
                 folders = emptyList(),
                 devices = emptyList(),
-                statusLines = emptyList(),
+                status = null,
                 forceStartStop = Constants.BTNSTATE_NO_FORCE_START_STOP,
                 totalProgress = null,
                 runningAsService = false,
@@ -259,12 +259,10 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                             ),
                         )
                     },
-                statusLines =
-                    service
-                        ?.let {
-                            statusLines(this, serviceState, it.runDecisionExplanation, figures)
-                        }
-                        .orEmpty(),
+                status =
+                    service?.let {
+                        statusInfo(this, serviceState, it.runDecisionExplanation, figures)
+                    },
                 forceStartStop =
                     preferences.getInt(
                         Constants.PREF_BTNSTATE_FORCE_START_STOP,
