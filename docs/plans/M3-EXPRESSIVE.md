@@ -121,9 +121,12 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
     versioning, sync conditions, folder picker, share, log, QR scanner and camera, web GUI and web
     page top bars, recent changes, device ID dialog, onboarding.
     Done: 10a the single choice dialogs (folder type, pull order) and the versioning dialog:
-    the choices are grouped items (`ChoiceOption`), the versions path row a group of one;
-    behaviour tests and drivers unchanged. The recipe's flexible top bars are not in material3
-    1.5.0-beta01 (only their tokens): the classic top bars stay until the next bump.
+    the choices are grouped items (`ChoiceOption`), the versions path row a group of one.
+    10b the sync conditions screen (grouped switch rows, the power source a connected button
+    group, no more preference rows) and the folder picker (grouped rows with folder and file
+    icons, new `other/folder_picker*` goldens); behaviour tests and drivers unchanged. The
+    recipe's flexible top bars are not in material3 1.5.0-beta01 (only their tokens): the
+    classic top bars stay until the next bump.
 11. **Settings.** Expressive styling of the preference lists (`me.zhanghai` preference library:
     theme it, or replace its rows with our grouped items where it falls short) and, on large
     windows, categories and detail side by side with a Navigation 3 list-detail scene.

@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import me.zhanghai.compose.preference.ProvidePreferenceTheme
 
 /**
  * The run conditions of one folder or device. They are saved whenever the screen pauses, also
@@ -46,15 +45,13 @@ class SyncConditionsActivity : SyncthingActivity() {
         conditions = ObjectRunConditions.read(preferences, prefixAndId, global)
         setContent {
             ApplicationTheme {
-                ProvidePreferenceTheme {
-                    conditions?.let { current ->
-                        SyncConditionsScreen(
-                            global = global,
-                            conditions = current,
-                            onConditionsChange = { conditions = it },
-                            onNavigateBack = ::finishWithResult,
-                        )
-                    }
+                conditions?.let { current ->
+                    SyncConditionsScreen(
+                        global = global,
+                        conditions = current,
+                        onConditionsChange = { conditions = it },
+                        onNavigateBack = ::finishWithResult,
+                    )
                 }
             }
         }
