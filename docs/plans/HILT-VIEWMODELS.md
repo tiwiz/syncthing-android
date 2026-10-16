@@ -100,16 +100,22 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   - exit still stops the service.
 
   Not yet used by screens.
+
+  Done: `service/SyncthingConnection.kt` (`ServiceSnapshot`, `snapshot: StateFlow`, binds through
+  a `callbackFlow`, `WhileSubscribed(5 s)`), `@ApplicationScope` scope from `SyncthingModule`,
+  `kotlinx-coroutines-test` 1.9.0, `SyncthingConnectionTest` (4).
 - **H4** `refactor(main): MainViewModel` (A):
   - `uiState`, the refresh loop and usage reporting move out of `MainActivity`;
-  - the detail selection and its form move to `SavedStateHandle` (`DetailPanes` goes);
+  - the detail pane stays in `DetailPanes` until H5 (its controllers become ViewModels there);
   - `MainActivity` collects.
 
-  New test: `scenario.recreate()` keeps the selected detail and its unsaved changes.
+  New test: `scenario.recreate()` keeps the usage reporting question without asking Syncthing
+  again.
 - **H5** `refactor(folder, device): FolderEditViewModel, DeviceEditViewModel` (A):
   - the controllers become ViewModels with `SavedStateHandle` (Gson `Bundle` state gone);
   - activity results go through events and `rememberLauncherForActivityResult`;
-  - the same ViewModels serve the activities and the detail pane;
+  - the same ViewModels serve the activities and the detail pane; the selection moves from
+    `DetailPanes` to `MainViewModel`'s `SavedStateHandle`, and `DetailPanes` goes;
   - recreation tests for both.
 - **H6** `refactor(onboarding): OnboardingViewModel` (B): the JSON `uiState` in the `Bundle`
   becomes ViewModel and `SavedStateHandle` state; recreation test.

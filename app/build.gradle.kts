@@ -50,6 +50,7 @@ dependencies {
 
     detektPlugins(libs.compose.rules.detekt)
 
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.compose.ui.test.junit4)
