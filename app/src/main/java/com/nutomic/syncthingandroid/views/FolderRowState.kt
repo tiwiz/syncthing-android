@@ -22,7 +22,7 @@ data class FolderRowState(
     val type: String,
     /** Null while Syncthing is not running. */
     val state: String?,
-    @param:ColorRes @get:ColorRes val stateColor: Int,
+    val tone: StateTone,
     val showOverride: Boolean,
     val showRevert: Boolean,
     @param:StringRes @get:StringRes val revertLabel: Int,
@@ -35,6 +35,11 @@ data class FolderRowState(
     val items: String?,
     val invalid: String?,
 ) {
+    /** The color of [state]. */
+    @get:ColorRes
+    val stateColor: Int
+        get() = tone.textColor
+
     companion object {
         /** The row of [folder]; [status] is null while Syncthing is not running. */
         @JvmStatic
@@ -51,7 +56,7 @@ data class FolderRowState(
                     directory = directory,
                     type = folder.type,
                     state = null,
-                    stateColor = R.color.text_red,
+                    tone = StateTone.OFFLINE,
                     showOverride = false,
                     showRevert = false,
                     revertLabel = R.string.revert_local_changes,
@@ -79,7 +84,7 @@ data class FolderRowState(
                             folderStatus.receiveOnlyChangedDeletes > 0
                     else -> false
                 }
-            val (state, color) =
+            val (state, tone) =
                 stateText(context, folder, folderStatus, cached, outOfSync, showRevert)
             val syncing = folderStatus.state == "syncing"
             return FolderRowState(
@@ -87,7 +92,7 @@ data class FolderRowState(
                 directory = directory,
                 type = folder.type,
                 state = state,
-                stateColor = color,
+                tone = tone,
                 showOverride = folder.type == Constants.FOLDER_TYPE_SEND_ONLY && outOfSync,
                 showRevert = showRevert,
                 revertLabel =
@@ -114,49 +119,44 @@ data class FolderRowState(
             cached: CachedFolderStatus,
             outOfSync: Boolean,
             showRevert: Boolean,
-        ): Pair<String, Int> =
+        ): Pair<String, StateTone> =
             when {
-                outOfSync -> context.getString(R.string.status_outofsync) to R.color.text_red
+                outOfSync -> context.getString(R.string.status_outofsync) to StateTone.ERROR
                 status.errors > 0 ->
-                    context.getString(R.string.state_failed_items, status.errors) to
-                        R.color.text_red
-                folder.paused -> context.getString(R.string.state_paused) to R.color.text_purple
+                    context.getString(R.string.state_failed_items, status.errors) to StateTone.ERROR
+                folder.paused -> context.getString(R.string.state_paused) to StateTone.PAUSED
                 else ->
                     when (status.state) {
                         "clean-waiting" ->
-                            context.getString(R.string.state_clean_waiting) to R.color.text_orange
-                        "cleaning" ->
-                            context.getString(R.string.state_cleaning) to R.color.text_blue
+                            context.getString(R.string.state_clean_waiting) to StateTone.ATTENTION
+                        "cleaning" -> context.getString(R.string.state_cleaning) to StateTone.BUSY
                         "idle" ->
                             when {
                                 // Idle and not shared with any other device.
                                 folder.deviceCount <= 1 ->
                                     context.getString(R.string.state_unshared) to
-                                        R.color.text_orange
+                                        StateTone.ATTENTION
                                 showRevert ->
                                     context.getString(R.string.state_local_additions) to
-                                        R.color.text_green
-                                else ->
-                                    context.getString(R.string.state_up_to_date) to
-                                        R.color.text_green
+                                        StateTone.OK
+                                else -> context.getString(R.string.state_up_to_date) to StateTone.OK
                             }
                         "scan-waiting" ->
-                            context.getString(R.string.state_scan_waiting) to R.color.text_orange
-                        "scanning" ->
-                            context.getString(R.string.state_scanning) to R.color.text_blue
+                            context.getString(R.string.state_scan_waiting) to StateTone.ATTENTION
+                        "scanning" -> context.getString(R.string.state_scanning) to StateTone.BUSY
                         "sync-waiting" ->
-                            context.getString(R.string.state_sync_waiting) to R.color.text_orange
+                            context.getString(R.string.state_sync_waiting) to StateTone.ATTENTION
                         "syncing" ->
                             context.getString(R.string.state_syncing, cached.completion.toInt()) to
-                                R.color.text_blue
+                                StateTone.BUSY
                         "sync-preparing" ->
-                            context.getString(R.string.state_sync_preparing) to R.color.text_blue
+                            context.getString(R.string.state_sync_preparing) to StateTone.BUSY
                         "error" ->
                             (if (status.error.isEmpty()) context.getString(R.string.state_error)
                             else context.getString(R.string.state_error_message, status.error)) to
-                                R.color.text_red
-                        "unknown" -> context.getString(R.string.state_unknown) to R.color.text_red
-                        else -> status.state to R.color.text_red
+                                StateTone.ERROR
+                        "unknown" -> context.getString(R.string.state_unknown) to StateTone.ERROR
+                        else -> status.state to StateTone.ERROR
                     }
             }
 
