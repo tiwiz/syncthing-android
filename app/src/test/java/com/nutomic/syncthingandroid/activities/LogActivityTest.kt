@@ -81,7 +81,6 @@ class LogActivityTest {
         compose.onNodeWithContentDescription("Share log file").performClick()
     }
 
-    // Removing the milliseconds also removes the space before the tag, as it always did.
     @Test
     fun `the Android log leaves out other components and shortens the lines`() {
         ShadowUtilDeviceShell.logcatOutput =
@@ -96,8 +95,8 @@ class LogActivityTest {
 
         launch().use {
             val expected =
-                "10:00:00I/SyncthingService starting\n10:00:02 [ABCDE] INFO: ready\n" +
-                    "10:00:03E/RestApi failed"
+                "10:00:00 I/SyncthingService starting\n10:00:02 [ABCDE] INFO: ready\n" +
+                    "10:00:03 E/RestApi failed"
             it.awaitShown(expected)
             assertEquals(expected, Constants.getAndroidLogFile(context).readText())
         }
@@ -110,7 +109,7 @@ class LogActivityTest {
         ShadowUtilDeviceShell.logcatOutput = "10-13 10:00:00.000 I/SyncthingService(1): up"
 
         launch().use {
-            it.awaitShown("10:00:00I/SyncthingService up")
+            it.awaitShown("10:00:00 I/SyncthingService up")
             it.switchLogs()
             it.awaitShown("[ABCDE] INFO: Syncthing log\n")
             compose.onNodeWithText("Syncthing Log").assertExists()
