@@ -153,6 +153,9 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+            // Material 3 Expressive is still experimental; opted in once for the whole module
+            // (docs/plans/M3-EXPRESSIVE.md).
+            optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
         }
     }
 

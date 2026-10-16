@@ -55,6 +55,10 @@ panes split on the hinge of an unfolded foldable.
    schemes from the seed (`theme/Color.kt`), emphasized typography (`theme/Type.kt`), shapes and
    the expressive motion scheme. Unit test for the scheme choice (dynamic vs fallback, light vs
    dark, `PREF_APP_THEME`). All screenshots re-recorded once, nothing else changes.
+   Done: material3 1.5.0-beta01 and Compose UI 1.12.1 (module-wide opt-in), Roboto Flex in
+   `res/font` with its licence in `assets/fonts/`, `ApplicationThemeTest`. The upgrade also
+   moved `ExposedDropdownMenu` to an extension (import) and three `LaunchedEffect`s that never
+   suspend to the new keyed `SideEffect` (Compose Rules).
 2. **Window size screenshot matrix.** Adaptive dependencies, a test helper that renders a screen
    at compact (411 dp), medium (700 dp), expanded (840 dp, foldable) and large (1280 dp, tablet
    landscape). Records today's layouts at those sizes as the baseline, plus Italian variants. No

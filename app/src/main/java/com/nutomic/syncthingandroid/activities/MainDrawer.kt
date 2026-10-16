@@ -31,7 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +70,7 @@ internal fun MainDrawer(
     var confirmRestart by rememberSaveable { mutableStateOf(false) }
     var confirmExit by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(requestFocus) { if (requestFocus) firstItemFocusRequester.requestFocus() }
+    SideEffect(requestFocus) { if (requestFocus) firstItemFocusRequester.requestFocus() }
 
     ModalDrawerSheet(modifier = modifier.testTag("drawer")) {
         Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
