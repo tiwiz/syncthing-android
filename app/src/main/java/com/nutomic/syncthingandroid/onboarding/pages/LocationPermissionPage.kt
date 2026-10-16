@@ -23,12 +23,8 @@ fun LocationPermissionPage(
     onGrantLocationPermission: () -> Unit,
 ) {
     val actionFocusRequester = remember { FocusRequester() }
-    val description = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        stringResource(R.string.location_permission_desc) + "\n\n" +
-                stringResource(R.string.location_permission_desc_api_29)
-    } else {
-        stringResource(R.string.location_permission_desc)
-    }
+    val description = stringResource(R.string.location_permission_desc) + "\n\n" +
+            stringResource(R.string.location_permission_desc_api_29)
 
     OnboardingScaffold(
         icon = OnboardingIcon.Vector(Icons.Outlined.LocationOn),

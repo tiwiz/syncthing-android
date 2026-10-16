@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.R
@@ -43,7 +42,6 @@ class NotificationHandlerTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
     private lateinit var service: SyncthingService
     private lateinit var handler: NotificationHandler
 
@@ -52,7 +50,7 @@ class NotificationHandlerTest {
         System.setProperty("os.version", "6.1.0-android")
         ConfigFixture.install(context)
         service = StoppedSyncthingService.install()
-        handler = NotificationHandler(context, prefs)
+        handler = NotificationHandler(context)
         manager.cancelAll()
     }
 
@@ -145,28 +143,6 @@ class NotificationHandlerTest {
 
         assertNull(shadowOf(manager).getNotification(1))
         assertNull(shadowOf(manager).getNotification(4))
-    }
-
-    @Test
-    @Config(sdk = [25])
-    fun `before Android 8 a sleeping app is not in the foreground`() {
-        setState(SyncthingService.State.DISABLED)
-
-        handler.updatePersistentNotification(service)
-
-        assertNull(foreground())
-        assertEquals("Sleeping", title(shadowOf(manager).getNotification(4)))
-    }
-
-    @Test
-    @Config(sdk = [25])
-    fun `before Android 8 starting on boot keeps the app in the foreground`() {
-        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
-        setState(SyncthingService.State.DISABLED)
-
-        handler.updatePersistentNotification(service)
-
-        assertEquals(4, foregroundId())
     }
 
     @Test

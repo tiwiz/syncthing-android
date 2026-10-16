@@ -60,9 +60,5 @@ internal fun createAuthHeaders(username: String?, password: String?): Map<String
     return mapOf("Authorization" to "Basic $encodedCredentials")
 }
 
-@SuppressLint("PrivateApi")
-internal fun extractCertificate(sslCertificate: SslCertificate): X509Certificate? {
-    val certificateField = sslCertificate.javaClass.getDeclaredField("mX509Certificate")
-    certificateField.isAccessible = true
-    return certificateField.get(sslCertificate) as X509Certificate?
-}
+internal fun extractCertificate(sslCertificate: SslCertificate): X509Certificate? =
+    sslCertificate.x509Certificate

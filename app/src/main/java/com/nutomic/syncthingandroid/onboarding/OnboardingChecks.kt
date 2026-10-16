@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
 private const val TAG = "OnboardingActivity"
 
 internal fun Context.haveStoragePermission(): Boolean {
-    return PermissionUtil.haveStoragePermission(this)
+    return PermissionUtil.haveStoragePermission()
 }
 
 internal fun Context.haveIgnoreDozePermission(): Boolean {
@@ -36,14 +36,8 @@ internal fun Context.haveLocationPermission(): Boolean {
             PackageManager.PERMISSION_GRANTED
 
     val backgroundLocationGranted =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
 
     return coarseLocationGranted && backgroundLocationGranted
 }

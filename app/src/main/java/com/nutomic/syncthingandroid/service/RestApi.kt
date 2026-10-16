@@ -457,7 +457,6 @@ class RestApi(
     val webGuiUrl: URL
         get() =
             synchronized(configLock) {
-                val urlProtocol = if (Constants.osSupportsTLS12()) "https" else "http"
                 try {
                     val address = checkNotNull(checkNotNull(config).gui).address
                     if (address == null) {
@@ -465,9 +464,9 @@ class RestApi(
                             TAG,
                             "getWebGuiUrl: mConfig.gui.address == null, returning 127.0.0.1:8384",
                         )
-                        return URL("$urlProtocol://127.0.0.1:8384")
+                        return URL("https://127.0.0.1:8384")
                     }
-                    URL("$urlProtocol://$address")
+                    URL("https://$address")
                 } catch (e: MalformedURLException) {
                     throw IllegalStateException("Failed to parse web interface URL", e)
                 }

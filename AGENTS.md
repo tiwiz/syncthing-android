@@ -12,7 +12,7 @@ Read it at the start of every task and keep it current.
   `com.github.catfriend1.syncthingfork`, namespace `com.nutomic.syncthingandroid`.
 - Kotlin only, every screen in Jetpack Compose + Material 3 (migrated from Java/Views in
   October 2026). Dagger 2 via KSP, Volley + Gson for HTTP, Navigation 3 in settings. Go for the native part.
-- minSdk 23, compileSdk/targetSdk 37, JDK 21, AGP 9.4, Kotlin 2.4, Gradle 9.8.
+- minSdk 30 (Android 11), compileSdk/targetSdk 37, JDK 21, AGP 9.4, Kotlin 2.4, Gradle 9.8.
 
 ## SOURCE OF TRUTH DOCS
 

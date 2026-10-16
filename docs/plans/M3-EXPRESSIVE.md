@@ -31,6 +31,10 @@ panes split on the hinge of an unfolded foldable.
    changes, device ID, web GUI, restart and exit. Medium windows get a rail with the same three
    destinations and the same top bar; large windows an expanded rail that also lists the overflow
    entries, as in the tablet design.
+6. **minSdk 30 (Android 11).** material3 1.5 (the first release with the expressive components)
+   needs minSdk 24; the owner raised it to 30. The code paths for older releases are removed in
+   their own PR before PR 1 (HTTP fallback for Android 7.0, pre-Android 8 background service,
+   pre-Android 11 storage and location permissions, `-v26` launcher icons).
 
 ## Rules for every PR
 

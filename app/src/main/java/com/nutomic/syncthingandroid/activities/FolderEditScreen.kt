@@ -50,7 +50,6 @@ internal data class FolderScreenInfo(
     val expertMode: Boolean,
     /** Null until a path is known. */
     val canWriteToPath: Boolean?,
-    val canSelectAdvancedDirectory: Boolean,
     val saving: Boolean,
 )
 
@@ -233,7 +232,7 @@ private fun NameAndPath(form: FolderForm, info: FolderScreenInfo, actions: Folde
                     else MaterialTheme.colorScheme.onSurface,
             )
         }
-        if (info.createMode && info.canSelectAdvancedDirectory) {
+        if (info.createMode) {
             OutlinedButton(onClick = actions::onPickAdvancedDirectory) {
                 Text(stringResource(R.string.advanced_directory_selection))
             }

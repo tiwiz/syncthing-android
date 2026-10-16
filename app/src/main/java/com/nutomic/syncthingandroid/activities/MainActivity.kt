@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -141,11 +140,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
 
         // The user can launch this screen straight from the recent apps: start the service here.
         val serviceIntent = Intent(this, SyncthingService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
-        }
+        startForegroundService(serviceIntent)
         lastIntent = intent
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
         preferences.registerOnSharedPreferenceChangeListener(prefListener)
@@ -159,7 +154,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
 
     override fun onResume() {
         // The storage permission can be revoked at runtime.
-        if (!PermissionUtil.haveStoragePermission(this)) {
+        if (!PermissionUtil.haveStoragePermission()) {
             startActivity(Intent(this, OnboardingActivity::class.java))
             finish()
             super.onResume()

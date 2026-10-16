@@ -3,7 +3,6 @@ package com.nutomic.syncthingandroid.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.nutomic.syncthingandroid.service.AppPrefs
 import com.nutomic.syncthingandroid.service.SyncthingService
 
@@ -34,11 +33,7 @@ class BootReceiver : BroadcastReceiver() {
         @JvmStatic
         fun startServiceCompat(context: Context) {
             val intent = Intent(context, SyncthingService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startForegroundService(intent)
         }
     }
 }

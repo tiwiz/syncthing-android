@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.text.TextUtils
 import android.util.Log
 import com.google.common.io.Files
@@ -290,11 +289,8 @@ class SyncthingRunnable(private val context: Context, command: Command) : Runnab
         // Workaround SyncthingNativeCode denied to read gatewayIP by Android 14+ restriction.
         getGatewayIpV4(context)?.let { targetEnv["FALLBACK_NET_GATEWAY_IPV4"] = it }
         putProxyVariables(targetEnv)
-        // Optimize memory usage for older devices.
-        val gogc =
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) GOGC_OLD_DEVICES else GOGC_DEFAULT
-        logV("Setting env var: [GOGC]=[$gogc]")
-        targetEnv["GOGC"] = gogc.toString()
+        logV("Setting env var: [GOGC]=[$GOGC_DEFAULT]")
+        targetEnv["GOGC"] = GOGC_DEFAULT.toString()
         putCustomEnvironmentVariables(targetEnv)
         return targetEnv
     }
@@ -344,7 +340,6 @@ class SyncthingRunnable(private val context: Context, command: Command) : Runnab
         private const val LOG_FILE_MAX_LINES = 200_000
         private const val LOG_FILE_BUFFER_SIZE = 1024 * 1024
         private const val GOGC_DEFAULT = 100
-        private const val GOGC_OLD_DEVICES = 75
 
         // Syncthing's exit codes.
         private const val EXIT_ERROR = 1

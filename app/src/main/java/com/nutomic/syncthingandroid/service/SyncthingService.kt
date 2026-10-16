@@ -128,7 +128,7 @@ class SyncthingService : Service() {
         handler = Handler(Looper.getMainLooper())
         // If runtime permissions are revoked, Android kills and restarts the service: check again
         // whether we still have the storage permission.
-        storagePermissionGranted = PermissionUtil.haveStoragePermission(this)
+        storagePermissionGranted = PermissionUtil.haveStoragePermission()
         notificationHandler.setAppShutdownInProgress(false)
     }
 

@@ -28,7 +28,7 @@ contains no binary and the service cannot start Syncthing.
 Versions live in `gradle/libs.versions.toml`, which the Python build scripts and CI parse too:
 `version-name` (`major.minor.patch.wrapper`, the first three follow Syncthing), `version-code`
 (checked by the `validateAppVersionCode` task: `M*1_000_000 + m*10_000 + p*100 + w`),
-`go_version`, `ndk-version`, `min-sdk` (23), `compile-sdk`/`target-sdk` (37).
+`go_version`, `ndk-version`, `min-sdk` (30), `compile-sdk`/`target-sdk` (37).
 
 ## Package map (`com.nutomic.syncthingandroid`)
 

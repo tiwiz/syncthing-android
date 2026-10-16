@@ -377,13 +377,7 @@ private fun WifiSsidPreference(
 
     var showSelectionAlert by rememberSaveable { mutableStateOf(false) }
 
-    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        Manifest.permission.ACCESS_FINE_LOCATION
-    } else {
-        Manifest.permission.ACCESS_COARSE_LOCATION
-    }
-
-    val permissionState = rememberPermissionState(permission) { isGranted ->
+    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { isGranted ->
         if (!isGranted) {
             Toast.makeText(
                 context,

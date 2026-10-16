@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -56,7 +55,7 @@ class FolderActivity : SyncthingActivity() {
     private var isCreateMode = false
 
     private var form by mutableStateOf<FolderForm?>(null)
-    private var info by mutableStateOf(FolderScreenInfo(false, false, null, false, false))
+    private var info by mutableStateOf(FolderScreenInfo(false, false, null, false))
     private var dialog by mutableStateOf(FolderDialog.NONE)
 
     private val backPressedCallback =
@@ -157,8 +156,6 @@ class FolderActivity : SyncthingActivity() {
             info.copy(
                 createMode = isCreateMode,
                 expertMode = preferences.getBoolean(Constants.PREF_EXPERT_MODE, false),
-                // Android 11 disallows picking "Downloads" and the storage root through SAF.
-                canSelectAdvancedDirectory = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R,
             )
         dialog =
             savedInstanceState?.getString(STATE_DIALOG)?.let(FolderDialog::valueOf)
