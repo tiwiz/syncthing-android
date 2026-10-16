@@ -199,8 +199,9 @@ folders, revoked storage permission, restart required). Consent notifications ca
    location, local-network (Android 17) and notification pages as needed, then generates keys and
    `config.xml` (`KeyGenerationPage`). When everything is in place it skips straight to
    `MainActivity` (or `WebGuiActivity` when "start into web GUI" is on).
-2. `MainActivity` starts the service and shows three tabs in a `ViewPager`
-   (`FolderListFragment`, `DeviceListFragment`, `StatusFragment`) plus the Compose drawer.
+2. `MainActivity` starts the service and shows `MainContent`: folders, devices and status as
+   destinations of a `NavigationSuiteScaffold` (navigation bar on phones, rail on wider windows),
+   with the settings icon and the overflow menu (`MainMenu`) in the top bar.
 3. Detail and edit screens (`FolderActivity`, `DeviceActivity` and the dialog activities) extend
    `SyncthingActivity`, which binds the service in `onResume` and unbinds in `onPause`, and use
    `ConfigRouter` to read and save.

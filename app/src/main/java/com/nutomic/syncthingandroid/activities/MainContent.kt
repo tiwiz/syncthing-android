@@ -15,41 +15,49 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
@@ -59,7 +67,6 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
-import kotlinx.coroutines.launch
 
 /** A folder in the folder list. */
 @Immutable
@@ -86,8 +93,8 @@ internal data class MainUiState(
     val usageReport: String?,
 )
 
-/** What the drawer can do; each entry also closes the drawer, except exit. */
-internal interface DrawerActions {
+/** What the main screen's overflow menu can do; each entry also closes the menu. */
+internal interface MenuActions {
     fun onShowDeviceId()
 
     fun onRecentChanges()
@@ -97,8 +104,6 @@ internal interface DrawerActions {
     fun onBackup()
 
     fun onRestart()
-
-    fun onSettings()
 
     fun onExit()
 }
@@ -137,73 +142,101 @@ internal enum class UsageAnswer {
     WEBSITE,
 }
 
-/** The main screen's tabs, in order. */
-internal enum class MainTab(val title: Int) {
-    FOLDERS(R.string.folders_fragment_title),
-    DEVICES(R.string.devices_fragment_title),
-    STATUS(R.string.status_fragment_title),
+/** The main screen's destinations, in order. */
+internal enum class MainTab(val title: Int, val icon: ImageVector, val selectedIcon: ImageVector) {
+    FOLDERS(R.string.folders_fragment_title, Icons.Outlined.Folder, Icons.Filled.Folder),
+    DEVICES(R.string.devices_fragment_title, Icons.Outlined.Devices, Icons.Filled.Devices),
+    STATUS(R.string.status_fragment_title, Icons.Outlined.MonitorHeart, Icons.Filled.MonitorHeart),
 }
 
-/** The main screen: the drawer around the top bar, the three tabs and the exit button. */
+/** Windows at least this wide get the expanded rail, with labels next to the icons. */
+private const val EXPANDED_RAIL_MIN_WIDTH_DP = 1200
+
+/**
+ * A short navigation bar on phones, a rail from medium windows and an expanded rail on large ones
+ * (docs/plans/M3-EXPRESSIVE.md).
+ */
+@Composable
+private fun navigationType(): NavigationSuiteType {
+    val info = currentWindowAdaptiveInfo(supportLargeAndXLargeWidth = true)
+    val type = NavigationSuiteScaffoldDefaults.navigationSuiteType(info)
+    val large = info.windowSizeClass.isWidthAtLeastBreakpoint(EXPANDED_RAIL_MIN_WIDTH_DP)
+    return if (type == NavigationSuiteType.WideNavigationRailCollapsed && large) {
+        NavigationSuiteType.WideNavigationRailExpanded
+    } else {
+        type
+    }
+}
+
+/**
+ * The main screen: the destinations in a navigation bar or rail, the top bar with the overflow
+ * menu, and the exit button.
+ */
 @Composable
 internal fun MainContent(
     state: MainUiState,
-    drawerState: DrawerState,
-    requestDrawerFocus: Boolean,
-    drawerActions: DrawerActions,
+    menuOpen: Boolean,
+    onMenuOpenChange: (Boolean) -> Unit,
+    menuActions: MenuActions,
     actions: MainActions,
     modifier: Modifier = Modifier,
 ) {
-    ModalNavigationDrawer(
-        drawerState = drawerState,
+    var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
+    val type = navigationType()
+    NavigationSuiteScaffold(
+        navigationSuiteType = type,
         modifier = modifier,
-        drawerContent = {
-            MainDrawer(
-                running = state.serviceState == SyncthingService.State.ACTIVE,
-                showWebGui = state.showWebGui,
-                runningAsService = state.runningAsService,
-                requestFocus = requestDrawerFocus,
-                actions = drawerActions,
-            )
+        navigationItems = {
+            for (destination in MainTab.entries) {
+                val selected = destination == tab
+                NavigationSuiteItem(
+                    selected = selected,
+                    onClick = { tab = destination },
+                    icon = {
+                        Icon(if (selected) destination.selectedIcon else destination.icon, null)
+                    },
+                    label = { Text(stringResource(destination.title)) },
+                    navigationSuiteType = type,
+                )
+            }
         },
     ) {
-        MainScaffold(state, drawerState, actions)
+        MainScaffold(state, tab, menuOpen, onMenuOpenChange, menuActions, actions)
     }
     state.usageReport?.let { UsageReportingDialog(it, actions) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainScaffold(state: MainUiState, drawerState: DrawerState, actions: MainActions) {
-    val scope = rememberCoroutineScope()
-    val pagerState = rememberPagerState { MainTab.entries.size }
-    val tab = MainTab.entries[pagerState.currentPage]
+private fun MainScaffold(
+    state: MainUiState,
+    tab: MainTab,
+    menuOpen: Boolean,
+    onMenuOpenChange: (Boolean) -> Unit,
+    menuActions: MenuActions,
+    actions: MainActions,
+) {
     Scaffold(
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, stringResource(R.string.open_main_menu))
-                        }
-                    },
-                    actions = {
-                        state.totalProgress?.let { TotalProgress(it) }
-                        StatusLight(state.serviceState)
-                        TabActions(tab, actions)
-                    },
-                )
-                PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
-                    MainTab.entries.forEachIndexed { index, mainTab ->
-                        Tab(
-                            selected = index == pagerState.currentPage,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            text = { Text(stringResource(mainTab.title)) },
-                        )
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    state.totalProgress?.let { TotalProgress(it) }
+                    StatusLight(state.serviceState)
+                    TabActions(tab, actions)
+                    IconButton(onClick = actions::onSettings) {
+                        Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
                     }
-                }
-            }
+                    MainMenu(
+                        open = menuOpen,
+                        onOpenChange = onMenuOpenChange,
+                        running = state.serviceState == SyncthingService.State.ACTIVE,
+                        showWebGui = state.showWebGui,
+                        runningAsService = state.runningAsService,
+                        actions = menuActions,
+                    )
+                },
+            )
         },
         floatingActionButton = {
             if (state.exitVisible) {
@@ -213,9 +246,8 @@ private fun MainScaffold(state: MainUiState, drawerState: DrawerState, actions: 
             }
         },
     ) { padding ->
-        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize().padding(padding)) {
-            page ->
-            when (MainTab.entries[page]) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when (tab) {
                 MainTab.FOLDERS -> FolderList(state.folders, actions)
                 MainTab.DEVICES -> DeviceList(state.devices, actions)
                 MainTab.STATUS -> StatusTab(state.statusLines, state.forceStartStop, actions)
@@ -243,10 +275,7 @@ private fun TabActions(tab: MainTab, actions: MainActions) {
                 IconButton(onClick = actions::onAddDevice) {
                     Icon(Icons.Outlined.Add, stringResource(R.string.add_device))
                 }
-            MainTab.STATUS ->
-                IconButton(onClick = actions::onSettings) {
-                    Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
-                }
+            MainTab.STATUS -> Unit
         }
     }
 }

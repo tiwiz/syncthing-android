@@ -12,13 +12,9 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -53,8 +49,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The main screen: the folders, devices and status tabs, the drawer, and the questions Syncthing
- * asks once it runs.
+ * The main screen: the folders, devices and status destinations, the overflow menu, and the
+ * questions Syncthing asks once it runs.
  */
 class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
 
@@ -85,9 +81,8 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
             )
         )
 
-    /** Whether the drawer should be open; the Compose drawer follows it and reports back. */
-    private var drawerOpen by mutableStateOf(false)
-    private var requestDrawerFocus by mutableStateOf(false)
+    /** Whether the overflow menu is open; hoisted so the menu key can toggle it. */
+    private var menuOpen by mutableStateOf(false)
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
@@ -116,23 +111,12 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
 
         setContent {
             ApplicationTheme {
-                val drawerState = rememberDrawerState(DrawerValue.Closed)
-                LaunchedEffect(drawerOpen) {
-                    if (drawerOpen) drawerState.open() else drawerState.close()
-                }
-                LaunchedEffect(drawerState) {
-                    snapshotFlow { drawerState.currentValue }
-                        .collect {
-                            drawerOpen = it == DrawerValue.Open
-                            if (drawerOpen) requestDrawerFocus = true
-                        }
-                }
-                BackHandler(enabled = drawerOpen) { drawerOpen = false }
+                BackHandler(enabled = menuOpen) { menuOpen = false }
                 MainContent(
                     state = uiState,
-                    drawerState = drawerState,
-                    requestDrawerFocus = requestDrawerFocus,
-                    drawerActions = drawerActions,
+                    menuOpen = menuOpen,
+                    onMenuOpenChange = { menuOpen = it },
+                    menuActions = menuActions,
                     actions = actions,
                 )
             }
@@ -336,38 +320,27 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
         DeviceIdDialogFragment.show(supportFragmentManager, name.trim(), deviceId, true)
     }
 
-    /** The menu key toggles the drawer; D-pad right closes it. */
+    /** The menu key toggles the overflow menu. */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode == KeyEvent.KEYCODE_MENU) {
-            drawerOpen = !drawerOpen
-            return true
-        }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && drawerOpen) {
-            drawerOpen = false
+            menuOpen = !menuOpen
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
-    private val drawerActions =
-        object : DrawerActions {
-            private fun open(intent: Intent) {
-                startActivity(intent)
-                drawerOpen = false
-            }
-
-            override fun onShowDeviceId() {
-                showDeviceIdDialog()
-                drawerOpen = false
-            }
+    private val menuActions =
+        object : MenuActions {
+            override fun onShowDeviceId() = showDeviceIdDialog()
 
             override fun onRecentChanges() =
-                open(Intent(this@MainActivity, RecentChangesActivity::class.java))
+                startActivity(Intent(this@MainActivity, RecentChangesActivity::class.java))
 
-            override fun onWebGui() = open(Intent(this@MainActivity, WebGuiActivity::class.java))
+            override fun onWebGui() =
+                startActivity(Intent(this@MainActivity, WebGuiActivity::class.java))
 
             override fun onBackup() =
-                open(
+                startActivity(
                     Intent(this@MainActivity, SettingsActivity::class.java)
                         .putExtra(SettingsActivity.EXTRA_START_DESTINATION, "ImportExport")
                 )
@@ -377,11 +350,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                     Intent(this@MainActivity, SyncthingService::class.java)
                         .setAction(SyncthingService.ACTION_RESTART)
                 )
-                drawerOpen = false
             }
-
-            override fun onSettings() =
-                open(Intent(this@MainActivity, SettingsActivity::class.java))
 
             override fun onExit() = doExit()
         }
