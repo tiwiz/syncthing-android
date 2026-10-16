@@ -8,7 +8,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -100,17 +99,23 @@ internal class MainScreen(
         return nextStarted()
     }
 
-    /** The actions in the top bar of each tab. */
-    enum class Action(val description: String) {
-        ADD_FOLDER("Add Folder"),
+    /** The actions in the top bar and the add button's menu. */
+    enum class Action(val description: String, val inAddMenu: Boolean = false) {
+        ADD_FOLDER("Add Folder", inAddMenu = true),
         RESCAN_ALL("Rescan All"),
-        ADD_DEVICE("Add Device"),
+        ADD_DEVICE("Add Device", inAddMenu = true),
         SETTINGS("Settings"),
     }
 
     /** Runs [action] and returns the screen it started, if any. */
     fun run(action: Action): Intent? {
-        compose.onNodeWithContentDescription(action.description).performClick()
+        if (action.inAddMenu) {
+            compose.onNodeWithContentDescription("Add").performClick()
+            idle()
+            compose.onNode(hasText(action.description) and hasClickAction()).performClick()
+        } else {
+            compose.onNodeWithContentDescription(action.description).performClick()
+        }
         idle()
         return nextStarted()
     }
@@ -142,20 +147,17 @@ internal class MainScreen(
     /** The overall sync progress shown in the top bar, or null when hidden. */
     fun totalProgress(): String? =
         compose
-            .onAllNodesWithTag("totalProgress")
+            .onAllNodesWithTag("totalProgress", useUnmergedTree = true)
             .fetchSemanticsNodes()
             .firstOrNull()
             ?.config
             ?.get(SemanticsProperties.Text)
             ?.joinToString()
+            ?.removeSuffix("%")
 
-    fun exitShown(): Boolean =
-        compose.onAllNodes(hasContentDescription("Exit")).fetchSemanticsNodes().any {
-            it.boundsInRoot.width > 0 && it.boundsInRoot.left >= 0
-        }
-
-    fun exit() {
-        compose.onNodeWithContentDescription("Exit").performClick()
+    /** Answers yes when exit asks for confirmation. */
+    fun confirmExit() {
+        compose.onNode(hasText("Yes") and hasClickAction()).performClick()
         idle()
     }
 

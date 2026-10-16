@@ -74,7 +74,6 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                 statusLines = emptyList(),
                 forceStartStop = Constants.BTNSTATE_NO_FORCE_START_STOP,
                 totalProgress = null,
-                exitVisible = true,
                 runningAsService = false,
                 showWebGui = true,
                 usageReport = null,
@@ -273,7 +272,6 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                     ),
                 totalProgress =
                     total.takeIf { serviceState == SyncthingService.State.ACTIVE && it != -1 },
-                exitVisible = !runningAsService(),
                 runningAsService = runningAsService(),
             )
     }

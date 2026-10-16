@@ -95,6 +95,20 @@ private val StateColors.content: Color
             StateColors.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant
         }
 
+/** The color of a state's text: Material roles, so it keeps its contrast in both themes. */
+val StateTone.stateTextColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() =
+        when (this) {
+            StateTone.OK -> MaterialTheme.colorScheme.tertiary
+            StateTone.BUSY -> MaterialTheme.colorScheme.primary
+            StateTone.ATTENTION,
+            StateTone.PAUSED -> MaterialTheme.colorScheme.secondary
+            StateTone.ERROR -> MaterialTheme.colorScheme.error
+            StateTone.OFFLINE -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
 /** A [tone]'s shape with its icon; decorative, the row's text says the state. */
 @Composable
 fun StateBadge(tone: StateTone, modifier: Modifier = Modifier, size: Dp = 48.dp) {

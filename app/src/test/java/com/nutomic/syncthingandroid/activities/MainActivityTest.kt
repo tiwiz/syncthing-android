@@ -206,17 +206,37 @@ class MainActivityTest {
     }
 
     @Test
-    fun `the exit button stops Syncthing and leaves, unless the app runs as a service`() {
+    fun `exit in the menu stops Syncthing and leaves, asking first when running as a service`() {
         stopped().use { screen ->
-            assertTrue(screen.exitShown())
-
-            screen.exit()
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
 
             assertTrue(screen.finishing())
         }
 
         prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
-        stopped().use { screen -> assertFalse(screen.exitShown()) }
+        stopped().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertFalse(screen.finishing())
+
+            screen.confirmExit()
+
+            assertTrue(screen.finishing())
+        }
+    }
+
+    @Test
+    fun `the add button offers new folders and devices on both lists`() {
+        stopped().use { screen ->
+            for (tab in listOf(MainScreen.Tab.FOLDERS, MainScreen.Tab.DEVICES)) {
+                screen.showTab(tab)
+                val folder = checkNotNull(screen.run(MainScreen.Action.ADD_FOLDER))
+                assertEquals(tab.name, FolderActivity::class.java.name, folder.component?.className)
+                val device = checkNotNull(screen.run(MainScreen.Action.ADD_DEVICE))
+                assertEquals(tab.name, DeviceActivity::class.java.name, device.component?.className)
+            }
+        }
     }
 
     @Test
