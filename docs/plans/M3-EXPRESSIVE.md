@@ -51,6 +51,9 @@ panes split on the hinge of an unfolded foldable.
 
 ## Order
 
+Steps 1–7 are done. The detailed plan for steps 8–13, the UI architecture and how a second
+agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
+
 1. **Theme foundation.** `MaterialExpressiveTheme` in `ApplicationTheme`, fallback light and dark
    schemes from the seed (`theme/Color.kt`), emphasized typography (`theme/Type.kt`), shapes and
    the expressive motion scheme. Unit test for the scheme choice (dynamic vs fallback, light vs
