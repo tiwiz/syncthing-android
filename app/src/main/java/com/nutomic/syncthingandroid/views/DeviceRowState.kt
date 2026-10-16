@@ -21,12 +21,17 @@ data class DeviceRowState(
     /** One folder per line, or null when it shares none. */
     val sharedFolders: String?,
     val status: String,
-    @param:ColorRes @get:ColorRes val statusColor: Int,
+    val tone: StateTone,
     /** The sync progress in percent, or null when not syncing. */
     val progress: Int?,
     /** Download and upload rates, or null when not connected. */
     val bandwidth: String?,
 ) {
+    /** The color of [status]. */
+    @get:ColorRes
+    val statusColor: Int
+        get() = tone.textColor
+
     /** What Syncthing knows about the device while it runs. */
     class Status(val connection: Connection, val completion: Int, val needBytes: Double)
 
@@ -72,7 +77,7 @@ data class DeviceRowState(
                         if (sharedFolders.isEmpty()) null
                         else "• " + sharedFolders.joinToString("\n• "),
                     status = context.getString(R.string.device_disconnected),
-                    statusColor = R.color.text_red,
+                    tone = StateTone.OFFLINE,
                     progress = null,
                     bandwidth = null,
                 )
@@ -80,7 +85,7 @@ data class DeviceRowState(
                 device.paused ->
                     base.copy(
                         status = context.getString(R.string.device_paused),
-                        statusColor = R.color.text_purple,
+                        tone = StateTone.PAUSED,
                     )
                 // Syncthing is not running.
                 status == null -> base
@@ -120,7 +125,7 @@ data class DeviceRowState(
                             status.completion,
                             readableFileSize(context, status.needBytes),
                         ),
-                    statusColor = R.color.text_blue,
+                    tone = StateTone.BUSY,
                     progress = status.completion,
                     bandwidth = bandwidth,
                 )
@@ -132,7 +137,7 @@ data class DeviceRowState(
                     context.getString(
                         if (syncing) R.string.state_syncing_general else R.string.device_up_to_date
                     ),
-                statusColor = if (syncing) R.color.text_blue else R.color.text_green,
+                tone = if (syncing) StateTone.BUSY else StateTone.OK,
                 bandwidth = bandwidth,
             )
         }

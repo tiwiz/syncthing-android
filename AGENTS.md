@@ -124,6 +124,7 @@ app/                         Android application (only Gradle module with code)
     views/         FolderRowState, DeviceRowState (main screen list rows)
     onboarding/    Compose launcher flow (permissions, key generation)
     settings/      Compose settings, Navigation 3, SharedPreferenceFlow
+    ui/            shared expressive components: state badges, grouped lists, wavy progress
     recentchanges/ webgui/ theme/ receiver/
   src/main/res/    strings, drawables, themes, a few XML layouts (values = English, values-* from Weblate)
   src/main/play/   Play Store listing metadata
@@ -249,7 +250,8 @@ Next steps (to be confirmed with the owner):
    [docs/plans/M3-EXPRESSIVE.md](docs/plans/M3-EXPRESSIVE.md), with the approved design canvas.
    Decisions taken the same day (in the plan), plus minSdk 30 (PR #64). PR 1 theme foundation
    (`MaterialExpressiveTheme`, fallback colors, Roboto Flex). PR 2 window size screenshot
-   matrix (`WindowSizeScreenshotTest`). **Resume here:** PR 3 (shared components).
+   matrix (`WindowSizeScreenshotTest`). PR 3 shared components (`ui/`,
+   `StateTone`). **Resume here:** PR 4 (main screen navigation).
 
 ## HANDOFF
 

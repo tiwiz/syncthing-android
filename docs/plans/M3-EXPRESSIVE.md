@@ -72,6 +72,10 @@ panes split on the hinge of an unfolded foldable.
    - `StateShapeIcon`, grouped list item shapes (24 dp outer, 6 dp inner corners),
      `SectionHeader`, wavy progress wrappers.
    - A component gallery screenshot in light and dark.
+   Done: `views/StateTone` (OK, BUSY, ATTENTION, PAUSED, ERROR, OFFLINE) in both row states, the
+   old text colors derived from it; `ui/StateLook.kt` (`look()`, `StateBadge`), `ui/Grouped.kt`
+   (`groupedItemShape`, `SectionHeader`, `SyncProgress` with a still wave); `StateLookTest`,
+   `ComponentGalleryScreenshotTest`.
 4. **Main screen navigation.** Tabs, pager and drawer become `NavigationSuiteScaffold`: bar on
    compact, rail on medium/expanded, expanded rail with labels on large. Drawer entries move to
    the overflow menu as in decision 5. Driver: `openDrawer()` becomes `openMenu()`; every
