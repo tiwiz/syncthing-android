@@ -23,6 +23,7 @@ Read it at the start of every task and keep it current.
 | [docs/TESTING.md](docs/TESTING.md) | TDD flow, test layers, what to test first |
 | [docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md) | The gate, Lint, planned detekt/ktfmt, suppressions |
 | [docs/TECH-DEBT.md](docs/TECH-DEBT.md) | Things to fix: pinned bugs, detekt suppressions, TODOs |
+| [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md) | Planned: Hilt instead of hand-written Dagger, screen state in ViewModels (steps H1–H9) |
 | [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md) | Material 3 Expressive work: UI architecture, pitfalls, detailed plan for steps 8–13, split between two agents |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Upstream rules (commits, DCO, AI policy) |
 | [wiki/developers/](wiki/developers/) | Upstream build guide, sync-status broadcast API |
@@ -257,6 +258,9 @@ Next steps (to be confirmed with the owner):
    menu. PR 6 devices list. PR 7 status tab. **Resume here:**
    owner's phone test of the main screen, then steps 8–13 as planned in
    [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md).
+7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
+   [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
+   steps (order at the end of that file).
 
 ## HANDOFF
 
