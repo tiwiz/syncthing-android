@@ -111,6 +111,11 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
 
   New test: `scenario.recreate()` keeps the usage reporting question without asking Syncthing
   again.
+
+  Done: `MainViewModel` (`@HiltViewModel`; observes `SyncthingConnection`; `uiState`,
+  `refreshWhileShown()` run by the activity while resumed, usage reporting asked once per
+  ViewModel, force start/stop; a `FINISH` event when Syncthing crashes). `MainActivity` keeps the
+  menu, the detail panes, navigation and exit. `lifecycle-runtime-compose` 2.10.0.
 - **H5** `refactor(folder, device): FolderEditViewModel, DeviceEditViewModel` (A):
   - the controllers become ViewModels with `SavedStateHandle` (Gson `Bundle` state gone);
   - activity results go through events and `rememberLauncherForActivityResult`;

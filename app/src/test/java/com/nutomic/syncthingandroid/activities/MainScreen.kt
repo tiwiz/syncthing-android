@@ -278,6 +278,12 @@ internal class MainScreen(
         return finishing
     }
 
+    /** Recreates the screen, as a rotation or a fold does. */
+    fun recreate() {
+        scenario.recreate()
+        idle()
+    }
+
     override fun close() = scenario.close()
 
     companion object {

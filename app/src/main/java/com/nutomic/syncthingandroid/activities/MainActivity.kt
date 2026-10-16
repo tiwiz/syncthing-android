@@ -3,7 +3,6 @@ package com.nutomic.syncthingandroid.activities
 import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -12,40 +11,30 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
-import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.onboarding.OnboardingActivity
 import com.nutomic.syncthingandroid.recentchanges.RecentChangesActivity
 import com.nutomic.syncthingandroid.service.AppPrefs
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.settings.SettingsActivity
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.ConfigRouter
-import com.nutomic.syncthingandroid.util.ConfigXml
 import com.nutomic.syncthingandroid.util.FileOpener
 import com.nutomic.syncthingandroid.util.PermissionUtil
-import com.nutomic.syncthingandroid.util.isTelevision
 import com.nutomic.syncthingandroid.util.testPathEllipsis
-import com.nutomic.syncthingandroid.views.DeviceRowState
-import com.nutomic.syncthingandroid.views.FolderRowState
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -53,39 +42,22 @@ import kotlinx.coroutines.launch
  * questions Syncthing asks once it runs.
  */
 @AndroidEntryPoint
-class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
+class MainActivity : SyncthingActivity() {
 
     @Inject lateinit var preferences: SharedPreferences
 
     private lateinit var configRouter: ConfigRouter
     private var enableVerboseLog = false
 
-    private var serviceState = SyncthingService.State.INIT
     private var lastIntent: Intent? = null
 
-    /** The figures from the last system status, while Syncthing runs. */
-    private var figures: SystemFigures? = null
-
-    private var uiState by
-        mutableStateOf(
-            MainUiState(
-                serviceState = SyncthingService.State.INIT,
-                folders = emptyList(),
-                devices = emptyList(),
-                status = null,
-                forceStartStop = Constants.BTNSTATE_NO_FORCE_START_STOP,
-                totalProgress = null,
-                runningAsService = false,
-                showWebGui = true,
-                usageReport = null,
-            )
-        )
+    private val viewModel: MainViewModel by viewModels()
 
     /** Whether the overflow menu is open; hoisted so the menu key can toggle it. */
     private var menuOpen by mutableStateOf(false)
 
     /** Folders and devices next to their list on large windows. */
-    private val panes = DetailPanes(this, { preferences }, { refresh() })
+    private val panes = DetailPanes(this, { preferences }, { viewModel.refresh() })
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
@@ -95,10 +67,6 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
             }
         }
 
-    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Constants.PREF_BTNSTATE_FORCE_START_STOP) refresh()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         configRouter = ConfigRouter(this)
@@ -106,16 +74,12 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
         if (enableVerboseLog) {
             testPathEllipsis()
         }
-        uiState =
-            uiState.copy(
-                showWebGui = Constants.isDebuggable(this) || !resources.configuration.isTelevision
-            )
-
         panes.restoreState(savedInstanceState)
         setContent {
             ApplicationTheme {
                 BackHandler(enabled = panes.detail != null && panes.twoPanes) { panes.back() }
                 BackHandler(enabled = menuOpen) { menuOpen = false }
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 MainContent(
                     state = uiState,
                     menuOpen = menuOpen,
@@ -133,8 +97,15 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
         startForegroundService(serviceIntent)
         lastIntent = intent
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
-        preferences.registerOnSharedPreferenceChangeListener(prefListener)
-        startRefreshing()
+        lifecycleScope.launch {
+            // The lists and figures refresh while the screen is shown.
+            repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.refreshWhileShown() }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                viewModel.events.collect { if (it == MainEvent.FINISH) finish() }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -152,7 +123,7 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
         }
         // The metered Wi-Fi flags may have changed.
         service?.evaluateRunConditions()
-        refresh()
+        viewModel.refresh()
         if (lastIntent?.action == ACTION_EXIT) {
             Log.i(TAG, "Exit app requested by notification action")
             stopService(Intent(this, SyncthingService::class.java))
@@ -161,149 +132,14 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
         super.onResume()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        preferences.unregisterOnSharedPreferenceChangeListener(prefListener)
-        service?.unregisterOnServiceStateChangeListener(this)
-    }
-
     override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
         super.onServiceConnected(componentName, iBinder)
-        (iBinder as SyncthingServiceBinder).service.registerOnServiceStateChangeListener(this)
         api?.let(panes::onApiAvailable)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         panes.saveState(outState)
-    }
-
-    override fun onServiceStateChange(currentState: SyncthingService.State) {
-        serviceState = currentState
-        when (currentState) {
-            SyncthingService.State.ACTIVE -> askUsageReportingIfDue()
-            SyncthingService.State.ERROR -> finish()
-            else -> Unit
-        }
-        refresh()
-    }
-
-    /**
-     * Refreshes the screen while it is shown: the lists and progress every
-     * [Constants.GUI_UPDATE_INTERVAL], Syncthing's own figures every
-     * [Constants.REST_UPDATE_INTERVAL].
-     */
-    private fun startRefreshing() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                var sinceQuery = Long.MAX_VALUE
-                while (true) {
-                    if (sinceQuery >= Constants.REST_UPDATE_INTERVAL) {
-                        queryRestApi()
-                        sinceQuery = 0
-                    }
-                    refresh()
-                    delay(Constants.GUI_UPDATE_INTERVAL)
-                    sinceQuery += Constants.GUI_UPDATE_INTERVAL
-                }
-            }
-        }
-    }
-
-    /** Asks Syncthing for the device states and its figures; the answers refresh the screen. */
-    private fun queryRestApi() {
-        val restApi = api.takeIf { serviceState == SyncthingService.State.ACTIVE } ?: return
-        // A cache miss queries the status of all devices.
-        restApi.getRemoteDeviceStatus("")
-        restApi.getSystemStatus { status ->
-            val total =
-                restApi.takeIf { it.isConfigLoaded }?.totalConnectionStatistic ?: Connection()
-            figures = systemFigures(this, status, total)
-            refresh()
-        }
-    }
-
-    private fun refresh() {
-        if (isFinishing) return
-        val restApi = api
-        val running = restApi?.takeIf { it.isConfigLoaded }
-        val folders =
-            try {
-                configRouter.getFolders(restApi)
-            } catch (_: ConfigXml.OpenConfigException) {
-                Log.e(TAG, "Failed to parse existing config. You will need support from here ...")
-                return
-            }
-        val devices =
-            configRouter
-                .getDevices(restApi, false)
-                .sortedWith(compareBy { it.name.ifEmpty { it.deviceID.orEmpty() } })
-        val lastSeen = { id: String? ->
-            preferences.getString(Constants.PREF_CACHE_DEVICE_LASTSEEN_PREFIX + id, "").orEmpty()
-        }
-        val total = running?.totalSyncCompletion ?: -1
-        uiState =
-            uiState.copy(
-                serviceState = serviceState,
-                folders =
-                    folders.map {
-                        FolderItem(
-                            it.id.orEmpty(),
-                            it.path.orEmpty(),
-                            FolderRowState.of(this, it, running?.getFolderStatus(it.id)),
-                        )
-                    },
-                devices =
-                    devices.map {
-                        DeviceItem(
-                            it.deviceID.orEmpty(),
-                            DeviceRowState.of(
-                                this,
-                                it,
-                                lastSeen(it.deviceID),
-                                configRouter.getSharedFolders(it.deviceID),
-                                running?.let { api ->
-                                    DeviceRowState.Status(
-                                        api.getRemoteDeviceStatus(it.deviceID),
-                                        api.getRemoteDeviceCompletion(it.deviceID),
-                                        api.getRemoteDeviceNeedBytes(it.deviceID),
-                                    )
-                                },
-                            ),
-                        )
-                    },
-                status =
-                    service?.let {
-                        statusInfo(this, serviceState, it.runDecisionExplanation, figures)
-                    },
-                forceStartStop =
-                    preferences.getInt(
-                        Constants.PREF_BTNSTATE_FORCE_START_STOP,
-                        Constants.BTNSTATE_NO_FORCE_START_STOP,
-                    ),
-                totalProgress =
-                    total.takeIf { serviceState == SyncthingService.State.ACTIVE && it != -1 },
-                runningAsService = runningAsService(),
-            )
-    }
-
-    private fun runningAsService() =
-        preferences.getBoolean(Constants.PREF_START_SERVICE_ON_BOOT, false)
-
-    /** Asks about usage reporting once the app is a few days old and the user has not decided. */
-    private fun askUsageReportingIfDue() {
-        val restApi = api ?: return
-        val firstStart =
-            try {
-                packageManager.getPackageInfo(packageName, 0).firstInstallTime
-            } catch (e: PackageManager.NameNotFoundException) {
-                Log.w(TAG, "This should never happen", e)
-                0
-            }
-        val delayPassed = Date().time > firstStart + USAGE_REPORTING_DIALOG_DELAY
-        if (!delayPassed || !restApi.isConfigLoaded || restApi.isUsageReportingDecided) return
-        Log.v(TAG, "showUsageReportingDialog triggered.")
-        restApi.getUsageReport { report -> uiState = uiState.copy(usageReport = report) }
     }
 
     /** Stops Syncthing and leaves the app. */
@@ -423,33 +259,20 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
                 startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
             }
 
-            override fun onForceStartStop(index: Int) {
-                // The index is one of the Constants.BTNSTATE_* values.
-                preferences.edit { putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, index) }
-                LocalBroadcastManager.getInstance(this@MainActivity)
-                    .sendBroadcast(Intent(RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION))
-                refresh()
-            }
+            override fun onForceStartStop(index: Int) = viewModel.onForceStartStop(index)
 
             override fun onExit() = doExit()
 
             override fun onUsageReporting(answer: UsageAnswer) {
-                uiState = uiState.copy(usageReport = null)
-                val restApi = api ?: return
-                when (answer) {
-                    UsageAnswer.YES,
-                    UsageAnswer.NO -> {
-                        restApi.setUsageReporting(answer == UsageAnswer.YES)
-                        restApi.sendConfig()
-                    }
-                    UsageAnswer.WEBSITE ->
-                        startActivity(
-                            Intent(this@MainActivity, WebViewActivity::class.java)
-                                .putExtra(
-                                    WebViewActivity.EXTRA_WEB_URL,
-                                    getString(R.string.syncthing_usage_stats_url),
-                                )
-                        )
+                viewModel.onUsageReporting(answer)
+                if (answer == UsageAnswer.WEBSITE) {
+                    startActivity(
+                        Intent(this@MainActivity, WebViewActivity::class.java)
+                            .putExtra(
+                                WebViewActivity.EXTRA_WEB_URL,
+                                getString(R.string.syncthing_usage_stats_url),
+                            )
+                    )
                 }
             }
         }
@@ -459,8 +282,5 @@ class MainActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeL
 
         /** Intent action to exit the app. */
         const val ACTION_EXIT = ".MainActivity.EXIT"
-
-        /** How long after the first start the usage reporting question waits. */
-        private val USAGE_REPORTING_DIALOG_DELAY = TimeUnit.DAYS.toMillis(3)
     }
 }
