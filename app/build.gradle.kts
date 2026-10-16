@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.activity.compose)
     implementation(libs.activity.ktx)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.androidx.appcompat)
     implementation(libs.android.material)
     implementation(libs.compose.material3)

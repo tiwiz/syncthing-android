@@ -406,6 +406,19 @@ class MainActivityTest {
     }
 
     @Test
+    fun `the usage reporting question survives recreation without asking Syncthing again`() {
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            val reportRequests = checkNotNull(syncthing).requests("/rest/svc/report").size
+
+            screen.recreate()
+
+            assertTrue(screen.usageReportingAsked())
+            assertEquals(reportRequests, checkNotNull(syncthing).requests("/rest/svc/report").size)
+        }
+    }
+
+    @Test
     fun `the usage reporting website can be opened from the question`() {
         running(usageReport = true).use { screen ->
             awaitMain { screen.usageReportingAsked() }
