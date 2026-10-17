@@ -68,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SyncProgress
-import com.nutomic.syncthingandroid.ui.groupedItemShape
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -185,6 +184,7 @@ internal fun MainContent(
     actions: MainActions,
     modifier: Modifier = Modifier,
     detail: Detail? = null,
+    detailBackProgress: () -> Float = { 0f },
     onTwoPanesChange: (Boolean) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
@@ -212,7 +212,7 @@ internal fun MainContent(
         MainScaffold(
             state = state,
             tab = tab,
-            panes = Panes(directive, detail),
+            panes = Panes(directive, detail, detailBackProgress),
             menu = MenuState(menuOpen, onMenuOpenChange, menuActions),
             actions = actions,
         )
@@ -221,7 +221,12 @@ internal fun MainContent(
 }
 
 /** The list and detail panes of the current window. */
-private class Panes(val directive: PaneScaffoldDirective, val detail: Detail?) {
+private class Panes(
+    val directive: PaneScaffoldDirective,
+    val detail: Detail?,
+    /** How far a back gesture closing the detail pane has gone, 0 to 1. */
+    val backProgress: () -> Float,
+) {
     val detailShown: Boolean
         get() = detail != null && directive.twoPanes
 
@@ -277,12 +282,35 @@ private fun MainScaffold(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
                 MainTab.FOLDERS ->
-                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
-                        FolderList(state.folders, state.totalProgress, actions)
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        backProgress = panes.backProgress,
+                    ) {
+                        FolderList(
+                            state.folders,
+                            state.totalProgress,
+                            actions,
+                            selectedFolderId =
+                                (panes.detail as? Detail.FolderDetail)
+                                    ?.key
+                                    ?.removePrefix(DetailPanes.FOLDER),
+                        )
                     }
                 MainTab.DEVICES ->
-                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
-                        DeviceList(state.devices, actions)
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        backProgress = panes.backProgress,
+                    ) {
+                        DeviceList(
+                            state.devices,
+                            actions,
+                            selectedDeviceId =
+                                (panes.detail as? Detail.DeviceDetail)
+                                    ?.key
+                                    ?.removePrefix(DetailPanes.DEVICE),
+                        )
                     }
                 MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
             }
@@ -401,7 +429,12 @@ internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FolderList(folders: List<FolderItem>, totalProgress: Int?, actions: MainActions) {
+private fun FolderList(
+    folders: List<FolderItem>,
+    totalProgress: Int?,
+    actions: MainActions,
+    selectedFolderId: String?,
+) {
     if (folders.isEmpty()) {
         EmptyList(R.string.folder_list_empty)
         return
@@ -414,13 +447,23 @@ private fun FolderList(folders: List<FolderItem>, totalProgress: Int?, actions: 
         item { ListTitle(MainTab.FOLDERS) }
         totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
         itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
-            FolderRow(item, actions, shape = groupedItemShape(index, folders.size))
+            FolderRow(
+                item = item,
+                actions = actions,
+                index = index,
+                count = folders.size,
+                selected = item.folderId == selectedFolderId,
+            )
         }
     }
 }
 
 @Composable
-private fun DeviceList(devices: List<DeviceItem>, actions: MainActions) {
+private fun DeviceList(
+    devices: List<DeviceItem>,
+    actions: MainActions,
+    selectedDeviceId: String?,
+) {
     if (devices.isEmpty()) {
         EmptyList(R.string.no_devices_configured)
         return
@@ -432,7 +475,13 @@ private fun DeviceList(devices: List<DeviceItem>, actions: MainActions) {
     ) {
         item { ListTitle(MainTab.DEVICES) }
         itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
-            DeviceRow(item, actions, shape = groupedItemShape(index, devices.size))
+            DeviceRow(
+                item = item,
+                actions = actions,
+                index = index,
+                count = devices.size,
+                selected = item.deviceId == selectedDeviceId,
+            )
         }
     }
 }

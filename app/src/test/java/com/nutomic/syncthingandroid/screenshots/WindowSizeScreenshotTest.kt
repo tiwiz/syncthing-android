@@ -55,6 +55,8 @@ class WindowSizeScreenshotTest(
 
     @get:Rule val compose = createEmptyComposeRule()
 
+    @get:Rule val stillAnimations = StillAnimationsRule()
+
     private val recorder = RunningScreenRecorder(compose)
 
     @After fun tearDown() = recorder.close()

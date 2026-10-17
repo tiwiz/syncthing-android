@@ -149,7 +149,19 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
     detail pane; compact and medium windows keep `NavDisplay` as before.
 12. **Motion and polish.** Shape morph on selection and press, expressive `LoadingIndicator` while
     Syncthing is starting, predictive back on the detail pane, reduced motion respected.
-    Open: #90, held back (see the workload in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md)).
+    Done (#90, started by B, finished by A):
+    - The rows of the folder and device lists morph to fully rounded while pressed or open in the
+      detail pane. The open row also gets the `secondaryContainer` color and is marked selected
+      for accessibility (`morphingItemShape`).
+    - The status hero shows the expressive `LoadingIndicator` while Syncthing is `STARTING`.
+    - `MainActivity`'s back handler for the detail pane is a `PredictiveBackHandler`: during the
+      gesture the pane shrinks towards the list, and letting go closes it.
+    - `SyncProgress` waves only while the system animator scale is not 0
+      (`rememberAnimationsEnabled`, read once per composition).
+    - New tests: `GroupedTest`, `StatusHeroTest`, `StatusInfoTest` (starting), and two in
+      `MainActivityListDetailTest` (the selected row, and a cancelled back gesture).
+    - The screenshot tests that can show a wave turn animations off (`StillAnimationsRule`, as on
+      the test emulator). A moving wave is drawn at a different phase in each run.
 13. **Milestone.** Native debug build on the Pixel 8 (portrait and landscape), plus emulator AVDs
     for a foldable (Pixel Fold, folded and unfolded) and a tablet (Pixel Tablet); walk every
     screen, light and dark, English and Italian; write the results in AGENTS.md.

@@ -19,12 +19,20 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 
 /** The panes for the current window: two from expanded windows, avoiding a separating hinge. */
 @Composable
 internal fun paneDirective(): PaneScaffoldDirective =
     calculatePaneScaffoldDirective(currentWindowAdaptiveInfo())
+
+/** How much the detail pane shrinks at the end of a back gesture. */
+private const val BACK_SHRINK = 0.1f
+
+/** The pane shrinks towards its start edge, the list's side. */
+private val BACK_SHRINK_ORIGIN = TransformOrigin(pivotFractionX = 0f, pivotFractionY = 0.5f)
 
 /** Whether the window has room for a list and a detail pane side by side. */
 internal val PaneScaffoldDirective.twoPanes: Boolean
@@ -39,6 +47,7 @@ internal fun ListWithDetail(
     directive: PaneScaffoldDirective,
     detail: Detail?,
     modifier: Modifier = Modifier,
+    backProgress: () -> Float = { 0f },
     list: @Composable () -> Unit,
 ) {
     // The same list content in both layouts, so it keeps its state (scroll) when a pane opens.
@@ -61,7 +70,19 @@ internal fun ListWithDetail(
         listPane = { AnimatedPane { movableList() } },
         detailPane = {
             AnimatedPane {
-                Box(modifier = Modifier.testTag("detailPane")) { DetailContent(detail) }
+                Box(
+                    modifier =
+                        Modifier.graphicsLayer {
+                                // Shrinks towards the list while a back gesture closes the pane.
+                                val scale = 1f - BACK_SHRINK * backProgress()
+                                scaleX = scale
+                                scaleY = scale
+                                transformOrigin = BACK_SHRINK_ORIGIN
+                            }
+                            .testTag("detailPane")
+                ) {
+                    DetailContent(detail)
+                }
             }
         },
         paneExpansionDragHandle = { state ->

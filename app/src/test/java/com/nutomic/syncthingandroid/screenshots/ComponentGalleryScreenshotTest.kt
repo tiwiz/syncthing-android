@@ -23,6 +23,7 @@ import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.ui.groupedItemShape
 import com.nutomic.syncthingandroid.views.StateTone
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -36,6 +37,8 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = SCREENSHOT_QUALIFIERS)
 class ComponentGalleryScreenshotTest(private val dark: Boolean) {
+
+    @get:Rule val stillAnimations = StillAnimationsRule()
 
     @Test
     fun gallery() {

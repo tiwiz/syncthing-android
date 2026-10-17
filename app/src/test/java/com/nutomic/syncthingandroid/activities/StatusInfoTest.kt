@@ -35,6 +35,17 @@ class StatusInfoTest {
     }
 
     @Test
+    fun `only a starting Syncthing shows a loading indicator`() {
+        for (state in State.entries) {
+            assertEquals(
+                state.name,
+                state == State.STARTING,
+                statusInfo(context, state, "x", null).starting,
+            )
+        }
+    }
+
+    @Test
     fun `the reasons are one per line of the explanation`() {
         val info = statusInfo(context, State.DISABLED, " On battery\nNo Wi-Fi\n", figures)
 
