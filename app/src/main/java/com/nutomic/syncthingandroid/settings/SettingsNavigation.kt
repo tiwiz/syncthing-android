@@ -1,11 +1,24 @@
 package com.nutomic.syncthingandroid.settings
 
 import android.util.Log
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldDefaults
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationItem
+import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.calculateThreePaneScaffoldValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
@@ -15,6 +28,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.serialization.NavBackStackSerializer
@@ -104,10 +118,8 @@ fun SettingsNavDisplay(
     activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
-    NavDisplay(
-        backStack = backStack,
-        onBack = { navigator.navigateBack() },
-        entryProvider = entryProvider {
+    val entryProvider = remember(navigator, serviceState, activityScope) {
+        entryProvider {
             settingsRootEntry(navigator, serviceState)
             settingsRunConditionsEntry(navigator, serviceState)
             settingsUserInterfaceEntry(navigator, serviceState, activityScope)
@@ -119,30 +131,100 @@ fun SettingsNavDisplay(
             settingsExperimentalEntry(navigator)
             settingsAboutEntry(navigator, serviceState)
             licensesEntry(navigator)
-        },
-        transitionSpec = {
-            // Slide in from right when navigating forward
-            slideInHorizontally(initialOffsetX = { it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { -it })
-        },
-        popTransitionSpec = {
-            // Slide in from left when navigating back
-            slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { it })
-        },
-        predictivePopTransitionSpec = {
-            // Slide in from left when navigating back
-            slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
-        },
-        modifier = modifier.onKeyEvent { keyEvent ->
-            if (keyEvent.key == Key.DirectionLeft
-                && keyEvent.type == KeyEventType.KeyDown) {
-                navigator.navigateBack()
-                true
-            } else {
-                false
-            }
         }
+    }
+    val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
+    val navigatedModifier = modifier.onKeyEvent { keyEvent ->
+        if (keyEvent.key == Key.DirectionLeft
+            && keyEvent.type == KeyEventType.KeyDown) {
+            navigator.navigateBack()
+            true
+        } else {
+            false
+        }
+    }
+    if (directive.twoPanes) {
+        SettingsListDetail(
+            backStack = backStack,
+            navigator = navigator,
+            serviceState = serviceState,
+            entryProvider = entryProvider,
+            modifier = navigatedModifier,
+        )
+    } else {
+        NavDisplay(
+            backStack = backStack,
+            onBack = { navigator.navigateBack() },
+            entryProvider = entryProvider,
+            transitionSpec = { forwardTransition() },
+            popTransitionSpec = { backwardTransition() },
+            predictivePopTransitionSpec = { _ -> predictiveBackwardTransition() },
+            modifier = navigatedModifier,
+        )
+    }
+}
+
+/** Whether the window has room for a list and a detail pane side by side. */
+private val PaneScaffoldDirective.twoPanes: Boolean
+    get() = maxHorizontalPartitions > 1
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsListDetail(
+    backStack: NavBackStack<SettingsRoute>,
+    navigator: Navigator<SettingsRoute>,
+    serviceState: SyncthingServiceState,
+    entryProvider: (SettingsRoute) -> NavEntry<SettingsRoute>,
+    modifier: Modifier = Modifier,
+) {
+    val detailRoute = backStack.lastOrNull().takeIf { it != SettingsRoute.Root }
+    if (detailRoute == null) {
+        SettingsRootScreen(navigator = navigator, serviceState = serviceState, modifier = modifier)
+        return
+    }
+    val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
+    ListDetailPaneScaffold(
+        directive = directive,
+        value = calculateThreePaneScaffoldValue(
+            maxHorizontalPartitions = directive.maxHorizontalPartitions,
+            adaptStrategies = ListDetailPaneScaffoldDefaults.adaptStrategies(),
+            currentDestination =
+                ThreePaneScaffoldDestinationItem(ListDetailPaneScaffoldRole.Detail, detailRoute),
+        ),
+        modifier = modifier,
+        listPane = {
+            AnimatedPane {
+                SettingsRootScreen(
+                    navigator = navigator,
+                    serviceState = serviceState,
+                    modifier = Modifier,
+                )
+            }
+        },
+        detailPane = {
+            AnimatedPane {
+                val detailBackStack = remember(detailRoute) { mutableStateListOf(detailRoute) }
+                NavDisplay(
+                    backStack = NavBackStack(detailBackStack),
+                    onBack = { navigator.navigateBack() },
+                    entryProvider = entryProvider,
+                    transitionSpec = { forwardTransition() },
+                    popTransitionSpec = { backwardTransition() },
+                    predictivePopTransitionSpec = { _ -> predictiveBackwardTransition() },
+                )
+            }
+        },
     )
 }
+
+private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
+    slideInHorizontally(initialOffsetX = { it }) togetherWith
+            slideOutHorizontally(targetOffsetX = { -it })
+
+private fun AnimatedContentTransitionScope<*>.backwardTransition(): ContentTransform =
+    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+            slideOutHorizontally(targetOffsetX = { it })
+
+private fun AnimatedContentTransitionScope<*>.predictiveBackwardTransition(): ContentTransform =
+    slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth }) togetherWith
+            slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })

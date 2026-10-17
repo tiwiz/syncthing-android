@@ -34,6 +34,27 @@ Left: steps 8–13, about 12–15 PRs (detail below).
 | A | 8a #73, 8b #74, 8c #76, 9; H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | 12 → H9 (needs B's H6–H8) → 13 with the owner |
 | B | 10a #77, 10b #80, 10c #82 | 10d (log, recent changes, device ID dialog, web top bars: started, uncommitted in `.slim/worktrees/m3e-b`) → 10e → 11a → 11b → H6 → H7 → H8 |
 
+Updated later on 2026-10-17: B also merged 10d #85, 10e #87, 11a #88 and 11b #89, and opened
+step 12 as #90 (A's step). Steps 10 and 11 are done.
+
+| Agent | Done | Left, in order |
+|---|---|---|
+| A | 8a #73, 8b #74, 8c #76, 9 #86; H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | finish 12 (#90, below) → H9 (needs B's H6–H8) → 13 with the owner |
+| B | 10a #77, 10b #80, 10c #82, 10d #85, 10e #87, 11a #88, 11b #89; 12 opened as #90 | H6 → H7 → H8 |
+
+#90 (step 12) is green in CI but not merged, because of three problems:
+
+- No tests for the new behaviour (TDD rule): the loading indicator while `STARTING`, the
+  selected row, back closing the detail pane, reduced motion.
+- The `PredictiveBackHandler` in `ListWithDetail` only collects the progress and then calls
+  `panes.back()`. It adds no back animation and repeats the `BackHandler` that `MainActivity`
+  already has. Because it is registered when the pane opens, it also wins over handlers
+  registered earlier, such as the add menu's `BackHandler(expanded)`. With a detail pane open and
+  the add menu expanded, back closes the pane instead of the menu.
+- `rememberAnimationsEnabled()` reads `ANIMATOR_DURATION_SCALE` once per composition and is
+  repeated in four places, with the same `waveSpeed` expression each time. It could live in
+  `SyncProgress`.
+
 ## UI architecture
 
 ```

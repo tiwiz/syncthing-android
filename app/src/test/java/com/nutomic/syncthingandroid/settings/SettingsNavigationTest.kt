@@ -5,6 +5,9 @@ import android.os.Looper
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -78,6 +81,27 @@ class SettingsNavigationTest {
             compose.waitForIdle()
 
             assertTrue(activity.isFinishing)
+        }
+    }
+
+    @Test
+    @Config(
+        // Expanded window: list and detail should appear side by side.
+        qualifiers = "en-rUS-w840dp-h900dp-xxhdpi"
+    )
+    fun `expanded shows root and detail side by side`() {
+        launch("Root").use {
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .performClick()
+
+            // Detail pane shows the selected screen.
+            compose.onNodeWithText("Syncthing-Fork Wrapper Version").assertIsDisplayed()
+            // List pane is still visible next to it.
+            compose.onNodeWithText("Settings").assertIsDisplayed()
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .assertIsDisplayed()
         }
     }
 
