@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -39,6 +40,7 @@ internal fun ListWithDetail(
     directive: PaneScaffoldDirective,
     detail: Detail?,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     list: @Composable () -> Unit,
 ) {
     // The same list content in both layouts, so it keeps its state (scroll) when a pane opens.
@@ -47,6 +49,10 @@ internal fun ListWithDetail(
     if (detail == null || !directive.twoPanes) {
         Box(modifier = modifier) { movableList() }
         return
+    }
+    PredictiveBackHandler { progress ->
+        progress.collect {}
+        onBack()
     }
     ListDetailPaneScaffold(
         directive = directive,

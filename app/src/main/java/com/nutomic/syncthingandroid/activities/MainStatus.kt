@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -85,7 +87,7 @@ internal fun StatusTab(status: StatusInfo?, forceStartStop: Int, actions: MainAc
     }
 }
 
-/** What Syncthing is doing, with its state badge. */
+/** What Syncthing is doing, with its state badge or a loading indicator while starting. */
 @Composable
 private fun StatusHero(status: StatusInfo) {
     Surface(
@@ -98,7 +100,15 @@ private fun StatusHero(status: StatusInfo) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            StateBadge(status.tone, size = HERO_BADGE_SIZE.dp)
+            if (status.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(HERO_BADGE_SIZE.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+            } else {
+                StateBadge(status.tone, size = HERO_BADGE_SIZE.dp)
+            }
             Text(
                 status.headline,
                 style = MaterialTheme.typography.headlineSmallEmphasized,

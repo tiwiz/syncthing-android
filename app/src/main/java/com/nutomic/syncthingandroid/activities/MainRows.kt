@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,7 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.rememberAnimationsEnabled
 import com.nutomic.syncthingandroid.ui.stateTextColor
 
 /**
@@ -50,15 +52,22 @@ internal fun FolderRow(
     actions: MainActions,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
+    selected: Boolean = false,
 ) {
     val row = item.row
     var confirm by rememberSaveable { mutableStateOf<String?>(null) }
+    val waveSpeed =
+        if (rememberAnimationsEnabled()) WavyProgressIndicatorDefaults.LinearDeterminateWavelength
+        else 0.dp
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(
+                    if (selected) MaterialTheme.colorScheme.surfaceContainerHigh
+                    else MaterialTheme.colorScheme.surfaceContainerLow
+                )
                 .clickable { actions.onOpenFolder(item.folderId) }
                 .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp)
                 .testTag("folder:${row.label}"),
@@ -80,6 +89,7 @@ internal fun FolderRow(
                 SyncProgress(
                     progress = it / PERCENT,
                     modifier = Modifier.padding(vertical = 4.dp),
+                    waveSpeed = waveSpeed,
                 )
             }
             OptionalText(row.items)
@@ -151,14 +161,21 @@ internal fun DeviceRow(
     actions: MainActions,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
+    selected: Boolean = false,
 ) {
     val row = item.row
+    val waveSpeed =
+        if (rememberAnimationsEnabled()) WavyProgressIndicatorDefaults.LinearDeterminateWavelength
+        else 0.dp
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(
+                    if (selected) MaterialTheme.colorScheme.surfaceContainerHigh
+                    else MaterialTheme.colorScheme.surfaceContainerLow
+                )
                 .clickable { actions.onOpenDevice(item.deviceId) }
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .testTag("device:${row.name}"),
@@ -174,7 +191,11 @@ internal fun DeviceRow(
                 modifier = Modifier.testTag("deviceStatus:${row.name}"),
             )
             row.progress?.let {
-                SyncProgress(progress = it / PERCENT, modifier = Modifier.padding(vertical = 4.dp))
+                SyncProgress(
+                    progress = it / PERCENT,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    waveSpeed = waveSpeed,
+                )
             }
             OptionalText(row.bandwidth)
             OptionalText(row.lastSeen)

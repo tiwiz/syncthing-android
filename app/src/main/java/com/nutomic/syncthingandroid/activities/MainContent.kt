@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
@@ -69,6 +70,8 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.ui.groupedItemShape
+import com.nutomic.syncthingandroid.ui.rememberAnimationsEnabled
+import com.nutomic.syncthingandroid.ui.selectedGroupedItemShape
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -133,6 +136,9 @@ internal interface MainActions {
     fun onSettings()
 
     fun onForceStartStop(index: Int)
+
+    /** Closes the detail pane on large windows, or does nothing if there is none. */
+    fun onBack()
 
     fun onExit()
 
@@ -277,12 +283,35 @@ private fun MainScaffold(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
                 MainTab.FOLDERS ->
-                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
-                        FolderList(state.folders, state.totalProgress, actions)
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        onBack = actions::onBack,
+                    ) {
+                        FolderList(
+                            state.folders,
+                            state.totalProgress,
+                            actions,
+                            selectedFolderId =
+                                (panes.detail as? Detail.FolderDetail)
+                                    ?.key
+                                    ?.removePrefix(DetailPanes.FOLDER),
+                        )
                     }
                 MainTab.DEVICES ->
-                    ListWithDetail(panes.directive, panes.detailOf(tab)) {
-                        DeviceList(state.devices, actions)
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        onBack = actions::onBack,
+                    ) {
+                        DeviceList(
+                            state.devices,
+                            actions,
+                            selectedDeviceId =
+                                (panes.detail as? Detail.DeviceDetail)
+                                    ?.key
+                                    ?.removePrefix(DetailPanes.DEVICE),
+                        )
                     }
                 MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
             }
@@ -364,6 +393,9 @@ private fun AddMenu(actions: MainActions) {
 /** The overall progress of the devices in sync, above the folders. */
 @Composable
 private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
+    val waveSpeed =
+        if (rememberAnimationsEnabled()) WavyProgressIndicatorDefaults.LinearDeterminateWavelength
+        else 0.dp
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(CARD_CORNER.dp),
@@ -385,7 +417,10 @@ private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.displayMediumEmphasized,
                 modifier = Modifier.testTag("totalProgress"),
             )
-            SyncProgress(progress = percent / PERCENT.toFloat())
+            SyncProgress(
+                progress = percent / PERCENT.toFloat(),
+                waveSpeed = waveSpeed,
+            )
         }
     }
 }
@@ -401,7 +436,12 @@ internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FolderList(folders: List<FolderItem>, totalProgress: Int?, actions: MainActions) {
+private fun FolderList(
+    folders: List<FolderItem>,
+    totalProgress: Int?,
+    actions: MainActions,
+    selectedFolderId: String?,
+) {
     if (folders.isEmpty()) {
         EmptyList(R.string.folder_list_empty)
         return
@@ -414,13 +454,25 @@ private fun FolderList(folders: List<FolderItem>, totalProgress: Int?, actions: 
         item { ListTitle(MainTab.FOLDERS) }
         totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
         itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
-            FolderRow(item, actions, shape = groupedItemShape(index, folders.size))
+            val selected = item.folderId == selectedFolderId
+            FolderRow(
+                item = item,
+                actions = actions,
+                shape =
+                    if (selected) selectedGroupedItemShape()
+                    else groupedItemShape(index, folders.size),
+                selected = selected,
+            )
         }
     }
 }
 
 @Composable
-private fun DeviceList(devices: List<DeviceItem>, actions: MainActions) {
+private fun DeviceList(
+    devices: List<DeviceItem>,
+    actions: MainActions,
+    selectedDeviceId: String?,
+) {
     if (devices.isEmpty()) {
         EmptyList(R.string.no_devices_configured)
         return
@@ -432,7 +484,15 @@ private fun DeviceList(devices: List<DeviceItem>, actions: MainActions) {
     ) {
         item { ListTitle(MainTab.DEVICES) }
         itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
-            DeviceRow(item, actions, shape = groupedItemShape(index, devices.size))
+            val selected = item.deviceId == selectedDeviceId
+            DeviceRow(
+                item = item,
+                actions = actions,
+                shape =
+                    if (selected) selectedGroupedItemShape()
+                    else groupedItemShape(index, devices.size),
+                selected = selected,
+            )
         }
     }
 }

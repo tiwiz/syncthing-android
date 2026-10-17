@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 private val OUTER_CORNER = 24.dp
@@ -26,6 +27,11 @@ fun groupedItemShape(index: Int, count: Int): RoundedCornerShape {
     return RoundedCornerShape(top, top, bottom, bottom)
 }
 
+/**
+ * The shape of a selected item that stands alone in the list, e.g. the row open in the detail pane.
+ */
+fun selectedGroupedItemShape(): RoundedCornerShape = RoundedCornerShape(OUTER_CORNER)
+
 /** The title above a group of items. */
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
@@ -38,14 +44,20 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Sync progress as a wavy line; [progress] is 0 to 1. The wave stands still: a moving one never
- * lets the UI go idle, which stalls screenshots and tests.
+ * Sync progress as a wavy line; [progress] is 0 to 1.
+ *
+ * The wave is still by default so screenshots and tests stay idle; callers that know animations are
+ * enabled can pass [LinearWavyProgressIndicatorDefaults.waveSpeed] or another non-zero speed.
  */
 @Composable
-fun SyncProgress(progress: Float, modifier: Modifier = Modifier) {
+fun SyncProgress(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    waveSpeed: Dp = 0.dp,
+) {
     LinearWavyProgressIndicator(
         progress = { progress },
-        waveSpeed = 0.dp,
+        waveSpeed = waveSpeed,
         modifier =
             modifier.fillMaxWidth().semantics {
                 progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)

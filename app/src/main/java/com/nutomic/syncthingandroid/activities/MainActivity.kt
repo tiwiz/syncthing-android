@@ -254,6 +254,8 @@ class MainActivity : SyncthingActivity() {
 
             override fun onForceStartStop(index: Int) = viewModel.onForceStartStop(index)
 
+            override fun onBack() = panes.back()
+
             override fun onExit() = doExit()
 
             override fun onUsageReporting(answer: UsageAnswer) {
