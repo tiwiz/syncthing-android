@@ -92,7 +92,8 @@ class OnboardingActivity : ThemedAppCompatActivity() {
         val isRunningOnTv = isRunningOnTV(this)
         Log.d(TAG, if (isRunningOnTv) "Running on a TV Device" else "Running on a non-TV Device")
 
-        if (viewModel.shouldSkipToMain()) {
+        // Only on the first launch: once onboarding is shown, a rotation must not leave it.
+        if (savedInstanceState == null && viewModel.shouldSkipToMain()) {
             return startApp()
         }
 

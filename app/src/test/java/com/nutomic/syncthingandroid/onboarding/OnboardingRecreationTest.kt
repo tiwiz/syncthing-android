@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.onboarding
 
+import android.Manifest
 import android.app.Application
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -10,11 +11,13 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -57,18 +60,26 @@ class OnboardingRecreationTest {
     }
 
     @Test
-    fun `recreation does not restart the app when the config is already present`() {
+    fun `recreation stays in onboarding once every requirement is met`() {
         ConfigFixture.install(app)
 
         ActivityScenario.launch(OnboardingActivity::class.java).use { scenario ->
             compose.onNodeWithText("Continue").performClick()
             compose.waitForIdle()
+            // The last missing requirement is granted while onboarding is shown: only the first
+            // launch skips to the main screen, a rotation must not.
+            shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+            // Back from the system settings: the screen sees the new permission.
+            scenario.moveToState(Lifecycle.State.STARTED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
+
+            shadowOf(app).clearNextStartedActivities()
 
             scenario.recreate()
             compose.waitForIdle()
 
-            // If the activity had decided to skip onboarding it would have finished.
-            assertTrue(scenario.state.isAtLeast(Lifecycle.State.RESUMED))
+            // Skipping onboarding would have started the main screen.
+            assertNull(shadowOf(app).nextStartedActivity)
         }
     }
 
