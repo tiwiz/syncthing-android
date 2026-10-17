@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isSensitiveData
 import androidx.compose.ui.semantics.password
@@ -44,12 +44,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.zhanghai.compose.preference.MapPreferences
-import me.zhanghai.compose.preference.Preference
-import me.zhanghai.compose.preference.PreferenceCategory
 import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceFlow
-import me.zhanghai.compose.preference.SwitchPreference
-import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 import org.mindrot.jbcrypt.BCrypt
 import java.io.File
@@ -161,42 +157,54 @@ fun SettingsSyncthingOptionsScreen(
             title = stringResource(R.string.category_syncthing_options),
             description = stringResource(R.string.category_syncthing_options_summary),
         ) {
-            generalItems(
-                deviceName,
-                apiKey,
-                usageReporting,
-                isStServiceActive,
-                context,
-                clipboard,
-                activityScope,
+            groupedSection(
+                R.string.category_general,
+                generalItems(
+                    deviceName,
+                    apiKey,
+                    usageReporting,
+                    isStServiceActive,
+                    context,
+                    clipboard,
+                    activityScope,
+                ),
             )
-            connectionItems(
-                listenAddresses,
-                incomingRateLimit,
-                outgoingRateLimit,
-                natTraversal,
-                localDiscovery,
-                globalDiscovery,
-                relaying,
-                globalServers,
-                isStServiceActive,
-                context,
+            groupedSection(
+                R.string.category_connections,
+                connectionItems(
+                    listenAddresses,
+                    incomingRateLimit,
+                    outgoingRateLimit,
+                    natTraversal,
+                    localDiscovery,
+                    globalDiscovery,
+                    relaying,
+                    globalServers,
+                    isStServiceActive,
+                    context,
+                ),
             )
-            webGuiItems(
-                webGuiPort,
-                webGuiRemoteAccess,
-                webGuiUsername,
-                webGuiPassword,
-                sharedPrefWebGuiPassword,
-                isStServiceActive,
-                context,
+            groupedSection(
+                R.string.web_gui_title,
+                webGuiItems(
+                    webGuiPort,
+                    webGuiRemoteAccess,
+                    webGuiUsername,
+                    webGuiPassword,
+                    sharedPrefWebGuiPassword,
+                    isStServiceActive,
+                    context,
+                ),
             )
-            advancedItems(crashReporting, stService, isStServiceActive, navigator, activityScope)
+            groupedSection(
+                R.string.category_advanced,
+                advancedItems(crashReporting, stService, isStServiceActive, navigator, activityScope),
+            )
         }
     }
 }
 
-private fun LazyListScope.generalItems(
+private fun generalItems(
     deviceName: MutableState<String>,
     apiKey: MutableState<String>,
     usageReporting: MutableState<Boolean>,
@@ -204,26 +212,24 @@ private fun LazyListScope.generalItems(
     context: Context,
     clipboard: Clipboard,
     scope: CoroutineScope,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_general)) },
-        )
-    }
-    item {
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.device_name)) },
-            summary = { Text(deviceName.value) },
-            state = deviceName,
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsTextFieldItem(
+            title = stringResource(R.string.device_name),
+            value = deviceName.value,
+            shape = shape,
+            onValueChange = { deviceName.value = it },
             textToValue = { it },
             enabled = isStServiceActive,
         )
-    }
-    item {
+    },
+    { shape ->
         val apiKeyTitle = stringResource(R.string.syncthing_api_key)
-        Preference(
-            title = { Text(apiKeyTitle) },
-            summary = { Text(apiKey.value) },
+        SettingsItem(
+            title = apiKeyTitle,
+            summary = apiKey.value,
+            shape = shape,
+            enabled = isStServiceActive,
             modifier = Modifier.semantics(true) {
                 isSensitiveData = true
                 password()
@@ -242,19 +248,20 @@ private fun LazyListScope.generalItems(
                     }
                 }
             },
-            enabled = isStServiceActive,
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.usage_reporting)) },
-            state = usageReporting,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.usage_reporting),
+            checked = usageReporting.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { usageReporting.value = it },
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.connectionItems(
+private fun connectionItems(
     listenAddresses: MutableState<String>,
     incomingRateLimit: MutableState<Int>,
     outgoingRateLimit: MutableState<Int>,
@@ -265,97 +272,104 @@ private fun LazyListScope.connectionItems(
     globalServers: MutableState<String>,
     isStServiceActive: Boolean,
     context: Context,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_connections)) },
-        )
-    }
-    item {
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.listen_address)) },
-            summary = { Text(listenAddresses.value) },
-            state = listenAddresses,
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsTextFieldItem(
+            title = stringResource(R.string.listen_address),
+            value = listenAddresses.value,
+            shape = shape,
+            onValueChange = { listenAddresses.value = it },
             textToValue = { it },
             enabled = isStServiceActive,
         )
-    }
-    item {
+    },
+    { shape ->
         val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.max_recv_kbps)) },
-            summary = { Text(incomingRateLimit.value.toString()) },
-            state = incomingRateLimit,
+        SettingsTextFieldItem(
+            title = stringResource(R.string.max_recv_kbps),
+            value = incomingRateLimit.value.toString(),
+            shape = shape,
+            onValueChange = { incomingRateLimit.value = it.toIntOrNull() ?: 0 },
             textToValue = {
                 val newVal = it.toIntOrNull()
                 if (newVal == null) {
                     Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
                     null
                 } else {
-                    newVal
+                    newVal.toString()
                 }
             },
             enabled = isStServiceActive,
         )
-    }
-    item {
+    },
+    { shape ->
         val rateLimitError = stringResource(R.string.invalid_integer_value, 0, Int.MAX_VALUE)
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.max_send_kbps)) },
-            summary = { Text(outgoingRateLimit.value.toString()) },
-            state = outgoingRateLimit,
+        SettingsTextFieldItem(
+            title = stringResource(R.string.max_send_kbps),
+            value = outgoingRateLimit.value.toString(),
+            shape = shape,
+            onValueChange = { outgoingRateLimit.value = it.toIntOrNull() ?: 0 },
             textToValue = {
                 val newVal = it.toIntOrNull()
                 if (newVal == null) {
                     Toast.makeText(context, rateLimitError, Toast.LENGTH_LONG).show()
                     null
                 } else {
-                    newVal
+                    newVal.toString()
                 }
             },
             enabled = isStServiceActive,
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.enable_nat_traversal)) },
-            state = natTraversal,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.enable_nat_traversal),
+            checked = natTraversal.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { natTraversal.value = it },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.local_announce_enabled)) },
-            state = localDiscovery,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.local_announce_enabled),
+            checked = localDiscovery.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { localDiscovery.value = it },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.global_announce_enabled)) },
-            state = globalDiscovery,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.global_announce_enabled),
+            checked = globalDiscovery.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { globalDiscovery.value = it },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.enable_relaying)) },
-            state = relaying,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.enable_relaying),
+            checked = relaying.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { relaying.value = it },
         )
-    }
-    item {
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.global_announce_server)) },
-            summary = { Text(globalServers.value) },
-            state = globalServers,
+    },
+    { shape ->
+        SettingsTextFieldItem(
+            title = stringResource(R.string.global_announce_server),
+            value = globalServers.value,
+            shape = shape,
+            onValueChange = { globalServers.value = it },
             textToValue = { it },
             enabled = isStServiceActive,
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.webGuiItems(
+private fun webGuiItems(
     webGuiPort: MutableState<Int>,
     webGuiRemoteAccess: MutableState<Boolean>,
     webGuiUsername: MutableState<String>,
@@ -363,127 +377,129 @@ private fun LazyListScope.webGuiItems(
     sharedPrefWebGuiPassword: MutableState<String>,
     isStServiceActive: Boolean,
     context: Context,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.web_gui_title)) },
-        )
-    }
-    item {
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
         val portError = stringResource(R.string.invalid_port_number, 1024, 65535)
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.webui_tcp_port_title)) },
-            summary = { Text(webGuiPort.value.toString()) },
-            state = webGuiPort,
+        SettingsTextFieldItem(
+            title = stringResource(R.string.webui_tcp_port_title),
+            value = webGuiPort.value.toString(),
+            shape = shape,
+            onValueChange = { webGuiPort.value = it.toIntOrNull() ?: Constants.DEFAULT_WEBGUI_TCP_PORT },
             textToValue = {
                 val newValue = it.toIntOrNull()
                 if (newValue == null || newValue !in 1024..65535) {
                     Toast.makeText(context, portError, Toast.LENGTH_LONG).show()
                     null
                 } else {
-                    newValue
+                    newValue.toString()
                 }
             },
             enabled = isStServiceActive,
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.webui_remote_access_title)) },
-            summary = { Text(stringResource(R.string.webui_remote_access_summary)) },
-            state = webGuiRemoteAccess,
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.webui_remote_access_title),
+            summary = stringResource(R.string.webui_remote_access_summary),
+            checked = webGuiRemoteAccess.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { webGuiRemoteAccess.value = it },
         )
-    }
-    item {
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.webui_username_title)) },
-            summary = { Text(webGuiUsername.value) },
-            state = webGuiUsername,
+    },
+    { shape ->
+        SettingsTextFieldItem(
+            title = stringResource(R.string.webui_username_title),
+            value = webGuiUsername.value,
+            shape = shape,
+            onValueChange = { webGuiUsername.value = it },
             textToValue = { it },
             enabled = isStServiceActive,
         )
-    }
-    item {
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.webui_password_title)) },
+    },
+    { shape ->
+        SettingsPasswordItem(
+            title = stringResource(R.string.webui_password_title),
             value = webGuiPassword.value,
+            shape = shape,
             onValueChange = {
                 webGuiPassword.value = it
                 sharedPrefWebGuiPassword.value = it
             },
-            textToValue = { it },
             enabled = isStServiceActive,
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.advancedItems(
+private fun advancedItems(
     crashReporting: MutableState<Boolean>,
     stService: SyncthingService?,
     isStServiceActive: Boolean,
     navigator: Navigator<SettingsRoute>,
     scope: CoroutineScope,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_advanced)) },
-        )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.crash_reporting)) },
-            state = crashReporting,
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.crash_reporting),
+            checked = crashReporting.value,
+            shape = shape,
             enabled = isStServiceActive,
+            onCheckedChange = { crashReporting.value = it },
         )
-    }
-    item {
-        Preference(
-            title = { Text(stringResource(R.string.webui_custom_cert_title)) },
-            summary = { Text(stringResource(R.string.webui_custom_cert_summary)) },
-            onClick = { navigator.navigateTo(SettingsRoute.CustomCertificate) },
+    },
+    { shape ->
+        SettingsItem(
+            title = stringResource(R.string.webui_custom_cert_title),
+            summary = stringResource(R.string.webui_custom_cert_summary),
+            shape = shape,
             enabled = stService != null,
+            onClick = { navigator.navigateTo(SettingsRoute.CustomCertificate) },
         )
-    }
-    item {
-        ClearStVersionPreference(
+    },
+    { shape ->
+        ClearStVersionItem(
             stService = stService,
             enabled = isStServiceActive,
+            shape = shape,
             scope = scope,
         )
-    }
-    item {
-        SupportBundlePreference(
+    },
+    { shape ->
+        SupportBundleItem(
             stService = stService,
             enabled = isStServiceActive,
+            shape = shape,
             scope = scope,
         )
-    }
-    item {
-        UndoIgnoredDevicesFoldersPreference(
+    },
+    { shape ->
+        UndoIgnoredDevicesFoldersItem(
             stService = stService,
             enabled = isStServiceActive,
+            shape = shape,
             scope = scope,
         )
-    }
-}
+    },
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ClearStVersionPreference(
+private fun ClearStVersionItem(
     stService: SyncthingService?,
     enabled: Boolean,
+    shape: Shape,
     scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
-    Preference(
-        title = { Text(stringResource(R.string.clear_stversions_title)) },
-        summary = { Text(stringResource(R.string.clear_stversions_summary)) },
-        onClick = { showAlert = true },
+    SettingsItem(
+        title = stringResource(R.string.clear_stversions_title),
+        summary = stringResource(R.string.clear_stversions_summary),
+        shape = shape,
         enabled = enabled,
+        onClick = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(
@@ -526,19 +542,21 @@ private fun ClearStVersionPreference(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UndoIgnoredDevicesFoldersPreference(
+private fun UndoIgnoredDevicesFoldersItem(
     stService: SyncthingService?,
     enabled: Boolean,
+    shape: Shape,
     scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
-    Preference(
-        title = { Text(stringResource(R.string.undo_ignored_devices_folders_title)) },
-        onClick = { showAlert = true },
+    SettingsItem(
+        title = stringResource(R.string.undo_ignored_devices_folders_title),
+        shape = shape,
         enabled = enabled,
+        onClick = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(
@@ -580,31 +598,31 @@ private fun UndoIgnoredDevicesFoldersPreference(
 
 
 @Composable
-private fun SupportBundlePreference(
+private fun SupportBundleItem(
     stService: SyncthingService?,
     enabled: Boolean,
+    shape: Shape,
     scope: CoroutineScope,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     var supportBundleState by remember { mutableStateOf(SupportBundleDownloadState.INIT) }
     var supportBundleFileName by remember { mutableStateOf("") }
 
-    Preference(
-        title = { Text(stringResource(R.string.download_support_bundle_title)) },
-        summary = {
-            when (supportBundleState) {
-                SupportBundleDownloadState.INIT -> {}
-                SupportBundleDownloadState.DOWNLOADING -> {
-                    Text(stringResource(R.string.download_support_bundle_in_progress))
-                }
-                SupportBundleDownloadState.SUCCESS -> {
-                    Text(stringResource(R.string.download_support_bundle_succeeded, supportBundleFileName))
-                }
-                SupportBundleDownloadState.FAILED -> {
-                    Text(stringResource(R.string.download_support_bundle_failed))
-                }
-            }
-        },
+    val summary = when (supportBundleState) {
+        SupportBundleDownloadState.INIT -> null
+        SupportBundleDownloadState.DOWNLOADING -> stringResource(R.string.download_support_bundle_in_progress)
+        SupportBundleDownloadState.SUCCESS -> stringResource(
+            R.string.download_support_bundle_succeeded,
+            supportBundleFileName,
+        )
+        SupportBundleDownloadState.FAILED -> stringResource(R.string.download_support_bundle_failed)
+    }
+
+    SettingsItem(
+        title = stringResource(R.string.download_support_bundle_title),
+        summary = summary,
+        shape = shape,
+        enabled = enabled && supportBundleState != SupportBundleDownloadState.DOWNLOADING,
         onClick = {
             stService?.api?.let { api ->
                 supportBundleState = SupportBundleDownloadState.DOWNLOADING
@@ -623,7 +641,6 @@ private fun SupportBundlePreference(
                 }
             }
         },
-        enabled = enabled && supportBundleState != SupportBundleDownloadState.DOWNLOADING,
     )
 }
 

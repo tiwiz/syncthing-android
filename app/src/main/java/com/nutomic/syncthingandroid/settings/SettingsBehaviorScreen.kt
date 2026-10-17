@@ -1,13 +1,14 @@
 package com.nutomic.syncthingandroid.settings
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
-import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
@@ -34,24 +35,38 @@ fun SettingsBehaviorScreen(
         title = stringResource(R.string.category_behaviour),
     ) {
         item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.behaviour_autostart_title)) },
-                summary = { Text(stringResource(R.string.behaviour_autostart_summary)) },
-                state = autoStart,
+            val items: List<@Composable (Shape) -> Unit> = listOf(
+                { shape ->
+                    SettingsSwitch(
+                        title = stringResource(R.string.behaviour_autostart_title),
+                        summary = stringResource(R.string.behaviour_autostart_summary),
+                        checked = autoStart.value,
+                        shape = shape,
+                        onCheckedChange = { autoStart.value = it },
+                    )
+                },
+                { shape ->
+                    SettingsSwitch(
+                        title = stringResource(R.string.broadcast_service_control_title),
+                        summary = stringResource(R.string.broadcast_service_control_summary),
+                        checked = broadcast.value,
+                        shape = shape,
+                        onCheckedChange = { broadcast.value = it },
+                    )
+                },
+                { shape ->
+                    SettingsSwitch(
+                        title = stringResource(R.string.allow_overwrite_files_title),
+                        summary = stringResource(R.string.allow_overwrite_files_summary),
+                        checked = overwrite.value,
+                        shape = shape,
+                        onCheckedChange = { overwrite.value = it },
+                    )
+                },
             )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.broadcast_service_control_title))},
-                summary = { Text(stringResource(R.string.broadcast_service_control_summary))},
-                state = broadcast,
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.allow_overwrite_files_title)) },
-                summary = { Text(stringResource(R.string.allow_overwrite_files_summary))},
-                state = overwrite,
+            SettingsGroup(
+                items = items,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
     }

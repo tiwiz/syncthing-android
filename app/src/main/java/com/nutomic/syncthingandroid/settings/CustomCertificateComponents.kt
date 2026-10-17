@@ -1,13 +1,11 @@
 package com.nutomic.syncthingandroid.settings
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,37 +19,37 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.util.CertificateValidator
-import me.zhanghai.compose.preference.Preference
-import me.zhanghai.compose.preference.PreferenceCategory
 
 // Building blocks of SettingsCustomCertificateScreen.
 
 internal fun LazyListScope.explanationItems() {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.preference_category_explanation)) }
-        )
-    }
-    item { Preference(title = { Text(stringResource(R.string.custom_cert_explanation)) }) }
+    groupedSection(
+        R.string.preference_category_explanation,
+        listOf({ shape: Shape ->
+            SettingsItem(
+                title = stringResource(R.string.custom_cert_explanation),
+                shape = shape,
+                onClick = {},
+            )
+        }),
+    )
 }
 
 @Composable
@@ -59,11 +57,13 @@ internal fun PickFilePreference(
     @StringRes title: Int,
     fileName: String?,
     enabled: Boolean,
+    shape: Shape,
     onClick: () -> Unit,
 ) {
-    Preference(
-        title = { Text(stringResource(title)) },
-        summary = { Text(fileName ?: stringResource(R.string.custom_cert_not_selected)) },
+    SettingsItem(
+        title = stringResource(title),
+        summary = fileName ?: stringResource(R.string.custom_cert_not_selected),
+        shape = shape,
         enabled = enabled,
         onClick = onClick,
     )
@@ -81,46 +81,19 @@ internal fun LazyListScope.validationItems(result: CertificateValidator.Validati
 }
 
 @Composable
-internal fun ApplyCertificatePreference(
+internal fun ApplyCertificateItem(
     enabled: Boolean,
     applying: Boolean,
+    shape: Shape,
     onClick: () -> Unit,
 ) {
-    Preference(
-        title = {
-            Button(
-                onClick = onClick,
-                enabled = enabled,
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            ) {
-                Text(stringResource(R.string.custom_cert_apply))
-            }
-        },
-        summary = {
-            Box(
-                modifier = Modifier.height(24.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                AnimatedVisibility(
-                    visible = applying,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 120)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 120)),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.custom_cert_applying),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        },
+    val summary = if (applying) stringResource(R.string.custom_cert_applying) else null
+    SettingsItem(
+        title = stringResource(R.string.custom_cert_apply),
+        summary = summary,
+        shape = shape,
+        enabled = enabled && !applying,
+        onClick = onClick,
     )
 }
 
@@ -139,25 +112,30 @@ internal fun ResetCertificateDialog(onDismiss: () -> Unit, onConfirm: () -> Unit
     )
 }
 
-@Composable
-internal fun CurrentCertificateCard(info: CertificateValidator.CertInfo?) {
-    PreferenceCategory(title = { Text(stringResource(R.string.custom_cert_current_title)) })
-    Preference(
-        title = {
-            if (info == null) {
-                Text(stringResource(R.string.custom_cert_current_none))
-            } else {
-                Text(stringResource(R.string.custom_cert_subject, info.subject))
-                Text(stringResource(R.string.custom_cert_issuer, info.issuer))
-                Text(stringResource(R.string.custom_cert_expires, info.notAfter))
-                Text(
-                    stringResource(
-                        if (info.selfSigned) R.string.custom_cert_self_signed
-                        else R.string.custom_cert_ca_signed
-                    )
-                )
-            }
-        }
+internal fun LazyListScope.currentCertificateItems(info: CertificateValidator.CertInfo?) {
+    groupedSection(
+        R.string.custom_cert_current_title,
+        listOf({ shape: Shape ->
+            val lines =
+                when (info) {
+                    null -> listOf(stringResource(R.string.custom_cert_current_none))
+                    else ->
+                        listOf(
+                            stringResource(R.string.custom_cert_subject, info.subject),
+                            stringResource(R.string.custom_cert_issuer, info.issuer),
+                            stringResource(R.string.custom_cert_expires, info.notAfter),
+                            stringResource(
+                                if (info.selfSigned) R.string.custom_cert_self_signed
+                                else R.string.custom_cert_ca_signed
+                            ),
+                        )
+                }
+            SettingsItem(
+                title = lines.joinToString("\n"),
+                shape = shape,
+                onClick = {},
+            )
+        }),
     )
 }
 
@@ -199,6 +177,39 @@ internal fun checkTitle(check: CertificateValidator.Check): Int =
         CertificateValidator.Check.VALIDITY -> R.string.cert_check_validity
         CertificateValidator.Check.KEY -> R.string.cert_check_key
     }
+
+/** Relative to [R.string.wiki_url], matching how the onboarding pages link into the wiki. */
+internal const val CUSTOM_CERT_WIKI_PATH =
+    "/tips-and-tricks/Use-a-custom-HTTPS-certificate-for-the-Web-GUI.md"
+
+internal fun toast(context: Context, resId: Int) {
+    Toast.makeText(context.applicationContext, resId, Toast.LENGTH_LONG).show()
+}
+
+/**
+ * Links to the wiki page for this feature, following the `wiki_url` + relative path convention.
+ *
+ * Deliberately an ordinary settings row rather than a button: it is a secondary action sitting just
+ * above "Apply certificate", and a second filled button competes with — and when Apply is disabled,
+ * visually outranks — the primary one.
+ */
+@Composable
+internal fun HelpRow(shape: Shape) {
+    val context = LocalContext.current
+    val url = stringResource(R.string.wiki_url) + CUSTOM_CERT_WIKI_PATH
+    SettingsItem(
+        title = stringResource(R.string.generic_help),
+        summary = stringResource(R.string.wiki_open_setup_guide),
+        shape = shape,
+        onClick = {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+            } catch (_: ActivityNotFoundException) {
+                toast(context, R.string.no_app_to_open_link)
+            }
+        },
+    )
+}
 
 /**
  * The outcome of an apply, which is a different kind of thing from the validation checks above it —
