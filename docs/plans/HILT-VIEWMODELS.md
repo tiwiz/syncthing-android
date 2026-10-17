@@ -172,7 +172,11 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   before, a recreation while the camera app was open asked for a second picture),
   `SyncConditionsViewModel`, and plain `SavedStateHandle` ViewModels for the single-choice and
   versioning dialogs (their `Bundle` state is gone). The QR scanner keeps no state of its own, so
-  it has no ViewModel.
+  it has no ViewModel. H8c: `WebGuiViewModel` (config, loopback URL, the pinned certificate, the
+  page's load state; Syncthing from `SyncthingConnection` instead of the state listener) and
+  `WebViewViewModel` (URL, loading, and the accepted invalid certificate, which now survives a
+  recreation). The WebViews stay in the activities and load again after a recreation; a pending
+  certificate question belongs to its WebView, so it stays in the activity too.
 - **H9** `refactor: drop the per-activity service binding` (A):
   - `SyncthingActivity` binding and `OnServiceStateChangeListener` for the UI go;
   - the tiles use `SyncthingConnection`;

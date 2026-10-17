@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.net.http.SslCertificate
 import android.net.http.SslError
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.SslErrorHandler
@@ -129,6 +130,18 @@ class WebGuiActivityTest {
                 createAuthHeaders(config.webUIUsername, config.webUIPassword),
                 webView.lastAdditionalHttpHeaders,
             )
+        }
+    }
+
+    @Test
+    fun `after a recreation the GUI loads again in the new WebView`() {
+        launch().use { scenario ->
+            RunningSyncthingService.setState(service, SyncthingService.State.ACTIVE)
+
+            scenario.recreate()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertEquals("https://127.0.0.1:8385", shadowOf(scenario.webView()).lastLoadedUrl)
         }
     }
 

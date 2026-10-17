@@ -42,7 +42,7 @@ step 12 as #90 (A's step). Steps 10 and 11 are done.
 | A | 8a #73, 8b #74, 8c #76, 9 #86, 12 #90 (finished); H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | H9 (needs B's H6–H8) → 13 with the owner |
 | B | 10a #77, 10b #80, 10c #82, 10d #85, 10e #87, 11a #88, 11b #89; 12 started as #90 | H6 → H7 → H8 |
 
-Then: B merged H6 (#92, with a fix by A); the owner moved H7 (#93) and H8 to A. A has H8, H9 and 13.
+Then: B merged H6 (#92, with a fix by A); the owner moved H7 (#93) and H8 to A. A did H8 in three PRs; A has H9 and 13 left.
 
 #90 (step 12) was first held back for the problems below; A fixed them in the same PR (what it
 does now: [M3-EXPRESSIVE.md](M3-EXPRESSIVE.md), step 12). The add menu case turned out not to
