@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,12 +36,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.model.Folder
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 
 /**
  * Saving shared files to a Syncthing folder: their names (editable for one file), the folder, a sub
@@ -159,6 +162,11 @@ private fun SubFolder(subDirectory: String, onBrowse: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clip(groupedItemShape(0, 1))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {

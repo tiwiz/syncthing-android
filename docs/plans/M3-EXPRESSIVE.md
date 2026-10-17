@@ -124,9 +124,11 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
     the choices are grouped items (`ChoiceOption`), the versions path row a group of one.
     10b the sync conditions screen (grouped switch rows, the power source a connected button
     group, no more preference rows) and the folder picker (grouped rows with folder and file
-    icons, new `other/folder_picker*` goldens); behaviour tests and drivers unchanged. The
-    recipe's flexible top bars are not in material3 1.5.0-beta01 (only their tokens): the
-    classic top bars stay until the next bump.
+    icons, new `other/folder_picker*` goldens). 10c the share screen's sub folder row a group
+    of one and the QR scanner's cancel bar theme-styled; Syncthing Camera keeps the onboarding
+    scaffold, restyled with it in 10e. Behaviour tests and drivers unchanged. The recipe's
+    flexible top bars are not in material3 1.5.0-beta01 (only their tokens): the classic top
+    bars stay until the next bump.
 11. **Settings.** Expressive styling of the preference lists (`me.zhanghai` preference library:
     theme it, or replace its rows with our grouped items where it falls short) and, on large
     windows, categories and detail side by side with a Navigation 3 list-detail scene.
