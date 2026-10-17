@@ -197,6 +197,23 @@ class FolderDialogsTest {
     }
 
     @Test
+    fun `a changed sync condition survives a recreation`() {
+        val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
+
+        ActivityScenario.launch<SyncConditionsActivity>(
+                SyncConditionsActivity.createIntent(context, prefix, "Camera")
+            )
+            .use { scenario ->
+                compose.onNodeWithText("Run on Wi-Fi").performClick()
+                compose.onNodeWithText("Run on Wi-Fi").assertIsOff()
+
+                scenario.recreate()
+
+                compose.onNodeWithText("Run on Wi-Fi").assertIsOff()
+            }
+    }
+
+    @Test
     fun `conditions turned off globally cannot be turned on for a folder`() {
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()

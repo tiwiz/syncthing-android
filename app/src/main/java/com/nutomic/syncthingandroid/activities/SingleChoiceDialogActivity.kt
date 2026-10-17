@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.annotation.ArrayRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +31,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.ui.groupedItemShape
@@ -54,19 +54,19 @@ abstract class SingleChoiceDialogActivity : ThemedAppCompatActivity() {
     /** The result extra with the chosen value. */
     protected abstract val extraResult: String
 
-    private var selected by mutableStateOf<String?>(null)
+    private val viewModel: SingleChoiceViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        selected =
-            savedInstanceState?.getString(STATE_SELECTED) ?: intent.getStringExtra(extraValue)
+        val selectedFlow = viewModel.selected(extraValue)
         setContent {
+            val selected by selectedFlow.collectAsStateWithLifecycle()
             ApplicationTheme {
                 val names = stringArrayResource(labels)
                 SingleChoiceList(
                     options = values.zip(names),
                     selected = selected,
-                    onSelect = { selected = it },
+                    onSelect = viewModel::select,
                     onFinish = ::finishWithResult,
                 )
             }
@@ -74,18 +74,9 @@ abstract class SingleChoiceDialogActivity : ThemedAppCompatActivity() {
         onBackPressedDispatcher.addCallback(this) { finishWithResult() }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putString(STATE_SELECTED, selected)
-    }
-
     private fun finishWithResult() {
-        setResult(RESULT_OK, Intent().putExtra(extraResult, selected))
+        setResult(RESULT_OK, Intent().putExtra(extraResult, viewModel.selected(extraValue).value))
         finish()
-    }
-
-    private companion object {
-        const val STATE_SELECTED = "selected"
     }
 }
 

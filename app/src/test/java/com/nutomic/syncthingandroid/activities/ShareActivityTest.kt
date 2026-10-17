@@ -149,6 +149,19 @@ class ShareActivityTest {
     }
 
     @Test
+    fun `the typed name survives a recreation`() {
+        share(sharedFile("notes.txt", "hello")).use { scenario ->
+            compose.onNodeWithTag("names").performTextReplacement("renamed.txt")
+
+            scenario.recreate()
+
+            compose.onNodeWithTag("names").assertTextContains("renamed.txt")
+            scenario.shareAndWait()
+            assertEquals("hello", File(folderDir, "renamed.txt").readText())
+        }
+    }
+
+    @Test
     fun `sharing several files copies them all`() {
         share(sharedFile("a.txt", "A"), sharedFile("b.txt", "B")).use { scenario ->
             compose.onNodeWithTag("names").assertTextContains("Files List")

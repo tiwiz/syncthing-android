@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -12,6 +11,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,17 +26,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.onboarding.OnboardingIcon
 import com.nutomic.syncthingandroid.onboarding.OnboardingScaffold
@@ -61,11 +59,7 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
 
     @Inject lateinit var preferences: SharedPreferences
 
-    private var haveCamera by mutableStateOf(false)
-    private var haveStorage by mutableStateOf(false)
-
-    /** The file the camera app writes to, until the picture is taken. */
-    private var lastPhotoUri: Uri? = null
+    private val viewModel: PhotoShootViewModel by viewModels()
 
     private val takePicture =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -79,22 +73,30 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
             finish()
             return
         }
-        updatePermissions()
-        val consented = preferences.getBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, false)
-        Log.v(
-            TAG,
-            "prefEnableSyncthingCamera=$consented, haveRequiredPermissions=${haveStorage && haveCamera}",
-        )
-        if (haveStorage && haveCamera && consented) {
-            Log.v(TAG, "User completed intro and consented before. Warp to take a picture.")
-            openCameraIntent()
+        viewModel.updatePermissions()
+        if (savedInstanceState == null) {
+            val consented = preferences.getBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, false)
+            val havePermissions = viewModel.permissions.value.all
+            Log.v(
+                TAG,
+                "prefEnableSyncthingCamera=$consented, haveRequiredPermissions=$havePermissions",
+            )
+            if (havePermissions && consented) {
+                Log.v(TAG, "User completed intro and consented before. Warp to take a picture.")
+                openCameraIntent()
+                return
+            }
+            viewModel.introShown = true
+        } else if (!viewModel.introShown) {
+            // The camera app is open; its result comes back here.
             return
         }
         setContent {
+            val permissions by viewModel.permissions.collectAsStateWithLifecycle()
             ApplicationTheme {
                 PhotoShootIntro(
-                    haveStorage = haveStorage,
-                    haveCamera = haveCamera,
+                    haveStorage = permissions.haveStorage,
+                    haveCamera = permissions.haveCamera,
                     onGrantStorage = { PermissionUtil.requestStoragePermission(this) },
                     onGrantCamera = {
                         ActivityCompat.requestPermissions(
@@ -110,16 +112,9 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         }
     }
 
-    private fun updatePermissions() {
-        haveStorage = PermissionUtil.haveStoragePermission()
-        haveCamera =
-            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED
-    }
-
     private fun onContinue() {
-        updatePermissions()
-        if (!haveStorage || !haveCamera) {
+        viewModel.updatePermissions()
+        if (!viewModel.permissions.value.all) {
             Toast.makeText(this, R.string.photo_shoot_intro_missing_permissions, Toast.LENGTH_LONG)
                 .show()
             return
@@ -156,7 +151,7 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         val photoUri = FileProvider.getUriForFile(this, "$packageName.provider", photoFile)
         pictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
         Log.d(TAG, "Launching take picture intent ...")
-        lastPhotoUri = photoUri
+        viewModel.lastPhotoUri = photoUri
         takePicture.launch(pictureIntent)
     }
 
@@ -179,8 +174,8 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
 
     /** A picture the camera app could not write leaves an empty file, which is removed. */
     private fun onPictureTaken() {
-        val photoUri = lastPhotoUri
-        lastPhotoUri = null
+        val photoUri = viewModel.lastPhotoUri
+        viewModel.lastPhotoUri = null
         val taken =
             photoUri != null &&
                 try {
@@ -227,14 +222,14 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         } else {
             Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_SHORT).show()
             Log.i(TAG, "User granted CAMERA permission.")
-            updatePermissions()
+            viewModel.updatePermissions()
         }
     }
 
     override fun onResume() {
         super.onResume()
         // "All files access" is granted in the system settings, not through a result.
-        updatePermissions()
+        viewModel.updatePermissions()
     }
 
     private companion object {
