@@ -41,7 +41,6 @@ class FolderPickerActivityTest {
 
     @Before
     fun setUp() {
-        // The picker binds to the service, like every SyncthingActivity.
         StoppedSyncthingService.install()
         root =
             File(context.cacheDir, "picker-root").apply {

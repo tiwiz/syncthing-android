@@ -45,7 +45,7 @@ internal class PaneCallbacks(
  * and a reopened folder starts from the saved config, not from discarded edits.
  */
 internal class DetailPanes(
-    private val activity: SyncthingActivity,
+    private val activity: ThemedAppCompatActivity,
     /** Called when a folder or device was saved or removed. */
     onChanged: () -> Unit,
 ) {

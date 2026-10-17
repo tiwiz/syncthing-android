@@ -1,29 +1,38 @@
 package com.nutomic.syncthingandroid.service
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.SharedPreferences
-import android.os.IBinder
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import com.nutomic.syncthingandroid.ApplicationScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.ACTION_SYNC_TRIGGER_FIRED
 import com.nutomic.syncthingandroid.service.RunConditionMonitor.Companion.EXTRA_BEGIN_ACTIVE_TIME_WINDOW
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /** Starts Syncthing for the configured duration, when it follows a time schedule. */
-class QuickSettingsTileSchedule :
-    TileService(), ServiceConnection, SyncthingService.OnServiceStateChangeListener {
+@AndroidEntryPoint
+class QuickSettingsTileSchedule : TileService() {
+
+    @Inject lateinit var connection: SyncthingConnection
+
+    @Inject @ApplicationScope lateinit var appScope: CoroutineScope
+
+    /** Follows Syncthing's state while the tile listens. */
+    private var stateJob: Job? = null
 
     private var tilesAvailableState = Tile.STATE_INACTIVE
     private var appContext: Context? = null
     // Initialized when the tile starts listening; no injection needed.
     private var preferences: SharedPreferences? = null
-    private var syncthingService: SyncthingService? = null
 
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, pref ->
         if (pref == Constants.PREF_BTNSTATE_FORCE_START_STOP) {
@@ -33,16 +42,8 @@ class QuickSettingsTileSchedule :
 
     override fun onDestroy() {
         logV("onDestroy()")
-        syncthingService?.unregisterOnServiceStateChangeListener(this)
-        syncthingService = null
+        stateJob?.cancel()
         preferences?.unregisterOnSharedPreferenceChangeListener(prefListener)
-        try {
-            appContext?.unbindService(this)
-        } catch (_: IllegalArgumentException) {
-            logV("Service not bound or already unbound")
-        } catch (_: IllegalStateException) {
-            logV("Service not bound or already unbound")
-        }
         super.onDestroy()
     }
 
@@ -55,19 +56,23 @@ class QuickSettingsTileSchedule :
                 PreferenceManager.getDefaultSharedPreferences(context).also {
                     it.registerOnSharedPreferenceChangeListener(prefListener)
                 }
-            try {
-                context.bindService(
-                    Intent(context, SyncthingService::class.java),
-                    this,
-                    BIND_AUTO_CREATE,
-                )
-            } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-                // Binding is best effort; the tile then only shows the schedule's state.
-                Log.w(TAG, "Failed to bind to SyncthingService", e)
+            stateJob?.cancel()
+            stateJob = appScope.launch {
+                connection.snapshot.collect { snapshot ->
+                    snapshot.state?.let(::onServiceStateChange)
+                }
             }
             refreshTile()
         }
         super.onStartListening()
+    }
+
+    override fun onStopListening() {
+        logV("onStopListening()")
+        // The connection lets go of the service a while after this.
+        stateJob?.cancel()
+        stateJob = null
+        super.onStopListening()
     }
 
     override fun onClick() {
@@ -108,18 +113,6 @@ class QuickSettingsTileSchedule :
         return true
     }
 
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        logV("onServiceConnected(ComponentName=$name, IBinder=$service)")
-        syncthingService =
-            (service as SyncthingServiceBinder).service.also {
-                it.registerOnServiceStateChangeListener(this)
-            }
-    }
-
-    override fun onServiceDisconnected(componentName: ComponentName) {
-        syncthingService = null
-    }
-
     private fun updateTile(newState: Int) {
         val tile = qsTile ?: return
         val res = checkNotNull(appContext).resources
@@ -142,7 +135,7 @@ class QuickSettingsTileSchedule :
         tile.updateTile()
     }
 
-    override fun onServiceStateChange(currentState: SyncthingService.State) {
+    private fun onServiceStateChange(currentState: SyncthingService.State) {
         logV("onServiceStateChange: $currentState")
         tilesAvailableState =
             if (

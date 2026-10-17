@@ -21,7 +21,7 @@ import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 
 /** Shows a web page, such as the usage statistics, with a warning for invalid certificates. */
-class WebViewActivity : SyncthingActivity() {
+class WebViewActivity : ThemedAppCompatActivity() {
 
     private val viewModel: WebViewViewModel by viewModels()
 

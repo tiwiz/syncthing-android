@@ -183,6 +183,14 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   - ARCHITECTURE.md, CONVENTIONS.md (new rule: screen state in ViewModels) and TESTING.md
     (recreation tests) updated.
 
+  Done: `SyncthingActivity` is gone; every screen extends `ThemedAppCompatActivity` and reaches
+  Syncthing only through its ViewModel and `SyncthingConnection` (`MainViewModel.api` and
+  `evaluateRunConditions()` for the menu actions and resume). The folder and device screens
+  cancel the consent notification through the injected `NotificationHandler`. The schedule tile
+  is `@AndroidEntryPoint`, follows `SyncthingConnection` while it listens and lets go of it when
+  it stops listening (before, it stayed bound until destroyed); the other two tiles never bound
+  the service. `ServiceBindingTest`, two more `QuickSettingsTilesTest` cases.
+
 ## Tests
 
 - **ViewModel unit tests** with a fake `SyncthingConnection` and `kotlinx-coroutines-test`; plain

@@ -45,7 +45,7 @@ import java.io.File
 
 /** Shows the Android log or Syncthing's log, and shares it as a file. */
 @AndroidEntryPoint
-class LogActivity : SyncthingActivity() {
+class LogActivity : ThemedAppCompatActivity() {
 
     private val viewModel: LogViewModel by viewModels()
 
