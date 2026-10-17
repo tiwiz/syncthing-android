@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
@@ -48,14 +47,10 @@ import androidx.navigation3.runtime.EntryProviderScope
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import androidx.compose.ui.graphics.Shape
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
-import me.zhanghai.compose.preference.ListPreference
-import me.zhanghai.compose.preference.Preference
-import me.zhanghai.compose.preference.PreferenceCategory
-import me.zhanghai.compose.preference.SwitchPreference
-import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
@@ -128,111 +123,113 @@ fun SettingsRunConditionsScreen(
         title = stringResource(R.string.run_conditions_title),
         description = stringResource(R.string.run_conditions_summary),
     ) {
-        wifiItems(runOnWifi, runOnMeteredWifi, runOnSpecifiedSsid, markPending)
-        mobileDataItems(runOnMobileData, runOnRoaming, markPending)
-        batteryItems(
-            powerSourceNames,
-            powerSourceValues,
-            powerSource,
-            respectBatterySaving,
-            respectMasterSync,
-            flightMode,
-            markPending,
+        groupedSection(R.string.category_wifi, wifiItems(runOnWifi, runOnMeteredWifi, runOnSpecifiedSsid, markPending))
+        groupedSection(R.string.category_mobile_data, mobileDataItems(runOnMobileData, runOnRoaming, markPending))
+        groupedSection(
+            R.string.category_battery,
+            batteryItems(
+                powerSourceNames,
+                powerSourceValues,
+                powerSource,
+                respectBatterySaving,
+                respectMasterSync,
+                flightMode,
+                markPending,
+            ),
         )
-        scheduleItems(context, runScheduled, syncDuration, sleepInterval, markPending)
+        groupedSection(
+            R.string.category_schedule,
+            scheduleItems(context, runScheduled, syncDuration, sleepInterval, markPending),
+        )
     }
 }
 
-private fun LazyListScope.wifiItems(
+private fun wifiItems(
     runOnWifi: MutableState<Boolean>,
     runOnMeteredWifi: MutableState<Boolean>,
     runOnSpecifiedSsid: MutableState<Boolean>,
     markPending: () -> Unit,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_wifi)) },
-        )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_wifi_title)) },
-            summary = { Text(stringResource(R.string.run_on_wifi_summary)) },
-            value = runOnWifi.value,
-            onValueChange = {
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_wifi_title),
+            summary = stringResource(R.string.run_on_wifi_summary),
+            checked = runOnWifi.value,
+            shape = shape,
+            onCheckedChange = {
                 runOnWifi.value = it
                 markPending()
-            }
+            },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_metered_wifi_title)) },
-            summary = { Text(stringResource(R.string.run_on_metered_wifi_summary)) },
-            value = runOnMeteredWifi.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_metered_wifi_title),
+            summary = stringResource(R.string.run_on_metered_wifi_summary),
+            checked = runOnMeteredWifi.value,
+            shape = shape,
+            enabled = runOnWifi.value,
+            onCheckedChange = {
                 runOnMeteredWifi.value = it
                 markPending()
             },
-            enabled = runOnWifi.value,
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_whitelisted_wifi_title)) },
-            summary = { Text(stringResource(R.string.run_on_whitelisted_wifi_summary)) },
-            value = runOnSpecifiedSsid.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_whitelisted_wifi_title),
+            summary = stringResource(R.string.run_on_whitelisted_wifi_summary),
+            checked = runOnSpecifiedSsid.value,
+            shape = shape,
+            enabled = runOnWifi.value,
+            onCheckedChange = {
                 runOnSpecifiedSsid.value = it
                 markPending()
             },
-            enabled = runOnWifi.value,
         )
-    }
-    item {
-        WifiSsidPreference(
+    },
+    { shape ->
+        WifiSsidItem(
             enabled = runOnWifi.value && runOnSpecifiedSsid.value,
             setPendingEvaluation = markPending,
+            shape = shape,
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.mobileDataItems(
+private fun mobileDataItems(
     runOnMobileData: MutableState<Boolean>,
     runOnRoaming: MutableState<Boolean>,
     markPending: () -> Unit,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_mobile_data)) }
-        )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_mobile_data_title)) },
-            summary = { Text(stringResource(R.string.run_on_mobile_data_summary)) },
-            value = runOnMobileData.value,
-            onValueChange = {
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_mobile_data_title),
+            summary = stringResource(R.string.run_on_mobile_data_summary),
+            checked = runOnMobileData.value,
+            shape = shape,
+            onCheckedChange = {
                 runOnMobileData.value = it
                 markPending()
-            }
+            },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_roaming_title)) },
-            summary = { Text(stringResource(R.string.run_on_roaming_summary)) },
-            value = runOnRoaming.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_roaming_title),
+            summary = stringResource(R.string.run_on_roaming_summary),
+            checked = runOnRoaming.value,
+            shape = shape,
+            enabled = runOnMobileData.value,
+            onCheckedChange = {
                 runOnRoaming.value = it
                 markPending()
             },
-            enabled = runOnMobileData.value,
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.batteryItems(
+private fun batteryItems(
     powerSourceNames: Array<String>,
     powerSourceValues: Array<String>,
     powerSource: MutableState<String>,
@@ -240,91 +237,84 @@ private fun LazyListScope.batteryItems(
     respectMasterSync: MutableState<Boolean>,
     flightMode: MutableState<Boolean>,
     markPending: () -> Unit,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_battery)) },
-        )
-    }
-    item {
-        ListPreference(
-            title = { Text(stringResource(R.string.power_source_title)) },
-            summary = { Text(powerSourceNames[powerSourceValues.indexOf(powerSource.value)]) },
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsListItem(
+            title = stringResource(R.string.power_source_title),
             value = powerSource.value,
+            values = powerSourceValues.toList(),
+            valueToText = { powerSourceNames[powerSourceValues.indexOf(it)] },
+            shape = shape,
             onValueChange = {
                 powerSource.value = it
                 markPending()
             },
-            values = powerSourceValues.toList(),
-            valueToText = { value ->
-                AnnotatedString(powerSourceNames[powerSourceValues.indexOf(value)])
-            }
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.respect_battery_saving_title)) },
-            summary = { Text(stringResource(R.string.respect_battery_saving_summary)) },
-            value = respectBatterySaving.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.respect_battery_saving_title),
+            summary = stringResource(R.string.respect_battery_saving_summary),
+            checked = respectBatterySaving.value,
+            shape = shape,
+            onCheckedChange = {
                 respectBatterySaving.value = it
                 markPending()
-            }
+            },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.respect_master_sync_title)) },
-            summary = { Text(stringResource(R.string.respect_master_sync_summary)) },
-            value = respectMasterSync.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.respect_master_sync_title),
+            summary = stringResource(R.string.respect_master_sync_summary),
+            checked = respectMasterSync.value,
+            shape = shape,
+            onCheckedChange = {
                 respectMasterSync.value = it
                 markPending()
-            }
+            },
         )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_in_flight_mode_title)) },
-            summary = { Text(stringResource(R.string.run_in_flight_mode_summary)) },
-            value = flightMode.value,
-            onValueChange = {
+    },
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_in_flight_mode_title),
+            summary = stringResource(R.string.run_in_flight_mode_summary),
+            checked = flightMode.value,
+            shape = shape,
+            onCheckedChange = {
                 flightMode.value = it
                 markPending()
-            }
+            },
         )
-    }
-}
+    },
+)
 
-private fun LazyListScope.scheduleItems(
+private fun scheduleItems(
     context: Context,
     runScheduled: MutableState<Boolean>,
     syncDuration: MutableState<String>,
     sleepInterval: MutableState<String>,
     markPending: () -> Unit,
-) {
-    item {
-        PreferenceCategory(
-            title = { Text(stringResource(R.string.category_schedule)) },
-        )
-    }
-    item {
-        SwitchPreference(
-            title = { Text(stringResource(R.string.run_on_time_schedule_title)) },
-            summary = { Text(stringResource(R.string.run_on_time_schedule_summary)) },
-            value = runScheduled.value,
-            onValueChange = {
+): List<@Composable (Shape) -> Unit> = listOf(
+    { shape ->
+        SettingsSwitch(
+            title = stringResource(R.string.run_on_time_schedule_title),
+            summary = stringResource(R.string.run_on_time_schedule_summary),
+            checked = runScheduled.value,
+            shape = shape,
+            onCheckedChange = {
                 runScheduled.value = it
                 markPending()
-            }
+            },
         )
-    }
-    item {
+    },
+    { shape ->
         val syncDurationError = stringResource(R.string.invalid_integer_value, 1, 1440/* 24h */)
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.sync_duration_minutes_title)) },
-            summary = { Text(stringResource(R.string.sync_duration_minutes_summary, syncDuration.value)) },
+        SettingsTextFieldItem(
+            title = stringResource(R.string.sync_duration_minutes_title),
+            summary = stringResource(R.string.sync_duration_minutes_summary, syncDuration.value),
             value = syncDuration.value,
+            shape = shape,
             onValueChange = {
                 syncDuration.value = it
                 markPending()
@@ -337,15 +327,16 @@ private fun LazyListScope.scheduleItems(
                 } else {
                     text
                 }
-            }
+            },
         )
-    }
-    item {
+    },
+    { shape ->
         val sleepIntervalError = stringResource(R.string.invalid_integer_value, 1, 30240/* 3w */)
-        TextFieldPreference(
-            title = { Text(stringResource(R.string.sleep_interval_minutes_title)) },
-            summary = { Text(stringResource(R.string.sync_duration_minutes_summary, sleepInterval.value)) },
+        SettingsTextFieldItem(
+            title = stringResource(R.string.sleep_interval_minutes_title),
+            summary = stringResource(R.string.sync_duration_minutes_summary, sleepInterval.value),
             value = sleepInterval.value,
+            shape = shape,
             onValueChange = {
                 sleepInterval.value = it
                 markPending()
@@ -358,16 +349,17 @@ private fun LazyListScope.scheduleItems(
                 } else {
                     text
                 }
-            }
+            },
         )
-    }
-}
+    },
+)
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun WifiSsidPreference(
+private fun WifiSsidItem(
     enabled: Boolean,
     setPendingEvaluation: () -> Unit,
+    shape: Shape,
 ) {
     val context = LocalContext.current
     val locationManager = context.applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -416,10 +408,11 @@ private fun WifiSsidPreference(
     else
         stringResource(R.string.wifi_ssid_whitelist_empty)
 
-    Preference(
+    SettingsItem(
+        title = stringResource(R.string.specify_wifi_ssid_whitelist),
+        summary = specifiedSsidSummary,
+        shape = shape,
         enabled = enabled,
-        title = { Text(stringResource(R.string.specify_wifi_ssid_whitelist)) },
-        summary = { Text(specifiedSsidSummary) },
         onClick = {
             if (isPermissionGranted && isLocationEnabled) {
                 showSelectionAlert = true
@@ -438,7 +431,7 @@ private fun WifiSsidPreference(
                     Toast.LENGTH_LONG
                 ).show()
             }
-        }
+        },
     )
     if (showSelectionAlert) {
         SsidSelectionDialog(

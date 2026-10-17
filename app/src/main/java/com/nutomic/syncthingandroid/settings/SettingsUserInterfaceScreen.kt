@@ -3,15 +3,16 @@ package com.nutomic.syncthingandroid.settings
 import android.content.Context
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
@@ -23,8 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.ListPreference
-import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
@@ -72,38 +71,50 @@ fun SettingsUserInterfaceScreen(
         title = stringResource(R.string.category_user_interface),
     ) {
         item {
-            ListPreference(
-                title = { Text(stringResource(R.string.preference_app_theme_title)) },
-                summary = { Text(themeNames[themeValues.indexOf(theme)]) },
-                value = theme,
-                onValueChange = { newTheme ->
-                    val newThemeInt = newTheme.toIntOrNull()
-                    if (newTheme != theme && newThemeInt != null) {
-                        theme = newTheme
-                        AppCompatDelegate.setDefaultNightMode(newThemeInt)
-                        activityScope.launch(ioDispatcher) {
-                            withContext(NonCancellable) {
-                                syncWebGuiTheme(context, stService?.api, newTheme)
+            val items: List<@Composable (Shape) -> Unit> = listOf(
+                { shape ->
+                    SettingsListItem(
+                        title = stringResource(R.string.preference_app_theme_title),
+                        value = theme,
+                        values = themeValues.toList(),
+                        valueToText = { themeNames[themeValues.indexOf(it)] },
+                        shape = shape,
+                        onValueChange = { newTheme ->
+                            val newThemeInt = newTheme.toIntOrNull()
+                            if (newTheme != theme && newThemeInt != null) {
+                                theme = newTheme
+                                AppCompatDelegate.setDefaultNightMode(newThemeInt)
+                                activityScope.launch(ioDispatcher) {
+                                    withContext(NonCancellable) {
+                                        syncWebGuiTheme(context, stService?.api, newTheme)
+                                    }
+                                }
                             }
-                        }
-                    }
+                        },
+                    )
                 },
-                values = themeValues.toList(),
-                valueToText = { value -> AnnotatedString(themeNames[themeValues.indexOf(value)]) }
+                { shape ->
+                    SettingsSwitch(
+                        title = stringResource(R.string.expert_mode_title),
+                        summary = stringResource(R.string.expert_mode_summary),
+                        checked = expertMode.value,
+                        shape = shape,
+                        onCheckedChange = { expertMode.value = it },
+                    )
+                },
+                { shape ->
+                    SettingsSwitch(
+                        title = stringResource(R.string.start_into_web_gui_title),
+                        summary = stringResource(R.string.start_into_web_gui_summary),
+                        checked = startInWebGui.value,
+                        shape = shape,
+                        onCheckedChange = { startInWebGui.value = it },
+                    )
+                },
             )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.expert_mode_title)) },
-                summary = { Text(stringResource(R.string.expert_mode_summary)) },
-                state = expertMode,
-            )
-        }
-        item {
-            SwitchPreference(
-                title = { Text(stringResource(R.string.start_into_web_gui_title)) },
-                summary = { Text(stringResource(R.string.start_into_web_gui_summary)) },
-                state = startInWebGui,
+            SettingsGroup(
+                items = items,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
     }

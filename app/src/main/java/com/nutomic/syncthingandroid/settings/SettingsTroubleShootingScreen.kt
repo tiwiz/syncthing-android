@@ -15,18 +15,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.EntryProviderScope
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
-import me.zhanghai.compose.preference.MultiSelectListPreference
-import me.zhanghai.compose.preference.Preference
-import me.zhanghai.compose.preference.SwitchPreference
-import me.zhanghai.compose.preference.TextFieldPreference
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
@@ -55,76 +54,79 @@ fun SettingsTroubleshootingScreen(
     val stTraceSelection = rememberPreferenceState(Constants.PREF_DEBUG_FACILITIES_ENABLED, setOf<String>())
     val envVars = rememberPreferenceState(Constants.PREF_ENVIRONMENT_VARIABLES, "")
 
+    val selectedValues = stTraceSelection.value.intersect(stTraceOptions)
+
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
         modifier = modifier,
         title = stringResource(R.string.category_debug),
     ) {
         item {
-            Preference(
-                title = { Text(stringResource(R.string.report_issue_title)) },
-                summary = { Text(stringResource(R.string.open_issue_tracker_summary, issueTrackerUrl)) },
-                onClick = { uriHandler.openUri(issueTrackerUrl) }
-            )
-        }
-        item {
-            VerboseLogPreference()
-        }
-        item {
-            Preference(
-                title = { Text(stringResource(R.string.open_log)) },
-                summary = { Text(stringResource(R.string.open_log_summary)) },
-                onClick = {
-                    val intent = Intent(context, LogActivity::class.java)
-                    context.startActivity(intent)
-                }
-            )
-        }
-        item {
-            val selectedValues = stTraceSelection.value.intersect(stTraceOptions)
-            MultiSelectListPreference(
-                title = { Text(stringResource(R.string.sttrace_title)) },
-                summary = {
-                    Text(text =
-                        if (selectedValues.isNotEmpty())
-                            stTraceSelection.value.joinToString()
-                        else
-                            stringResource(R.string.sttrace_none_selected)
+            val items: List<@Composable (Shape) -> Unit> = listOf(
+                { shape ->
+                    SettingsItem(
+                        title = stringResource(R.string.report_issue_title),
+                        summary = stringResource(R.string.open_issue_tracker_summary, issueTrackerUrl),
+                        shape = shape,
+                        onClick = { uriHandler.openUri(issueTrackerUrl) },
                     )
                 },
-                value = selectedValues,
-                onValueChange = { stTraceSelection.value = it },
-                values = stTraceOptions.sorted(),
+                { shape -> VerboseLogItem(shape = shape) },
+                { shape ->
+                    SettingsItem(
+                        title = stringResource(R.string.open_log),
+                        summary = stringResource(R.string.open_log_summary),
+                        shape = shape,
+                        onClick = {
+                            val intent = Intent(context, LogActivity::class.java)
+                            context.startActivity(intent)
+                        },
+                    )
+                },
+                { shape ->
+                    SettingsMultiSelectListItem(
+                        title = stringResource(R.string.sttrace_title),
+                        value = selectedValues,
+                        values = stTraceOptions.sorted(),
+                        valueToText = { it },
+                        emptyText = stringResource(R.string.sttrace_none_selected),
+                        shape = shape,
+                        onValueChange = { stTraceSelection.value = it },
+                    )
+                },
+                { shape ->
+                    SettingsTextFieldItem(
+                        title = stringResource(R.string.environment_variables),
+                        value = envVars.value,
+                        shape = shape,
+                        onValueChange = { envVars.value = it },
+                        textToValue = { validateEnvVars(it, context) },
+                    )
+                },
+                { shape -> ResetDatabaseItem(shape = shape) },
+                { shape -> ResetDeltasItem(shape = shape) },
             )
-        }
-        item {
-            TextFieldPreference(
-                title = { Text(stringResource(R.string.environment_variables)) },
-                state = envVars,
-                textToValue = { validateEnvVars(it, context) }
+            SettingsGroup(
+                items = items,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-        }
-        item {
-            ResetDatabasePreference()
-        }
-        item {
-            ResetDeltasPreference()
         }
     }
 }
 
 @Composable
-private fun VerboseLogPreference() {
+private fun VerboseLogItem(shape: Shape) {
     val activity = LocalActivity.current
     val verboseLog = rememberPreferenceState(Constants.PREF_VERBOSE_LOG, false)
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
-    SwitchPreference(
-        title = { Text(stringResource(R.string.verbose_log_title)) },
-        summary = { Text(stringResource(R.string.verbose_log_summary)) },
-        value = verboseLog.value,
-        onValueChange = { showAlert = true }
+    SettingsSwitch(
+        title = stringResource(R.string.verbose_log_title),
+        summary = stringResource(R.string.verbose_log_summary),
+        checked = verboseLog.value,
+        shape = shape,
+        onCheckedChange = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(
@@ -169,14 +171,15 @@ private fun restartApp(activity: Activity?) {
 }
 
 @Composable
-private fun ResetDatabasePreference() {
+private fun ResetDatabaseItem(shape: Shape) {
     val context = LocalContext.current
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
-    Preference(
-        title = { Text(stringResource(R.string.st_reset_database_title)) },
-        onClick = { showAlert = true }
+    SettingsItem(
+        title = stringResource(R.string.st_reset_database_title),
+        shape = shape,
+        onClick = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(
@@ -207,14 +210,15 @@ private fun ResetDatabasePreference() {
 }
 
 @Composable
-private fun ResetDeltasPreference() {
+private fun ResetDeltasItem(shape: Shape) {
     val context = LocalContext.current
 
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
-    Preference(
-        title = { Text(stringResource(R.string.st_reset_deltas_title)) },
-        onClick = { showAlert = true }
+    SettingsItem(
+        title = stringResource(R.string.st_reset_deltas_title),
+        shape = shape,
+        onClick = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(

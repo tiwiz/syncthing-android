@@ -1,6 +1,5 @@
 package com.nutomic.syncthingandroid.settings
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,11 +7,6 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -24,18 +18,21 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
+import com.nutomic.syncthingandroid.ui.groupedItemShape
 import com.nutomic.syncthingandroid.util.CertificateValidator
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.Preference
 
 /**
  * Upper bound on a picked certificate or key file. Generous for PEM — a full chain is a few KiB — while
@@ -43,10 +40,6 @@ import me.zhanghai.compose.preference.Preference
  * Binder transaction with a hard size limit shared process-wide.
  */
 private const val MAX_PEM_BYTES = 64 * 1024
-
-/** Relative to [R.string.wiki_url], matching how the onboarding pages link into the wiki. */
-private const val CUSTOM_CERT_WIKI_PATH =
-    "/tips-and-tricks/Use-a-custom-HTTPS-certificate-for-the-Web-GUI.md"
 
 fun EntryProviderScope<SettingsRoute>.settingsCustomCertificateEntry(
     navigator: Navigator<SettingsRoute>,
@@ -100,62 +93,37 @@ fun SettingsCustomCertificateScreen(
         }
     }
 
-    val canApply = validation?.canApply == true && stService != null && !applying
+    val onApply = {
+        val result = validation
+        val service = stService
+        if (result != null && result.canApply && service != null && !applying) {
+            applying = true
+            applyFailure = null
+            service.replaceHttpsCertificate(result.certPem, result.keyPem) { outcome, detail ->
+                applying = false
+                applyFailure = onApplyOutcome(context, navigator, outcome, detail)
+            }
+        }
+    }
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
         title = stringResource(R.string.webui_custom_cert_title),
         modifier = modifier,
     ) {
-        explanationItems()
-
-        item { CurrentCertificateCard(currentInfo) }
-
-        item {
-            PickFilePreference(R.string.custom_cert_select_cert, certName, enabled = !applying) {
-                certPicker.launch(arrayOf("*/*"))
-            }
-        }
-        item {
-            PickFilePreference(R.string.custom_cert_select_key, keyName, enabled = !applying) {
-                keyPicker.launch(arrayOf("*/*"))
-            }
-        }
-
-        validation?.let { validationItems(it) }
-
-        applyFailure?.let { failure ->
-            item { ApplyFailureCard(applyFailureMessage(failure)) }
-        }
-
-        // Offered whenever the user is stuck — a rejected file or a failed apply. Both are cases where
-        // the wiki page (root CA installation, full chain, matching key) is the actual answer.
-        if (isBlockedByChecks(validation) || applyFailure != null) {
-            item { HelpRow() }
-        }
-
-        item {
-            ApplyCertificatePreference(enabled = canApply, applying = applying) {
-                val result = validation
-                val service = stService
-                if (result != null && result.canApply && service != null && !applying) {
-                    applying = true
-                    applyFailure = null
-                    service.replaceHttpsCertificate(result.certPem, result.keyPem) { outcome, detail ->
-                        applying = false
-                        applyFailure = onApplyOutcome(context, navigator, outcome, detail)
-                    }
-                }
-            }
-        }
-        item {
-            Preference(
-                title = { Text(stringResource(R.string.custom_cert_reset_title)) },
-                summary = { Text(stringResource(R.string.custom_cert_reset_summary)) },
-                enabled = stService != null && !applying,
-                onClick = { showResetDialog = true },
-            )
-        }
+        customCertificateScaffoldContent(
+            stService = stService,
+            applying = applying,
+            applyFailure = applyFailure,
+            validation = validation,
+            currentInfo = currentInfo,
+            certName = certName,
+            keyName = keyName,
+            onPickCert = { certPicker.launch(arrayOf("*/*")) },
+            onPickKey = { keyPicker.launch(arrayOf("*/*")) },
+            onApply = onApply,
+            onShowResetDialog = { showResetDialog = true },
+        )
     }
 
     if (showResetDialog) {
@@ -173,6 +141,81 @@ fun SettingsCustomCertificateScreen(
                     }
                 }
             },
+        )
+    }
+}
+
+private fun LazyListScope.customCertificateScaffoldContent(
+    stService: SyncthingService?,
+    applying: Boolean,
+    applyFailure: ApplyFailure?,
+    validation: CertificateValidator.ValidationResult?,
+    currentInfo: CertificateValidator.CertInfo?,
+    certName: String?,
+    keyName: String?,
+    onPickCert: () -> Unit,
+    onPickKey: () -> Unit,
+    onApply: () -> Unit,
+    onShowResetDialog: () -> Unit,
+) {
+    explanationItems()
+
+    currentCertificateItems(currentInfo)
+
+    item {
+        PickFilePreference(
+            R.string.custom_cert_select_cert,
+            certName,
+            enabled = !applying,
+            shape = groupedItemShape(0, 2),
+            onClick = onPickCert,
+        )
+    }
+    item {
+        PickFilePreference(
+            R.string.custom_cert_select_key,
+            keyName,
+            enabled = !applying,
+            shape = groupedItemShape(1, 2),
+            onClick = onPickKey,
+        )
+    }
+
+    validation?.let { validationItems(it) }
+
+    applyFailure?.let { failure ->
+        item { ApplyFailureCard(applyFailureMessage(failure)) }
+    }
+
+    // Offered whenever the user is stuck — a rejected file or a failed apply. Both are cases where
+    // the wiki page (root CA installation, full chain, matching key) is the actual answer.
+    item {
+        val showHelp = isBlockedByChecks(validation) || applyFailure != null
+        val canApply = validation?.canApply == true && stService != null && !applying
+        SettingsGroup(
+            items = buildList {
+                add { shape: Shape ->
+                    ApplyCertificateItem(
+                        enabled = canApply,
+                        applying = applying,
+                        shape = shape,
+                        onClick = onApply,
+                    )
+                }
+                add { shape: Shape ->
+                    SettingsItem(
+                        title = stringResource(R.string.custom_cert_reset_title),
+                        summary = stringResource(R.string.custom_cert_reset_summary),
+                        shape = shape,
+                        enabled = stService != null && !applying,
+                        onClick = onShowResetDialog,
+                    )
+                }
+                if (showHelp) {
+                    add { shape: Shape -> HelpRow(shape = shape) }
+                }
+            },
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }
@@ -287,37 +330,6 @@ private fun onResetOutcome(
     return null
 }
 
-/**
- * Links to the wiki page for this feature, following the `wiki_url` + relative path convention.
- *
- * Deliberately an ordinary preference row rather than a button: it is a secondary action sitting just
- * above "Apply certificate", and a second filled button competes with — and when Apply is disabled,
- * visually outranks — the primary one.
- */
-@Composable
-private fun HelpRow() {
-    val context = LocalContext.current
-    val url = stringResource(R.string.wiki_url) + CUSTOM_CERT_WIKI_PATH
-    Preference(
-        title = { Text(stringResource(R.string.generic_help)) },
-        summary = { Text(stringResource(R.string.wiki_open_setup_guide)) },
-        icon = {
-            Icon(
-                Icons.AutoMirrored.Filled.HelpOutline,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        onClick = {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-            } catch (_: ActivityNotFoundException) {
-                toast(context, R.string.no_app_to_open_link)
-            }
-        },
-    )
-}
-
 private fun readPicked(context: Context, uri: Uri?): Pair<String, ByteArray>? {
     if (uri == null) {
         return null
@@ -351,6 +363,3 @@ private fun queryDisplayName(context: Context, uri: Uri): String? {
         }
 }
 
-private fun toast(context: Context, resId: Int) {
-    Toast.makeText(context.applicationContext, resId, Toast.LENGTH_LONG).show()
-}
