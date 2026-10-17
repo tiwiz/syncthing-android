@@ -142,8 +142,14 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
 11. **Settings.** Expressive styling of the preference lists (`me.zhanghai` preference library:
     theme it, or replace its rows with our grouped items where it falls short) and, on large
     windows, categories and detail side by side with a Navigation 3 list-detail scene.
+    Done: 11a (#88) grouped settings rows (`SettingsGroup`, `SettingsItem`, `SettingsSwitch`,
+    list, multi-select, text and password items) instead of the preference library's rows, and
+    the classic `LargeTopAppBar`. 11b (#89) `ListDetailPaneScaffold` in `SettingsNavDisplay`
+    when the window has room for two panes: categories in the list pane, the open screen in the
+    detail pane; compact and medium windows keep `NavDisplay` as before.
 12. **Motion and polish.** Shape morph on selection and press, expressive `LoadingIndicator` while
     Syncthing is starting, predictive back on the detail pane, reduced motion respected.
+    Open: #90, held back (see the workload in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md)).
 13. **Milestone.** Native debug build on the Pixel 8 (portrait and landscape), plus emulator AVDs
     for a foldable (Pixel Fold, folded and unfolded) and a tablet (Pixel Tablet); walk every
     screen, light and dark, English and Italian; write the results in AGENTS.md.
