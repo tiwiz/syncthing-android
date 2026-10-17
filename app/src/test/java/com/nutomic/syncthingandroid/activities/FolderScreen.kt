@@ -10,7 +10,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -86,6 +85,16 @@ internal class FolderScreen(
     fun ignoreList(): String =
         tagged("ignoreList").fetchSemanticsNode().config[SemanticsProperties.EditableText].text
 
+    /** The folder's state, or null while Syncthing is not running. */
+    fun state(): String? =
+        compose
+            .onAllNodesWithTag("editState", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
+
     fun toggle(switch: Switch) {
         compose.onNodeWithText(switch.title).performScrollTo().performClick()
     }
@@ -141,7 +150,7 @@ internal class FolderScreen(
     }
 
     fun delete() {
-        compose.onNodeWithContentDescription("Delete Folder").performClick()
+        compose.onNodeWithText("Delete Folder").performScrollTo().performClick()
     }
 
     fun back() {

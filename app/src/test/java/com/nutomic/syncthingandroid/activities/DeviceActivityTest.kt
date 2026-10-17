@@ -10,7 +10,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -29,6 +28,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusList
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitMain
 import com.nutomic.syncthingandroid.testutil.drainMain
 import com.nutomic.syncthingandroid.util.ConfigXml
 import org.junit.Assert.assertEquals
@@ -226,6 +226,29 @@ class DeviceActivityTest {
     }
 
     @Test
+    fun `the device's state shows while Syncthing runs`() {
+        val syncthing = FakeSyncthing(context)
+        try {
+            RunningSyncthingService.install(syncthing)
+            DeviceScreen(
+                    ActivityScenario.launchActivityForResult(
+                        Intent(context, DeviceActivity::class.java)
+                            .putExtra(DeviceActivity.EXTRA_IS_CREATE, false)
+                            .putExtra(DeviceActivity.EXTRA_DEVICE_ID, REMOTE_DEVICE_ID)
+                    ),
+                    compose,
+                )
+                .use { screen ->
+                    // The fixture's completion leaves a few bytes for the laptop.
+                    awaitMain { screen.state() == "Disconnected (3 B pending)" }
+                    assertEquals("Disconnected (3 B pending)", screen.state())
+                }
+        } finally {
+            syncthing.close()
+        }
+    }
+
+    @Test
     fun `a new device can take the id of a device discovered nearby`() {
         val syncthing = FakeSyncthing(context)
         try {
@@ -289,6 +312,14 @@ internal class DeviceScreen(
         compose.onNodeWithTag("addresses").performScrollTo().performTextReplacement(addresses)
     }
 
+    /** The device's state as the screen shows it. */
+    fun state(): String =
+        compose
+            .onNodeWithTag("editState", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .joinToString()
+
     fun toggle(switch: Switch) {
         node(switch.title).performClick()
     }
@@ -331,7 +362,7 @@ internal class DeviceScreen(
     }
 
     fun delete() {
-        compose.onNodeWithContentDescription("Delete Device").performClick()
+        node("Delete Device").performClick()
     }
 
     fun back() {

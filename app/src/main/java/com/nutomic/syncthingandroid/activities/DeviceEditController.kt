@@ -23,6 +23,7 @@ import com.nutomic.syncthingandroid.service.TestData
 import com.nutomic.syncthingandroid.util.Compression
 import com.nutomic.syncthingandroid.util.ConfigRouter
 import com.nutomic.syncthingandroid.util.isRunningOnTV
+import com.nutomic.syncthingandroid.views.DeviceRowState
 
 /** The screens a device screen opens for a result. */
 internal enum class DeviceRequest {
@@ -100,6 +101,32 @@ private constructor(
         outState.putString(STATE_DEVICE, Gson().toJson(device))
         outState.putString(STATE_FORM, Gson().toJson(form))
         outState.putString(STATE_DIALOG, dialog.name)
+    }
+
+    /** Shows the saved device's state as Syncthing reports it; nothing for a new device. */
+    fun refreshStatus() {
+        if (createMode) return
+        val id = device.deviceID
+        val restApi = host.restApi
+        val saved =
+            configRouter.getDevices(restApi, false).firstOrNull { it.deviceID == id } ?: return
+        val running = restApi?.takeIf { it.isConfigLoaded }
+        val row =
+            DeviceRowState.of(
+                context,
+                saved,
+                // The screen does not show when the device was last seen.
+                lastSeen = "",
+                configRouter.getSharedFolders(id),
+                running?.let {
+                    DeviceRowState.Status(
+                        it.getRemoteDeviceStatus(id),
+                        it.getRemoteDeviceCompletion(id),
+                        it.getRemoteDeviceNeedBytes(id),
+                    )
+                },
+            )
+        info = info.copy(status = EditStatus(row.tone, row.status, row.progress))
     }
 
     /** A screen opened through [DeviceEditHost.launch] returned [result]. */
@@ -310,6 +337,7 @@ private constructor(
                     changed = createMode,
                 )
         info = info.copy(expertMode = preferences.getBoolean(Constants.PREF_EXPERT_MODE, false))
+        refreshStatus()
         dialog =
             savedState?.getString(STATE_DIALOG)?.let(DeviceDialog::valueOf) ?: DeviceDialog.NONE
     }

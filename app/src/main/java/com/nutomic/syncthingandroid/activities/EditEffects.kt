@@ -9,6 +9,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.Flow
 
 /** What a folder or device screen asks the UI around it to do once. */
@@ -37,16 +40,23 @@ internal class EditCallbacks<R>(
 
 /**
  * Runs the [events] of a folder or device screen: one result launcher per request in [requests],
- * and the callbacks of the activity or pane that shows the screen.
+ * and the callbacks of the activity or pane that shows the screen. [whileShown] runs while the
+ * screen is resumed.
  */
 @Composable
 internal fun <R> EditEffects(
     events: Flow<EditEvent<R>>,
     requests: List<R>,
     callbacks: EditCallbacks<R>,
+    whileShown: suspend () -> Unit,
 ) {
     val context = LocalContext.current
     val current by rememberUpdatedState(callbacks)
+    val currentWhileShown by rememberUpdatedState(whileShown)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { currentWhileShown() }
+    }
     // One launcher per request, always in the same order: the list never changes.
     val launchers = requests.associateWith { request ->
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {

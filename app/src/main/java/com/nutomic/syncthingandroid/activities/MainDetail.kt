@@ -90,6 +90,7 @@ private fun DetailContent(detail: Detail) {
                 viewModel.events,
                 FolderRequest.entries,
                 EditCallbacks(viewModel::onResult, callbacks.onClose, callbacks.onLeave),
+                viewModel::refreshWhileShown,
             )
             controller.form?.let {
                 FolderEditScreen(
@@ -112,6 +113,7 @@ private fun DetailContent(detail: Detail) {
                     callbacks.onLeave,
                     callbacks.onShowDeviceId,
                 ),
+                viewModel::refreshWhileShown,
             )
             controller.form?.let {
                 DeviceEditScreen(

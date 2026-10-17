@@ -27,6 +27,13 @@ before merging step 8 PRs; preparatory refactors (8a, 8b) can be opened earlier.
 
 Left: steps 8–13, about 12–15 PRs (detail below).
 
+### Workload on 2026-10-17
+
+| Agent | Done | Left, in order |
+|---|---|---|
+| A | 8a #73, 8b #74, 8c #76, 9; H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | 12 → H9 (needs B's H6–H8) → 13 with the owner |
+| B | 10a #77, 10b #80, 10c #82 | 10d (log, recent changes, device ID dialog, web top bars: started, uncommitted in `.slim/worktrees/m3e-b`) → 10e → 11a → 11b → H6 → H7 → H8 |
+
 ## UI architecture
 
 ```

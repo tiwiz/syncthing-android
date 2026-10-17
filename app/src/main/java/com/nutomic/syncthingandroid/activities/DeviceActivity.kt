@@ -66,6 +66,7 @@ class DeviceActivity : SyncthingActivity() {
                             )
                         },
                     ),
+                    viewModel::refreshWhileShown,
                 )
                 controller.form?.let {
                     DeviceEditScreen(

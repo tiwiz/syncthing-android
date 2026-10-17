@@ -8,6 +8,7 @@ import androidx.activity.result.ActivityResult
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.SyncthingConnection
 import com.nutomic.syncthingandroid.util.ConfigRouter
@@ -18,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -31,6 +33,14 @@ import kotlinx.coroutines.launch
 
 /** Key of a controller's saved state in the ViewModel's SavedStateHandle. */
 private const val STATE_CONTROLLER = "controller"
+
+/** Runs [refresh] now and then every [Constants.GUI_UPDATE_INTERVAL], until cancelled. */
+private suspend fun refreshEvery(refresh: () -> Unit): Nothing {
+    while (true) {
+        refresh()
+        delay(Constants.GUI_UPDATE_INTERVAL)
+    }
+}
 
 /** A folder screen; [controller] is null when the folder to edit is gone. */
 @HiltViewModel(assistedFactory = FolderEditViewModel.Factory::class)
@@ -87,11 +97,14 @@ constructor(
             savedState.setSavedStateProvider(STATE_CONTROLLER) { Bundle().also(saved::saveState) }
         }
         // Keeps the binding to Syncthing while the screen lives, so saving reaches the REST API.
-        viewModelScope.launch { connection.snapshot.collect {} }
+        viewModelScope.launch { connection.snapshot.collect { controller?.refreshStatus() } }
     }
 
     fun onResult(request: FolderRequest, result: ActivityResult) =
         controller?.onResult(request, result)
+
+    /** Refreshes the folder's state while the caller runs it (while shown). */
+    suspend fun refreshWhileShown(): Nothing = refreshEvery { controller?.refreshStatus() }
 
     @AssistedFactory
     interface Factory {
@@ -158,11 +171,14 @@ constructor(
                 saved.onApiAvailable(connection.snapshot.map { it.api }.filterNotNull().first())
             }
         }
-        viewModelScope.launch { connection.snapshot.collect {} }
+        viewModelScope.launch { connection.snapshot.collect { controller?.refreshStatus() } }
     }
 
     fun onResult(request: DeviceRequest, result: ActivityResult) =
         controller?.onResult(request, result)
+
+    /** Refreshes the device's state while the caller runs it (while shown). */
+    suspend fun refreshWhileShown(): Nothing = refreshEvery { controller?.refreshStatus() }
 
     @AssistedFactory
     interface Factory {
