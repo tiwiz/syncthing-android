@@ -133,6 +133,11 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   activity's store, keyed `<key>#<n>`. Recreation tests: folder, device, detail pane.
 - **H6** `refactor(onboarding): OnboardingViewModel` (B): the JSON `uiState` in the `Bundle`
   becomes ViewModel and `SavedStateHandle` state; recreation test.
+
+  Done: `OnboardingViewModel` (`@HiltViewModel`; `uiState` as `StateFlow`, persisted through
+  `SavedStateHandle`; `OnboardingUiState` moved to its own file). `OnboardingActivity` collects the
+  state and keeps the permission launchers and `startApp()`. Added `OnboardingViewModelTest` and
+  `OnboardingRecreationTest`.
 - **H7** `refactor(settings): ViewModels per category` (B): one per screen with state, scoped to
   its `NavEntry`; the service comes from `SyncthingConnection`, not a parameter; recreation tests
   on the screens with dialogs and forms (custom certificate, import/export, run conditions).
