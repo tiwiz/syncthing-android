@@ -14,8 +14,10 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.activities.PhotoShootActivity
+import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -156,6 +158,36 @@ class QuickSettingsTilesTest {
             ),
             results,
         )
+    }
+
+    @Test
+    fun `the schedule tile follows Syncthing's state`() {
+        val service = StoppedSyncthingService.install()
+        syncthingRunning(true)
+        prefs.edit().putBoolean(Constants.PREF_RUN_ON_TIME_SCHEDULE, true).commit()
+        val tile = Robolectric.buildService(QuickSettingsTileSchedule::class.java).create().get()
+        tile.onStartListening()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        RunningSyncthingService.setState(service, SyncthingService.State.ACTIVE)
+
+        assertEquals("Run for 5 minutes/active", tile.qsTile.summary())
+    }
+
+    @Test
+    fun `the schedule tile lets go of the service a while after it stops listening`() {
+        StoppedSyncthingService.install()
+        syncthingRunning(true)
+        val tile = Robolectric.buildService(QuickSettingsTileSchedule::class.java).create().get()
+        tile.onStartListening()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(1, shadowOf(app).boundServiceConnections.size)
+
+        tile.onStopListening()
+        shadowOf(Looper.getMainLooper())
+            .idleFor(Duration.ofMillis(SyncthingConnection.STOP_TIMEOUT_MILLIS + 1))
+
+        assertEquals(1, shadowOf(app).unboundServiceConnections.size)
     }
 
     @Test

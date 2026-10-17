@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  * questions Syncthing asks once it runs.
  */
 @AndroidEntryPoint
-class MainActivity : SyncthingActivity() {
+class MainActivity : ThemedAppCompatActivity() {
 
     @Inject lateinit var preferences: SharedPreferences
 
@@ -130,7 +130,7 @@ class MainActivity : SyncthingActivity() {
             return
         }
         // The metered Wi-Fi flags may have changed.
-        service?.evaluateRunConditions()
+        viewModel.evaluateRunConditions()
         viewModel.refresh()
         if (lastIntent?.action == ACTION_EXIT) {
             Log.i(TAG, "Exit app requested by notification action")
@@ -161,7 +161,7 @@ class MainActivity : SyncthingActivity() {
         }
         val name =
             configRouter
-                .getDevices(api, true)
+                .getDevices(viewModel.api, true)
                 .firstOrNull { it.deviceID == deviceId }
                 ?.displayName
                 .orEmpty()
@@ -246,7 +246,7 @@ class MainActivity : SyncthingActivity() {
             }
 
             override fun onRescanAll() {
-                val restApi = api
+                val restApi = viewModel.api
                 if (restApi == null || !restApi.isConfigLoaded) {
                     Log.e(TAG, "rescanAll skipped because Syncthing is not running.")
                     return

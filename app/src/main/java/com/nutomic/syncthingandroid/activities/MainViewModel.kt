@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.service.RestApi
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.ServiceSnapshot
 import com.nutomic.syncthingandroid.service.SyncthingConnection
@@ -141,6 +142,15 @@ constructor(
             figures = systemFigures(context, status, total)
             refresh()
         }
+    }
+
+    /** The REST API, or null while the service is not bound or Syncthing does not run. */
+    val api: RestApi?
+        get() = snapshot.api
+
+    /** Lets the service check its run conditions again, e.g. the metered Wi-Fi flags. */
+    fun evaluateRunConditions() {
+        snapshot.service?.evaluateRunConditions()
     }
 
     fun refresh() {

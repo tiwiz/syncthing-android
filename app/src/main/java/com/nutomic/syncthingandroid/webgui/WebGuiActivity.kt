@@ -27,7 +27,7 @@ import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
 import androidx.webkit.WebViewFeature
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.activities.SyncthingActivity
+import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
@@ -38,7 +38,7 @@ import androidx.core.net.toUri
  * Holds a WebView that shows the web ui of the local syncthing instance.
  */
 @AndroidEntryPoint
-class WebGuiActivity : SyncthingActivity() {
+class WebGuiActivity : ThemedAppCompatActivity() {
 
     private val viewModel: WebGuiViewModel by viewModels()
 

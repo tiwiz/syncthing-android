@@ -6,7 +6,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
-import com.nutomic.syncthingandroid.activities.SyncthingActivity
+import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.service.NotificationHandler
 import com.nutomic.syncthingandroid.service.SyncthingConnection
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
@@ -16,7 +16,7 @@ import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 
 @AndroidEntryPoint
-class SettingsActivity : SyncthingActivity() {
+class SettingsActivity : ThemedAppCompatActivity() {
 
     @Inject
     lateinit var sharedPreferences: SharedPreferences

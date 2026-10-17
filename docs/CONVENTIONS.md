@@ -15,8 +15,13 @@ this file says which one wins and why.
 - Follow the brace and parenthesis style of the surrounding code. Unix line endings only.
 - Keep Android types out of logic that can be pure (parsers, validators, run-condition decisions),
   so it can be tested on the JVM without Robolectric.
-- Dagger is the DI framework already in place. A class that needs app singletons injects itself
-  through `DaggerComponent`; prefer constructor parameters for new classes.
+- Hilt is the DI framework. Prefer constructor injection; activities and services use
+  `@AndroidEntryPoint` field injection. Blocking work runs on the injected `@IoDispatcher`.
+- Screen state lives in a ViewModel (`@HiltViewModel`, or a plain one with a `SavedStateHandle`):
+  `StateFlow` out, collected with `collectAsStateWithLifecycle`; arguments and anything that must
+  survive process death go in `SavedStateHandle`; one-off effects go to the UI as events. Only
+  UI-only state (a menu open, a dialog shown, scroll) stays in `rememberSaveable`. Screens reach
+  Syncthing through `SyncthingConnection`, never by binding the service themselves.
 - New preferences get a `PREF_*` constant in `service/Constants.java`. Never rename or reuse an
   existing key: the import/export zip carries them.
 - Everything that talks to Syncthing goes through `RestApi` when it is running and `ConfigXml`

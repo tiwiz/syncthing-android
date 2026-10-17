@@ -18,7 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
  * unchanged: conditions turned off globally since then must be saved off.
  */
 @AndroidEntryPoint
-class SyncConditionsActivity : SyncthingActivity() {
+class SyncConditionsActivity : ThemedAppCompatActivity() {
 
     private val viewModel: SyncConditionsViewModel by viewModels()
 

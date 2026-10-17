@@ -18,7 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 /** Picks a directory in the local file system, below one root or among all storage roots. */
 @AndroidEntryPoint
-class FolderPickerActivity : SyncthingActivity() {
+class FolderPickerActivity : ThemedAppCompatActivity() {
 
     private val viewModel: FolderPickerViewModel by viewModels()
 

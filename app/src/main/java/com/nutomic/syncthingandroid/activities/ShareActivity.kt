@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 /** Saves files shared from other apps into a Syncthing folder. */
 @AndroidEntryPoint
-class ShareActivity : SyncthingActivity() {
+class ShareActivity : ThemedAppCompatActivity() {
 
     private val viewModel: ShareViewModel by viewModels()
 

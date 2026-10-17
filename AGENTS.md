@@ -260,7 +260,7 @@ Next steps (to be confirmed with the owner):
      PR 11b list-detail settings layout on expanded windows (#89).
      PR 12 motion and polish (#90): morphing selected/pressed rows, `LoadingIndicator` while
      starting, predictive back shrinking the detail pane, wave only with animations on.
-     **Resume here:** H6–H8 (agent B), H9, then 13 as planned in
+     Steps 8–12 done; milestone 13 is left, as planned in
      [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md).
 7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
    [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
@@ -271,7 +271,8 @@ Next steps (to be confirmed with the owner):
     which A finished. 2026-10-17: H6 onboarding `OnboardingViewModel` (B, #92), H7 settings
     ViewModels per navigation entry (A, #93); H8 remaining screens (A, three PRs: H8a log, folder
     picker, recent changes; H8b share, photo shoot, sync conditions, dialogs; H8c web GUI and web
-    page). **Resume here (agent A):** H9, then 13.
+    page); H9 no per-activity service binding (A). **Resume here (agent A):** milestone 13 with the
+    owner.
 
 ## HANDOFF
 
