@@ -34,9 +34,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +58,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nutomic.syncthingandroid.R
@@ -64,6 +67,9 @@ import com.nutomic.syncthingandroid.util.isTelevision
 private const val COMPACT_SCREEN_MAX_DP = 360
 private const val LANDSCAPE_ICON_COLUMN_WEIGHT = 2f
 private const val LANDSCAPE_TEXT_COLUMN_WEIGHT = 3f
+
+/** The icon sits inside its badge with a quarter of its size free on each side. */
+private const val ICON_INSET_DIVISOR = 4
 private val focusIndicatorStrokeWidth = 3.dp
 private val focusIndicatorGap = 2.dp
 private val focusIndicatorPadding = focusIndicatorStrokeWidth + focusIndicatorGap
@@ -151,6 +157,39 @@ fun OnboardingScaffold(
     }
 }
 
+/** The page's icon in an expressive container: the app's badge look. */
+@Composable
+private fun OnboardingIconBadge(icon: OnboardingIcon, iconSize: Dp, modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .size(iconSize + iconSize / ICON_INSET_DIVISOR * 2)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialShapes.Cookie9Sided.toShape(),
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        val tint = MaterialTheme.colorScheme.onPrimaryContainer
+        when (icon) {
+            is OnboardingIcon.Vector ->
+                Icon(
+                    imageVector = icon.imageVector,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize),
+                )
+            OnboardingIcon.Logo ->
+                Icon(
+                    painter = painterResource(R.drawable.ic_monochrome_ui),
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize),
+                )
+        }
+    }
+}
+
 @Composable
 private fun PortraitScaffoldContent(
     icon: OnboardingIcon,
@@ -195,24 +234,7 @@ private fun PortraitScaffoldContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            when (icon) {
-                is OnboardingIcon.Vector -> {
-                    Icon(
-                        imageVector = icon.imageVector,
-                        contentDescription = null,
-                        modifier = Modifier.size(iconSize),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                OnboardingIcon.Logo -> {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_monochrome_ui),
-                        contentDescription = null,
-                        modifier = Modifier.size(iconSize),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            OnboardingIconBadge(icon = icon, iconSize = iconSize)
 
             Spacer(Modifier.height(24.dp))
 
@@ -297,24 +319,7 @@ private fun LandscapeScaffoldContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            when (icon) {
-                is OnboardingIcon.Vector -> {
-                    Icon(
-                        imageVector = icon.imageVector,
-                        contentDescription = null,
-                        modifier = Modifier.size(iconSize),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                OnboardingIcon.Logo -> {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_monochrome_ui),
-                        contentDescription = null,
-                        modifier = Modifier.size(iconSize),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            OnboardingIconBadge(icon = icon, iconSize = iconSize)
 
             Spacer(Modifier.height(24.dp))
 
