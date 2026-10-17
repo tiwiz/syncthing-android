@@ -13,7 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.activities.SyncthingActivity
+import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.model.Device
 import com.nutomic.syncthingandroid.model.DiskEvent
 import com.nutomic.syncthingandroid.service.RestApi
@@ -34,7 +34,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * Shows the list of recent changes to files and folders reported by the local Syncthing instance.
  */
 @AndroidEntryPoint
-class RecentChangesActivity : SyncthingActivity() {
+class RecentChangesActivity : ThemedAppCompatActivity() {
 
     private val viewModel: RecentChangesViewModel by viewModels()
 

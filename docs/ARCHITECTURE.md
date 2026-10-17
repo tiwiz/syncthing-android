@@ -42,7 +42,7 @@ The namespace is inherited from the original app. The application id is
 | `http` | Kotlin | Volley requests to the REST API: `ApiRequest`, `GetRequest`, `PostRequest`, `PollWebGuiAvailableTask`, `SyncthingTrustManager` |
 | `model` | Kotlin | Gson models mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
 | `util` | Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`/`SafUtils`/`FileOpener`, `PermissionUtil`, `Util` (shell), `TextFormat`, `UiUtil`, `JobUtils`, `CertificateValidator`, `extensions.kt` |
-| `activities` | Kotlin, Compose | Every screen except onboarding, settings, recent changes and the web GUI: main (`MainContent`, `MainRows`, `MainDrawer`), folder (`FolderForm`, `FolderEditScreen`), device (`DeviceForm`, `DeviceEditScreen`), pickers and dialogs, share, Syncthing Camera, QR scanner, log, web page. `ThemedAppCompatActivity` applies the theme and edge-to-edge; `SyncthingActivity` binds the service |
+| `activities` | Kotlin, Compose | Every screen except onboarding, settings, recent changes and the web GUI: main (`MainContent`, `MainRows`, `MainDrawer`), folder (`FolderForm`, `FolderEditScreen`), device (`DeviceForm`, `DeviceEditScreen`), pickers and dialogs, share, Syncthing Camera, QR scanner, log, web page. `ThemedAppCompatActivity` applies the theme and edge-to-edge; each screen's state lives in its ViewModel (`MainViewModel`, `FolderEditViewModel`, `LogViewModel`, …) |
 | `fragments` | Kotlin, Compose | `DeviceIdDialogFragment` (Compose inside a dialog fragment) |
 | `views` | Kotlin | `FolderRowState`, `DeviceRowState`: what a row of the main screen's lists shows |
 | `onboarding` | Kotlin, Compose | Launcher activity: welcome, permissions, key generation |
@@ -59,8 +59,10 @@ preview (zxing) and the WebViews are Views hosted in `AndroidView`.
 ## Dependency injection
 
 Hilt (Dagger 2.60, KSP). `SyncthingModule` (`SingletonComponent`) provides the default
-`SharedPreferences` and `NotificationHandler`. Activities and `SyncthingService` are
-`@AndroidEntryPoint` and use field injection (`@Inject lateinit var`). Classes Hilt does not
+`SharedPreferences`, `NotificationHandler`, the `@ApplicationScope` coroutine scope and the
+`@IoDispatcher`. Activities, `SyncthingService` and the schedule tile are `@AndroidEntryPoint` and
+use field injection (`@Inject lateinit var`); ViewModels are `@HiltViewModel` with constructor
+injection. Classes Hilt does not
 create (`RestApi`, `EventProcessor`, `RunConditionMonitor`, `SyncthingRunnable`) are built by hand,
 mostly inside `SyncthingService`, and get their dependencies in the constructor. Plain code with
 only a `Context` (`ConfigXml`, `ConfigBackup`) uses `Context.appDependencies()`. Plan:
@@ -70,8 +72,8 @@ only a `Context` (`ConfigXml`, `ConfigBackup`) uses `Context.appDependencies()`.
 
 ```
  UI (activities / Compose screens)
-   │  bindService (SyncthingActivity) → SyncthingServiceBinder → SyncthingService
-   │  getApi() → RestApi
+   │  ViewModels observe SyncthingConnection.snapshot (StateFlow<ServiceSnapshot>)
+   │  SyncthingConnection: bindService → SyncthingServiceBinder → SyncthingService, api → RestApi
    ▼
  SyncthingService (Service, foreground "specialUse")
    ├── RunConditionMonitor ── should-run decision ──┐
@@ -88,7 +90,9 @@ only a `Context` (`ConfigXml`, `ConfigBackup`) uses `Context.appDependencies()`.
 The central object. It is a started *and* bound service, kept in the foreground with a persistent
 notification. Its `State` is `INIT → STARTING → ACTIVE → DISABLED`, or `ERROR`; changes go through
 `onServiceStateChange()` under `mStateLock` and are broadcast to `OnServiceStateChangeListener`s on
-the main thread (the UI uses this to enable or grey out screens).
+the main thread. The UI does not register listeners itself: `SyncthingConnection` (`@Singleton`)
+binds the service while someone collects its `snapshot` and unbinds 5 s after the last collector
+is gone, so a rotation does not rebind and leaving the app still lets the service stop.
 
 - `onStartCommand` is also a command bus: `ACTION_RESTART`, `ACTION_STOP`,
   `ACTION_RESET_DATABASE`, `ACTION_RESET_DELTAS`, `ACTION_REFRESH_NETWORK_INFO`,
@@ -204,11 +208,12 @@ folders, revoked storage permission, restart required). Consent notifications ca
 2. `MainActivity` starts the service and shows `MainContent`: folders, devices and status as
    destinations of a `NavigationSuiteScaffold` (navigation bar on phones, rail on wider windows),
    with the settings icon and the overflow menu (`MainMenu`) in the top bar.
-3. Detail and edit screens (`FolderActivity`, `DeviceActivity` and the dialog activities) extend
-   `SyncthingActivity`, which binds the service in `onResume` and unbinds in `onPause`, and use
-   `ConfigRouter` to read and save.
+3. Detail and edit screens (`FolderActivity`, `DeviceActivity` and the dialog activities) keep
+   their state in ViewModels, which reach Syncthing through `SyncthingConnection` and use
+   `ConfigRouter` to read and save. Screens that do not need Syncthing (log, folder picker, sync
+   conditions, web page) do not bind it.
 4. `SettingsActivity` hosts the Compose settings with a Navigation 3 back stack
-   (`SettingsRoute`), and calls `evaluateRunConditions()` on stop.
+   (`SettingsRoute`); each entry has its own ViewModels (`SettingsViewModels.kt`).
 5. Other entry points: `ShareActivity` (share files into a synced folder), `PhotoShootActivity`
    (own launcher icon, takes photos into a synced folder), `QRScannerActivity`, `LogActivity`,
    `RecentChangesActivity`, `WebGuiActivity`.

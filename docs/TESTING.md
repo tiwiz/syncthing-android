@@ -36,6 +36,15 @@ SDK 37 image; the app targets 37.
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `WindowSizeScreenshotTest`, `ComponentGalleryScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
 | WebView screens on a device | AndroidJUnitRunner + Espresso-Web, HTTPS MockWebServer | `WebGuiActivityWebTest`, `WebViewActivityWebTest` |
 
+### Recreation tests
+
+Every screen with state has one: change something, `ActivityScenario.recreate()`, check it is
+still there and that the screen did not redo its work (read the log again, ask Syncthing again,
+open the camera again). Work that finishes after the recreation must reach the new activity
+(`SettingsRecreationTest`, `PhotoShootActivityTest`). ViewModels with a `SavedStateHandle` also get
+a round-trip test of the handle (`OnboardingViewModelTest`, `SettingsViewModelsTest`).
+`ServiceBindingTest` checks that screens bind Syncthing only through `SyncthingConnection`.
+
 ```bash
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest                         # unit tests only
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest --tests '*ConfigXmlTest' # one class
