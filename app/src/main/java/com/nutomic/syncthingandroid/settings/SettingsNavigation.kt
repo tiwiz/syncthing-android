@@ -29,12 +29,14 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.serialization.NavBackStackSerializer
 import androidx.navigation3.runtime.serialization.NavKeySerializer
 import androidx.navigation3.ui.NavDisplay
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -114,22 +116,20 @@ fun rememberSettingsNavBackStack(startDestination: SettingsRoute): NavBackStack<
 fun SettingsNavDisplay(
     backStack: NavBackStack<SettingsRoute>,
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
-    val entryProvider = remember(navigator, serviceState, activityScope) {
+    val entryProvider = remember(navigator) {
         entryProvider {
-            settingsRootEntry(navigator, serviceState)
-            settingsRunConditionsEntry(navigator, serviceState)
-            settingsUserInterfaceEntry(navigator, serviceState, activityScope)
+            settingsRootEntry(navigator)
+            settingsRunConditionsEntry(navigator)
+            settingsUserInterfaceEntry(navigator)
             settingsBehaviorEntry(navigator)
-            settingsSyncthingOptionsEntry(navigator, serviceState, activityScope)
-            settingsCustomCertificateEntry(navigator, serviceState)
-            settingsImportExportEntry(navigator, serviceState, activityScope)
+            settingsSyncthingOptionsEntry(navigator)
+            settingsCustomCertificateEntry(navigator)
+            settingsImportExportEntry(navigator)
             settingsTroubleshootingEntry(navigator)
             settingsExperimentalEntry(navigator)
-            settingsAboutEntry(navigator, serviceState)
+            settingsAboutEntry(navigator)
             licensesEntry(navigator)
         }
     }
@@ -147,7 +147,6 @@ fun SettingsNavDisplay(
         SettingsListDetail(
             backStack = backStack,
             navigator = navigator,
-            serviceState = serviceState,
             entryProvider = entryProvider,
             modifier = navigatedModifier,
         )
@@ -155,6 +154,7 @@ fun SettingsNavDisplay(
         NavDisplay(
             backStack = backStack,
             onBack = { navigator.navigateBack() },
+            entryDecorators = settingsEntryDecorators(),
             entryProvider = entryProvider,
             transitionSpec = { forwardTransition() },
             popTransitionSpec = { backwardTransition() },
@@ -173,13 +173,12 @@ private val PaneScaffoldDirective.twoPanes: Boolean
 private fun SettingsListDetail(
     backStack: NavBackStack<SettingsRoute>,
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
     entryProvider: (SettingsRoute) -> NavEntry<SettingsRoute>,
     modifier: Modifier = Modifier,
 ) {
     val detailRoute = backStack.lastOrNull().takeIf { it != SettingsRoute.Root }
     if (detailRoute == null) {
-        SettingsRootScreen(navigator = navigator, serviceState = serviceState, modifier = modifier)
+        SettingsRootRoute(navigator = navigator, modifier = modifier)
         return
     }
     val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
@@ -194,11 +193,7 @@ private fun SettingsListDetail(
         modifier = modifier,
         listPane = {
             AnimatedPane {
-                SettingsRootScreen(
-                    navigator = navigator,
-                    serviceState = serviceState,
-                    modifier = Modifier,
-                )
+                SettingsRootRoute(navigator = navigator)
             }
         },
         detailPane = {
@@ -207,6 +202,7 @@ private fun SettingsListDetail(
                 NavDisplay(
                     backStack = NavBackStack(detailBackStack),
                     onBack = { navigator.navigateBack() },
+                    entryDecorators = settingsEntryDecorators(),
                     entryProvider = entryProvider,
                     transitionSpec = { forwardTransition() },
                     popTransitionSpec = { backwardTransition() },
@@ -216,6 +212,17 @@ private fun SettingsListDetail(
         },
     )
 }
+
+/**
+ * Each entry keeps its saveable state and gets its own ViewModels, cleared when the entry leaves
+ * the back stack.
+ */
+@Composable
+private fun settingsEntryDecorators(): List<NavEntryDecorator<SettingsRoute>> =
+    listOf(
+        rememberSaveableStateHolderNavEntryDecorator(),
+        rememberViewModelStoreNavEntryDecorator(),
+    )
 
 private fun AnimatedContentTransitionScope<*>.forwardTransition(): ContentTransform =
     slideInHorizontally(initialOffsetX = { it }) togetherWith

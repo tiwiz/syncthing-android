@@ -1,60 +1,54 @@
 package com.nutomic.syncthingandroid.settings
 
-import android.content.Context
-import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.service.RestApi
-import com.nutomic.syncthingandroid.util.ConfigRouter
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
-private const val TAG = "SettingsUserInterfaceScreen"
-
 fun EntryProviderScope<SettingsRoute>.settingsUserInterfaceEntry(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.UserInterface> {
-        SettingsUserInterfaceScreen(
-            navigator = navigator,
-            serviceState = serviceState,
-            activityScope = activityScope,
-        )
+        SettingsUserInterfaceRoute(navigator = navigator)
     }
+}
+
+
+@Composable
+fun SettingsUserInterfaceRoute(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+    viewModel: UserInterfaceViewModel = hiltViewModel(),
+) {
+    // Keeps the service bound while the screen shows, for the web GUI theme.
+    viewModel.snapshot.collectAsStateWithLifecycle()
+    SettingsUserInterfaceScreen(
+        navigator = navigator,
+        onThemeChange = viewModel::syncWebGuiTheme,
+        modifier = modifier,
+    )
 }
 
 
 @Composable
 fun SettingsUserInterfaceScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
+    onThemeChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    val context = LocalContext.current
-    val stService = serviceState.service
-
     val themeNames = stringArrayResource(R.array.app_theme_names)
     val themeValues = stringArrayResource(R.array.app_theme_values)
 
@@ -84,11 +78,7 @@ fun SettingsUserInterfaceScreen(
                             if (newTheme != theme && newThemeInt != null) {
                                 theme = newTheme
                                 AppCompatDelegate.setDefaultNightMode(newThemeInt)
-                                activityScope.launch(ioDispatcher) {
-                                    withContext(NonCancellable) {
-                                        syncWebGuiTheme(context, stService?.api, newTheme)
-                                    }
-                                }
+                                onThemeChange(newTheme)
                             }
                         },
                     )
@@ -117,27 +107,5 @@ fun SettingsUserInterfaceScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
-    }
-}
-
-/**
- * Applies the app theme to the web GUI too, through config.xml or the REST API.
- *
- * It runs fire-and-forget after the app theme has already changed, so whatever goes wrong reading or
- * writing the config (I/O, parsing, REST) is logged and must not crash the app: hence the broad catch.
- */
-@Suppress("TooGenericExceptionCaught")
-private fun syncWebGuiTheme(context: Context, restApi: RestApi?, newTheme: String) {
-    try {
-        val config = ConfigRouter(context)
-        val gui = config.getGui(restApi)
-        gui.theme = when (newTheme) {
-            AppCompatDelegate.MODE_NIGHT_YES.toString() -> "dark"
-            AppCompatDelegate.MODE_NIGHT_NO.toString() -> "light"
-            else -> "default"
-        }
-        config.updateGui(restApi, gui)
-    } catch (e: Exception) {
-        Log.e(TAG, "Error updating theme with config router", e)
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +42,8 @@ import androidx.core.location.LocationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
@@ -56,25 +57,51 @@ import me.zhanghai.compose.preference.rememberPreferenceState
 
 fun EntryProviderScope<SettingsRoute>.settingsRunConditionsEntry(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
 ) {
     entry<SettingsRoute.RunConditions> {
-        SettingsRunConditionsScreen(navigator = navigator, serviceState = serviceState)
+        SettingsRunConditionsRoute(navigator = navigator)
     }
 }
 
 
 @Composable
+fun SettingsRunConditionsRoute(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+    viewModel: RunConditionsViewModel = hiltViewModel(),
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val stService = viewModel.snapshot.collectAsStateWithLifecycle().value.service
+
+    DisposableEffect(lifecycleOwner, stService, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.evaluatePending()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            viewModel.evaluatePending()
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    SettingsRunConditionsScreen(
+        navigator = navigator,
+        markPending = viewModel::markPending,
+        modifier = modifier,
+    )
+}
+
+@Composable
 fun SettingsRunConditionsScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+    markPending: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val stService = serviceState.service
-
-    var pendingEvaluation by remember { mutableStateOf(false) }
 
     val runOnWifi = rememberPreferenceState(Constants.PREF_RUN_ON_WIFI, true)
     val runOnMeteredWifi = rememberPreferenceState(Constants.PREF_RUN_ON_METERED_WIFI, false)
@@ -94,27 +121,6 @@ fun SettingsRunConditionsScreen(
     val runScheduled = rememberPreferenceState(Constants.PREF_RUN_ON_TIME_SCHEDULE, false)
     val syncDuration = rememberPreferenceState(Constants.PREF_SYNC_DURATION_MINUTES, "5")
     val sleepInterval = rememberPreferenceState(Constants.PREF_SLEEP_INTERVAL_MINUTES, "60")
-
-    val markPending = { pendingEvaluation = true }
-
-    DisposableEffect(lifecycleOwner, stService) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && pendingEvaluation && stService != null) {
-                stService.evaluateRunConditions()
-                pendingEvaluation = false
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            if (pendingEvaluation && stService != null) {
-                stService.evaluateRunConditions()
-                pendingEvaluation = false
-            }
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
 
     SettingsScaffold(

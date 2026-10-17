@@ -1,8 +1,5 @@
 package com.nutomic.syncthingandroid.settings
 
-import android.content.Intent
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,44 +10,51 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isSensitiveData
 import androidx.compose.ui.semantics.password
 import androidx.compose.ui.semantics.semantics
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.service.Constants
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.LocalPreferenceFlow
 import me.zhanghai.compose.preference.rememberPreferenceState
 
 
 fun EntryProviderScope<SettingsRoute>.settingsImportExportEntry(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.ImportExport> {
-        SettingsImportExportScreen(
-            navigator = navigator,
-            serviceState = serviceState,
-            activityScope = activityScope,
-        )
+        SettingsImportExportRoute(navigator = navigator)
     }
+}
+
+
+@Composable
+fun SettingsImportExportRoute(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+    viewModel: ImportExportViewModel = hiltViewModel(),
+) {
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
+    SettingsEffects(viewModel.events, navigator)
+    SettingsImportExportScreen(
+        navigator = navigator,
+        serviceBound = snapshot.service != null,
+        onExport = viewModel::exportConfig,
+        onImport = viewModel::importConfig,
+        modifier = modifier,
+    )
 }
 
 
 @Composable
 fun SettingsImportExportScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
+    serviceBound: Boolean,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val defaultBackupPath = "backups/syncthing/config.zip"
@@ -93,19 +97,21 @@ fun SettingsImportExportScreen(
             R.string.preference_category_actions,
             listOf(
                 { shape ->
-                    ExportConfigItem(
-                        navigator = navigator,
-                        serviceState = serviceState,
+                    ConfirmedActionItem(
+                        title = stringResource(R.string.export_config),
+                        question = stringResource(R.string.dialog_confirm_export),
+                        enabled = serviceBound,
                         shape = shape,
-                        scope = activityScope,
+                        onConfirm = onExport,
                     )
                 },
                 { shape ->
-                    ImportConfigItem(
-                        navigator = navigator,
-                        serviceState = serviceState,
+                    ConfirmedActionItem(
+                        title = stringResource(R.string.import_config),
+                        question = stringResource(R.string.dialog_confirm_import),
+                        enabled = serviceBound,
                         shape = shape,
-                        scope = activityScope,
+                        onConfirm = onImport,
                     )
                 },
             ),
@@ -136,139 +142,33 @@ private fun PasswordItem(shape: Shape) {
     )
 }
 
+/** A row that asks [question] before running [onConfirm]. */
 @Composable
-private fun ExportConfigItem(
-    navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+private fun ConfirmedActionItem(
+    title: String,
+    question: String,
+    enabled: Boolean,
     shape: Shape,
-    scope: CoroutineScope,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    onConfirm: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val stService = serviceState.service
-
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
     SettingsItem(
-        title = stringResource(R.string.export_config),
+        title = title,
         shape = shape,
-        enabled = stService != null,
+        enabled = enabled,
         onClick = { showAlert = true },
     )
     if (showAlert) {
         AlertDialog(
             onDismissRequest = { showAlert = false },
-            title = { Text(stringResource(R.string.export_config)) },
-            text = { Text(stringResource(R.string.dialog_confirm_export)) },
+            title = { Text(title) },
+            text = { Text(question) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        stService?.let { service ->
-                            scope.launch(ioDispatcher) {
-                                showAlert = false
-                                service.exportConfig().also { success ->
-                                    withContext(Dispatchers.Main) {
-                                        if (success) {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.config_export_successful_no_path,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            navigator.navigateUp()
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.config_export_failed,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            val intent = Intent(context, LogActivity::class.java)
-                                            context.startActivity(intent)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showAlert = false }
-                ) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
-}
-
-@Composable
-private fun ImportConfigItem(
-    navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    shape: Shape,
-    scope: CoroutineScope,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) {
-    val context = LocalContext.current
-    val stService = serviceState.service
-    val prefs = LocalPreferenceFlow.current
-
-    var showAlert by rememberSaveable { mutableStateOf(false) }
-
-    SettingsItem(
-        title = stringResource(R.string.import_config),
-        shape = shape,
-        enabled = stService != null,
-        onClick = { showAlert = true },
-    )
-    if (showAlert) {
-        AlertDialog(
-            onDismissRequest = { showAlert = false },
-            title = { Text(stringResource(R.string.import_config)) },
-            text = { Text(stringResource(R.string.dialog_confirm_import)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        stService?.let { service ->
-                            scope.launch(ioDispatcher) {
-                                showAlert = false
-                                service.importConfig().also { success ->
-                                    withContext(Dispatchers.Main) {
-                                        if (success) {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.config_imported_successful,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-
-                                            // apply theme from restored config
-                                            val raw: Any? = prefs.value[Constants.PREF_APP_THEME]
-                                            val theme = when (raw) {
-                                                is Int -> raw
-                                                is String -> raw.toIntOrNull()
-                                                else -> null
-                                            } ?: AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                                            AppCompatDelegate.setDefaultNightMode(theme)
-
-                                            service.evaluateRunConditions()
-
-                                            navigator.navigateUp()
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.config_import_failed_no_path,
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            val intent = Intent(context, LogActivity::class.java)
-                                            context.startActivity(intent)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        showAlert = false
+                        onConfirm()
                     },
                 ) {
                     Text(stringResource(android.R.string.ok))

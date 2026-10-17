@@ -1,69 +1,42 @@
 package com.nutomic.syncthingandroid.settings
 
-import com.nutomic.syncthingandroid.util.runShellCommandGetOutput
-import android.content.Context
-import android.content.pm.PackageManager
-import android.util.Log
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.service.Constants
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 
-private const val TAG = "SettingsAboutScreen"
+fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(navigator: Navigator<SettingsRoute>) {
+    entry<SettingsRoute.About> { SettingsAboutRoute(navigator = navigator) }
+}
 
-fun EntryProviderScope<SettingsRoute>.settingsAboutEntry(
+
+@Composable
+fun SettingsAboutRoute(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+    modifier: Modifier = Modifier,
+    viewModel: AboutViewModel = hiltViewModel(),
 ) {
-    entry<SettingsRoute.About> {
-        SettingsAboutScreen(navigator = navigator, serviceState = serviceState)
-    }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    SettingsAboutScreen(navigator = navigator, state = state, modifier = modifier)
 }
 
 
 @Composable
 fun SettingsAboutScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+    state: AboutState,
     modifier: Modifier = Modifier,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val stService = serviceState.service
-    val stServiceTick = serviceState.updateTick
-
-    val loading = stringResource(R.string.state_loading)
-    val unknown = stringResource(R.string.state_unknown)
-
-    val state by produceState(initialValue = AboutState(
-            appVersion = loading,
-            coreVersion = loading,
-            dbSize = loading,
-            fileLimit = loading,
-        ), stService, stServiceTick) {
-        value = withContext(ioDispatcher) {
-            AboutState(
-                appVersion = getAppVersion(context) ?: unknown,
-                coreVersion = stService?.api?.version ?: unknown,
-                dbSize = getDatabaseSize(context) ?: unknown,
-                fileLimit = getOpenFileLimit() ?: unknown,
-            )
-        }
-    }
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
@@ -137,39 +110,4 @@ fun SettingsAboutScreen(
             )
         }
     }
-}
-
-data class AboutState(
-    val appVersion: String = "",
-    val coreVersion: String = "",
-    val dbSize: String = "",
-    val fileLimit: String = ""
-)
-
-private fun getAppVersion(context: Context): String? {
-    return try {
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        "v${packageInfo.versionName}"
-    } catch (e: PackageManager.NameNotFoundException) {
-        Log.e(TAG, "Failed to get app version name")
-        null
-    }
-}
-
-private fun getOpenFileLimit(): String? {
-    val result = runShellCommandGetOutput("ulimit -n")
-    return if (result.isBlank()) null else result.trim()
-}
-
-private fun getDatabaseSize(context: Context): String? {
-    val dbPath = Constants.getIndexDbFolder(context).absolutePath
-    val result = runShellCommandGetOutput("/system/bin/du -sh $dbPath")
-
-    if (result.isBlank()) {
-        return null
-    }
-
-    // Split by whitespace and grab the first part (the size)
-    val resultParts = result.trim().split(Regex("\\s+"))
-    return resultParts.firstOrNull()
 }

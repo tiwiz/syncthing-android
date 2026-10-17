@@ -141,6 +141,21 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
 - **H7** `refactor(settings): ViewModels per category` (B): one per screen with state, scoped to
   its `NavEntry`; the service comes from `SyncthingConnection`, not a parameter; recreation tests
   on the screens with dialogs and forms (custom certificate, import/export, run conditions).
+
+  Done (A, at the owner's request): each settings screen has a route composable that gets its
+  `@HiltViewModel` with `hiltViewModel()` and a stateless screen. Both `NavDisplay`s (one pane and
+  the detail pane) use the saveable-state and ViewModel-store entry decorators
+  (`lifecycle-viewmodel-navigation3`; lifecycle moved to 2.11.0, which
+  `hilt-lifecycle-viewmodel-compose` 1.4.0 needs). `SettingsViewModels.kt` holds the base class
+  (`snapshot` from `SyncthingConnection`, `SettingsEvent` CLOSE / OPEN_LOG run by
+  `SettingsEffects`) and the root, run conditions, user interface, import/export and about
+  ViewModels; `CustomCertificateViewModel` (picked files and the last failure in
+  `SavedStateHandle`, an apply in flight survives a rotation) and `SyncthingOptionsViewModel`
+  (options as preferences written back after 0.5 s, maintenance actions) have their own files.
+  Work that used to run in the activity's scope runs in `@ApplicationScope` on the new
+  `@IoDispatcher`. `SyncthingServiceState` and the activity's listener are gone; the activity
+  only reads the connection in `onStop` for the notification. Tests: `SettingsRecreationTest`,
+  `SettingsViewModelsTest`.
 - **H8** `refactor: ViewModels for the remaining screens` (B; split if large):
   - share, photo shoot, QR scanner, log, recent changes, folder picker, sync conditions;
   - versioning and single-choice dialogs, only where they have more than UI-only state;

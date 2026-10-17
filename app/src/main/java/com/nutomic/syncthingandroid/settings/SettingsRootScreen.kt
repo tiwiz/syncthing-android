@@ -1,41 +1,43 @@
 package com.nutomic.syncthingandroid.settings
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 
-fun EntryProviderScope<SettingsRoute>.settingsRootEntry(
+fun EntryProviderScope<SettingsRoute>.settingsRootEntry(navigator: Navigator<SettingsRoute>) {
+    entry<SettingsRoute.Root> { SettingsRootRoute(navigator = navigator) }
+}
+
+@Composable
+fun SettingsRootRoute(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+    modifier: Modifier = Modifier,
+    viewModel: SettingsRootViewModel = hiltViewModel(),
 ) {
-    entry<SettingsRoute.Root> {
-        SettingsRootScreen(navigator = navigator, serviceState = serviceState)
-    }
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
+    SettingsRootScreen(
+        navigator = navigator,
+        isSyncthingOptionsEnabled = snapshot.state == SyncthingService.State.ACTIVE,
+        modifier = modifier,
+    )
 }
 
 @Composable
 fun SettingsRootScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
+    isSyncthingOptionsEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val stService = serviceState.service
-    val stServiceTick = serviceState.updateTick
-
-    val isSyncthingOptionsEnabled by remember(stService, stServiceTick) {
-        derivedStateOf { stService != null && stService.currentState == SyncthingService.State.ACTIVE }
-    }
-
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
         modifier = modifier.testTag("settingsRootList"),
