@@ -26,7 +26,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
@@ -41,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.ui.groupedItemShape
-import com.nutomic.syncthingandroid.ui.rememberAnimationsEnabled
 import com.nutomic.syncthingandroid.ui.stateTextColor
 import com.nutomic.syncthingandroid.views.StateTone
 
@@ -132,9 +130,6 @@ private fun HeroChip(text: String) {
 
 @Composable
 private fun ProgressCard(state: String, percent: Int) {
-    val waveSpeed =
-        if (rememberAnimationsEnabled()) WavyProgressIndicatorDefaults.LinearDeterminateWavelength
-        else 0.dp
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(CARD_CORNER.dp),
@@ -156,10 +151,7 @@ private fun ProgressCard(state: String, percent: Int) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            SyncProgress(
-                progress = percent / PERCENT.toFloat(),
-                waveSpeed = waveSpeed,
-            )
+            SyncProgress(progress = percent / PERCENT.toFloat())
         }
     }
 }

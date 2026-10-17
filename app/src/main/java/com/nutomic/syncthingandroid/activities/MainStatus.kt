@@ -14,7 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -89,25 +89,27 @@ internal fun StatusTab(status: StatusInfo?, forceStartStop: Int, actions: MainAc
 
 /** What Syncthing is doing, with its state badge or a loading indicator while starting. */
 @Composable
-private fun StatusHero(status: StatusInfo) {
+internal fun StatusHero(status: StatusInfo, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(CARD_CORNER.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            if (status.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(HERO_BADGE_SIZE.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            if (status.starting) {
+                LoadingIndicator(
+                    modifier = Modifier.size(HERO_BADGE_SIZE.dp).testTag("statusLoading")
                 )
             } else {
-                StateBadge(status.tone, size = HERO_BADGE_SIZE.dp)
+                StateBadge(
+                    status.tone,
+                    size = HERO_BADGE_SIZE.dp,
+                    modifier = Modifier.testTag("statusBadge"),
+                )
             }
             Text(
                 status.headline,

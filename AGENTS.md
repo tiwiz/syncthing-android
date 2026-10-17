@@ -258,17 +258,18 @@ Next steps (to be confirmed with the owner):
      menu. PR 6 devices list. PR 7 status tab. PR 10e onboarding page icon in an expressive badge
      (#87). PR 11a grouped Material 3 Expressive settings rows and classic `LargeTopAppBar` (#88).
      PR 11b list-detail settings layout on expanded windows (#89).
-     Step 12 is open as #90, held back for tests and a back handler fix.
-     **Resume here:** step 12 (#90), then 13 as planned in
+     PR 12 motion and polish (#90): morphing selected/pressed rows, `LoadingIndicator` while
+     starting, predictive back shrinking the detail pane, wave only with animations on.
+     **Resume here:** H6–H8 (agent B), H9, then 13 as planned in
      [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md).
 7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
    [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
    steps (order at the end of that file). Done 2026-10-17: H1 Hilt (#78), H2 constructor
    dependencies (#79), H3 `SyncthingConnection` (#81), H4 `MainViewModel` (#83), H5 folder and
    device ViewModels (#84). 2026-10-17: M3 Expressive step 9, folder and device screens.
-   2026-10-17: B finished steps 10 and 11 (#85, #87, #88, #89) and opened step 12 as #90.
-   **Resume here (agent A):** finish step 12 (#90, problems listed in the handoff's workload),
-   then H9 (after agent B's H6–H8), 13. **Agent B:** H6 → H7 → H8.
+   2026-10-17: B finished steps 10 and 11 (#85, #87, #88, #89) and started step 12 (#90),
+   which A finished. **Resume here (agent A):** H9 (after agent B's H6–H8), then 13.
+   **Agent B:** H6 → H7 → H8.
 
 ## HANDOFF
 

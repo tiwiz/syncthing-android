@@ -82,6 +82,40 @@ class MainActivityListDetailTest {
     }
 
     @Test
+    fun `the row open in the pane is marked as selected`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            assertFalse(screen.folderSelected("Camera"))
+
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            assertTrue(screen.folderSelected("Camera"))
+
+            screen.back()
+            assertFalse(screen.folderSelected("Camera"))
+
+            screen.showTab(MainScreen.Tab.DEVICES)
+            screen.open(MainScreen.Tab.DEVICES, "laptop")
+            assertTrue(screen.deviceSelected("laptop"))
+        }
+    }
+
+    @Test
+    fun `the pane shrinks with the back gesture and stays when it is cancelled`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            val width = checkNotNull(screen.detailPaneWidth())
+
+            screen.startBackGesture(progress = 1f)
+            assertTrue(checkNotNull(screen.detailPaneWidth()) < width)
+
+            screen.cancelBackGesture()
+            assertEquals("Edit Folder", screen.detailTitle())
+            assertEquals(width, checkNotNull(screen.detailPaneWidth()), 0.5f)
+        }
+    }
+
+    @Test
     fun `back closes the detail pane first, then keeps the screen in the background`() {
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)

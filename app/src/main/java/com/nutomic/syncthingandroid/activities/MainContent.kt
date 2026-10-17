@@ -43,7 +43,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
@@ -69,9 +68,6 @@ import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SyncProgress
-import com.nutomic.syncthingandroid.ui.groupedItemShape
-import com.nutomic.syncthingandroid.ui.rememberAnimationsEnabled
-import com.nutomic.syncthingandroid.ui.selectedGroupedItemShape
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -137,9 +133,6 @@ internal interface MainActions {
 
     fun onForceStartStop(index: Int)
 
-    /** Closes the detail pane on large windows, or does nothing if there is none. */
-    fun onBack()
-
     fun onExit()
 
     fun onUsageReporting(answer: UsageAnswer)
@@ -191,6 +184,7 @@ internal fun MainContent(
     actions: MainActions,
     modifier: Modifier = Modifier,
     detail: Detail? = null,
+    detailBackProgress: () -> Float = { 0f },
     onTwoPanesChange: (Boolean) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
@@ -218,7 +212,7 @@ internal fun MainContent(
         MainScaffold(
             state = state,
             tab = tab,
-            panes = Panes(directive, detail),
+            panes = Panes(directive, detail, detailBackProgress),
             menu = MenuState(menuOpen, onMenuOpenChange, menuActions),
             actions = actions,
         )
@@ -227,7 +221,12 @@ internal fun MainContent(
 }
 
 /** The list and detail panes of the current window. */
-private class Panes(val directive: PaneScaffoldDirective, val detail: Detail?) {
+private class Panes(
+    val directive: PaneScaffoldDirective,
+    val detail: Detail?,
+    /** How far a back gesture closing the detail pane has gone, 0 to 1. */
+    val backProgress: () -> Float,
+) {
     val detailShown: Boolean
         get() = detail != null && directive.twoPanes
 
@@ -286,7 +285,7 @@ private fun MainScaffold(
                     ListWithDetail(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
-                        onBack = actions::onBack,
+                        backProgress = panes.backProgress,
                     ) {
                         FolderList(
                             state.folders,
@@ -302,7 +301,7 @@ private fun MainScaffold(
                     ListWithDetail(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
-                        onBack = actions::onBack,
+                        backProgress = panes.backProgress,
                     ) {
                         DeviceList(
                             state.devices,
@@ -393,9 +392,6 @@ private fun AddMenu(actions: MainActions) {
 /** The overall progress of the devices in sync, above the folders. */
 @Composable
 private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
-    val waveSpeed =
-        if (rememberAnimationsEnabled()) WavyProgressIndicatorDefaults.LinearDeterminateWavelength
-        else 0.dp
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(CARD_CORNER.dp),
@@ -417,10 +413,7 @@ private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.displayMediumEmphasized,
                 modifier = Modifier.testTag("totalProgress"),
             )
-            SyncProgress(
-                progress = percent / PERCENT.toFloat(),
-                waveSpeed = waveSpeed,
-            )
+            SyncProgress(progress = percent / PERCENT.toFloat())
         }
     }
 }
@@ -454,14 +447,12 @@ private fun FolderList(
         item { ListTitle(MainTab.FOLDERS) }
         totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
         itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
-            val selected = item.folderId == selectedFolderId
             FolderRow(
                 item = item,
                 actions = actions,
-                shape =
-                    if (selected) selectedGroupedItemShape()
-                    else groupedItemShape(index, folders.size),
-                selected = selected,
+                index = index,
+                count = folders.size,
+                selected = item.folderId == selectedFolderId,
             )
         }
     }
@@ -484,14 +475,12 @@ private fun DeviceList(
     ) {
         item { ListTitle(MainTab.DEVICES) }
         itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
-            val selected = item.deviceId == selectedDeviceId
             DeviceRow(
                 item = item,
                 actions = actions,
-                shape =
-                    if (selected) selectedGroupedItemShape()
-                    else groupedItemShape(index, devices.size),
-                selected = selected,
+                index = index,
+                count = devices.size,
+                selected = item.deviceId == selectedDeviceId,
             )
         }
     }

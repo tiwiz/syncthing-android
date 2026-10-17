@@ -39,10 +39,13 @@ step 12 as #90 (A's step). Steps 10 and 11 are done.
 
 | Agent | Done | Left, in order |
 |---|---|---|
-| A | 8a #73, 8b #74, 8c #76, 9 #86; H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | finish 12 (#90, below) → H9 (needs B's H6–H8) → 13 with the owner |
-| B | 10a #77, 10b #80, 10c #82, 10d #85, 10e #87, 11a #88, 11b #89; 12 opened as #90 | H6 → H7 → H8 |
+| A | 8a #73, 8b #74, 8c #76, 9 #86, 12 #90 (finished); H1 #78, H2 #79, H3 #81, H4 #83, H5 #84 | H9 (needs B's H6–H8) → 13 with the owner |
+| B | 10a #77, 10b #80, 10c #82, 10d #85, 10e #87, 11a #88, 11b #89; 12 started as #90 | H6 → H7 → H8 |
 
-#90 (step 12) is green in CI but not merged, because of three problems:
+#90 (step 12) was first held back for the problems below; A fixed them in the same PR (what it
+does now: [M3-EXPRESSIVE.md](M3-EXPRESSIVE.md), step 12). The add menu case turned out not to
+happen, because the add button is hidden while the pane is open, but the duplicate handler was
+still removed.
 
 - No tests for the new behaviour (TDD rule): the loading indicator while `STARTING`, the
   selected row, back closing the detail pane, reduced motion.

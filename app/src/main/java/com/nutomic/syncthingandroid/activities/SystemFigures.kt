@@ -77,8 +77,8 @@ internal fun readableUptime(seconds: Long): String {
 internal data class StatusInfo(
     val headline: String,
     val tone: StateTone,
-    /** Whether the service is starting and a loading indicator should replace the state badge. */
-    val isLoading: Boolean,
+    /** Whether Syncthing is starting: a loading indicator replaces the state badge. */
+    val starting: Boolean,
     /** Why Syncthing runs or not, one per item; none while it starts or after a crash. */
     val reasons: List<String>,
     /** Label and value of each figure, only while it runs. */
@@ -119,7 +119,7 @@ internal fun statusInfo(
     return StatusInfo(
         headline = context.getString(headline),
         tone = tone,
-        isLoading = state == SyncthingService.State.STARTING,
+        starting = state == SyncthingService.State.STARTING,
         reasons = if (explained) runDecisionExplanation.trim().split("\n") else emptyList(),
         figures = shown,
     )

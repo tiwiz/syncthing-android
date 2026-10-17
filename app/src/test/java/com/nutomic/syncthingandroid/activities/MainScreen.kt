@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.os.Looper
 import android.view.KeyEvent
+import androidx.activity.BackEventCompat
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -83,6 +84,19 @@ internal class MainScreen(
             ?.joinToString()
 
     fun devices(): List<String> = texts("device:")
+
+    /** Whether the row of folder [label] is marked as the one open in the detail pane. */
+    fun folderSelected(label: String): Boolean = rowSelected("folder:$label")
+
+    /** Whether the row of device [name] is marked as the one open in the detail pane. */
+    fun deviceSelected(name: String): Boolean = rowSelected("device:$name")
+
+    private fun rowSelected(tag: String): Boolean =
+        compose.onNodeWithTag(tag).fetchSemanticsNode().config.getOrElse(
+            SemanticsProperties.Selected
+        ) {
+            false
+        }
 
     fun deviceStatus(name: String): String =
         compose
@@ -280,6 +294,38 @@ internal class MainScreen(
         scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         idle()
     }
+
+    /** Starts a back gesture from the left edge and holds it at [progress] (0 to 1). */
+    fun startBackGesture(progress: Float) {
+        scenario.onActivity {
+            it.onBackPressedDispatcher.dispatchOnBackStarted(backEvent(0f))
+            it.onBackPressedDispatcher.dispatchOnBackProgressed(backEvent(progress))
+        }
+        idle()
+    }
+
+    /** Lets go of the back gesture without going back. */
+    fun cancelBackGesture() {
+        scenario.onActivity { it.onBackPressedDispatcher.dispatchOnBackCancelled() }
+        idle()
+    }
+
+    private fun backEvent(progress: Float) =
+        BackEventCompat(
+            touchX = 0f,
+            touchY = 0f,
+            progress = progress,
+            swipeEdge = BackEventCompat.EDGE_LEFT,
+        )
+
+    /** How wide the detail pane is drawn, in pixels; null without one. */
+    fun detailPaneWidth(): Float? =
+        compose
+            .onAllNodesWithTag("detailPane")
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.boundsInRoot
+            ?.width
 
     fun finishing(): Boolean {
         var finishing = false

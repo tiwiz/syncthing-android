@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
@@ -75,7 +76,15 @@ class MainActivity : SyncthingActivity() {
         panes.restoreState(savedInstanceState)
         setContent {
             ApplicationTheme {
-                BackHandler(enabled = panes.detail != null && panes.twoPanes) { panes.back() }
+                // The detail pane shrinks with the back gesture; letting go closes it.
+                PredictiveBackHandler(enabled = panes.detail != null && panes.twoPanes) { events ->
+                    try {
+                        events.collect { panes.backProgress = it.progress }
+                        panes.back()
+                    } finally {
+                        panes.backProgress = 0f
+                    }
+                }
                 BackHandler(enabled = menuOpen) { menuOpen = false }
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 MainContent(
@@ -85,6 +94,7 @@ class MainActivity : SyncthingActivity() {
                     menuActions = menuActions,
                     actions = actions,
                     detail = panes.detail,
+                    detailBackProgress = { panes.backProgress },
                     onTwoPanesChange = { panes.twoPanes = it },
                 )
             }
@@ -253,8 +263,6 @@ class MainActivity : SyncthingActivity() {
             }
 
             override fun onForceStartStop(index: Int) = viewModel.onForceStartStop(index)
-
-            override fun onBack() = panes.back()
 
             override fun onExit() = doExit()
 

@@ -1,12 +1,15 @@
 package com.nutomic.syncthingandroid.ui
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -21,16 +24,32 @@ private val INNER_CORNER = 6.dp
  * The shape of item [index] of [count] in a grouped list: rounded where the group starts and ends,
  * tight between items.
  */
-fun groupedItemShape(index: Int, count: Int): RoundedCornerShape {
-    val top = if (index == 0) OUTER_CORNER else INNER_CORNER
-    val bottom = if (index == count - 1) OUTER_CORNER else INNER_CORNER
+fun groupedItemShape(index: Int, count: Int): RoundedCornerShape =
+    RoundedCornerShape(
+        topCorner(index, emphasized = false),
+        topCorner(index, emphasized = false),
+        bottomCorner(index, count, emphasized = false),
+        bottomCorner(index, count, emphasized = false),
+    )
+
+/**
+ * [groupedItemShape] for an item that morphs to fully rounded while [emphasized] (pressed or
+ * selected), with the theme's spatial motion.
+ */
+@Composable
+fun morphingItemShape(index: Int, count: Int, emphasized: Boolean): RoundedCornerShape {
+    val spec = MaterialTheme.motionScheme.fastSpatialSpec<Dp>()
+    val top by animateDpAsState(topCorner(index, emphasized), spec, label = "top corners")
+    val bottom by
+        animateDpAsState(bottomCorner(index, count, emphasized), spec, label = "bottom corners")
     return RoundedCornerShape(top, top, bottom, bottom)
 }
 
-/**
- * The shape of a selected item that stands alone in the list, e.g. the row open in the detail pane.
- */
-fun selectedGroupedItemShape(): RoundedCornerShape = RoundedCornerShape(OUTER_CORNER)
+private fun topCorner(index: Int, emphasized: Boolean): Dp =
+    if (emphasized || index == 0) OUTER_CORNER else INNER_CORNER
+
+private fun bottomCorner(index: Int, count: Int, emphasized: Boolean): Dp =
+    if (emphasized || index == count - 1) OUTER_CORNER else INNER_CORNER
 
 /** The title above a group of items. */
 @Composable
@@ -44,20 +63,17 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Sync progress as a wavy line; [progress] is 0 to 1.
- *
- * The wave is still by default so screenshots and tests stay idle; callers that know animations are
- * enabled can pass [LinearWavyProgressIndicatorDefaults.waveSpeed] or another non-zero speed.
+ * Sync progress as a wavy line; [progress] is 0 to 1. The wave moves only while the system allows
+ * animations ([rememberAnimationsEnabled]).
  */
 @Composable
-fun SyncProgress(
-    progress: Float,
-    modifier: Modifier = Modifier,
-    waveSpeed: Dp = 0.dp,
-) {
+fun SyncProgress(progress: Float, modifier: Modifier = Modifier) {
     LinearWavyProgressIndicator(
         progress = { progress },
-        waveSpeed = waveSpeed,
+        waveSpeed =
+            if (rememberAnimationsEnabled())
+                WavyProgressIndicatorDefaults.LinearDeterminateWavelength
+            else 0.dp,
         modifier =
             modifier.fillMaxWidth().semantics {
                 progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)

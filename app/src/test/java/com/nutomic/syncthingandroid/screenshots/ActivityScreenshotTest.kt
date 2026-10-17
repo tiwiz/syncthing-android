@@ -14,6 +14,7 @@ import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -36,6 +37,8 @@ import org.robolectric.annotation.GraphicsMode
         ],
 )
 class ActivityScreenshotTest(private val screen: Screen, private val dark: Boolean) {
+
+    @get:Rule val stillAnimations = StillAnimationsRule()
 
     enum class Screen(val activity: Class<out Activity>, val extras: Intent.() -> Unit = {}) {
         MAIN(MainActivity::class.java),

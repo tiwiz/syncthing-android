@@ -3,6 +3,7 @@ package com.nutomic.syncthingandroid.activities
 import android.os.Bundle
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
@@ -50,6 +51,9 @@ internal class DetailPanes(
 ) {
     var detail by mutableStateOf<Detail?>(null)
         private set
+
+    /** How far a back gesture closing the pane has gone, 0 to 1. */
+    var backProgress by mutableFloatStateOf(0f)
 
     /** Whether the window has room for the pane; reported by the screen. */
     var twoPanes by mutableStateOf(false)
