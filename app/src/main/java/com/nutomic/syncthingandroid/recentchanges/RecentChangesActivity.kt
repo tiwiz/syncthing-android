@@ -1,39 +1,31 @@
 package com.nutomic.syncthingandroid.recentchanges
 
-import android.content.ComponentName
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.preference.PreferenceManager
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.SyncthingActivity
 import com.nutomic.syncthingandroid.model.Device
 import com.nutomic.syncthingandroid.model.DiskEvent
-import com.nutomic.syncthingandroid.service.Constants.PREF_SHOW_EXACT_TIMES
 import com.nutomic.syncthingandroid.service.RestApi
-import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.FileOpener
 import java.io.File
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -41,122 +33,39 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Shows the list of recent changes to files and folders reported by the local Syncthing instance.
  */
-class RecentChangesActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
+@AndroidEntryPoint
+class RecentChangesActivity : SyncthingActivity() {
 
-    private var changes by mutableStateOf<List<RecentChange>>(emptyList())
-
-    /** Drives the pull-to-refresh indicator; only set for refreshes the user asked for. */
-    private var isRefreshing by mutableStateOf(false)
-
-    /** Re-entrancy guard, separate from [isRefreshing] so background polls stay invisible. */
-    private var refreshInFlight = false
-
-    private var showExactTimes by mutableStateOf(false)
-    private lateinit var preferences: SharedPreferences
+    private val viewModel: RecentChangesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Same store the Dagger-provided SharedPreferences wraps, read directly so this screen does
-        // not need to be added to the injector for one boolean.
-        preferences = PreferenceManager.getDefaultSharedPreferences(this)
-        showExactTimes = preferences.getBoolean(PREF_SHOW_EXACT_TIMES, false)
-
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             ApplicationTheme {
                 RecentChangesScreen(
-                    changes = changes,
-                    isRefreshing = isRefreshing,
-                    showExactTimes = showExactTimes,
+                    changes = state.changes,
+                    isRefreshing = state.isRefreshing,
+                    showExactTimes = state.showExactTimes,
                     onNavigateBack = { finish() },
-                    onRefresh = { refresh() },
-                    onToggleExactTimes = ::toggleExactTimes,
+                    onRefresh = { viewModel.refresh() },
+                    onToggleExactTimes = viewModel::toggleExactTimes,
                     onItemClick = ::openChange,
                 )
             }
         }
 
-        startBackgroundPolling()
-    }
-
-    /**
-     * Keeps the list current while the screen is in the foreground, without ever showing the refresh
-     * indicator — new changes just appear.
-     *
-     * This polls on an interval rather than holding a long-poll open (which is how the web GUI stays
-     * live). Two things make a subscription impractical here: `RestApi.getDiskEvents` has no `since`
-     * parameter, so a loop would re-fetch the same buffered events and spin as fast as the server
-     * could answer; and Volley's `DefaultRetryPolicy` uses a 5s socket timeout, so it abandons and
-     * retries a blocked long-poll several times per call — the server explicitly notes such requests
-     * "should not be retried". Short `timeout=1` queries on a timer are far more predictable.
-     *
-     * `repeatOnLifecycle(STARTED)` stops polling when the screen is not visible.
-     */
-    private fun startBackgroundPolling() {
+        // `repeatOnLifecycle(STARTED)` stops polling when the screen is not visible.
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                while (true) {
-                    delay(POLL_INTERVAL)
-                    refresh(showProgress = false)
-                }
-            }
-        }
-    }
-
-    override fun onServiceConnected(componentName: ComponentName, binder: IBinder) {
-        super.onServiceConnected(componentName, binder)
-        (binder as SyncthingServiceBinder).service.registerOnServiceStateChangeListener(this)
-    }
-
-    override fun onServiceStateChange(newState: SyncthingService.State) {
-        Log.v(TAG, "onServiceStateChange($newState)")
-        if (newState == SyncthingService.State.ACTIVE) {
-            refresh()
-        }
-    }
-
-    override fun onDestroy() {
-        service?.unregisterOnServiceStateChangeListener(this)
-        super.onDestroy()
-    }
-
-    /**
-     * @param showProgress whether to drive the refresh indicator. False for background polls, so
-     *   they update the list silently.
-     */
-    private fun refresh(showProgress: Boolean = true) {
-        if (refreshInFlight) return
-        val api = activeApi ?: return
-
-        refreshInFlight = true
-        if (showProgress) isRefreshing = true
-        // Scoped to the lifecycle, so a pending request is cancelled if the screen goes away.
-        lifecycleScope.launch {
-            try {
-                // Both of these are cached config reads, not network calls.
-                val devices = api.getDevices(true)
-                val localDeviceId = api.localDevice.deviceID
-                Log.v(TAG, "Querying disk events")
-                api.awaitDiskEvents(DISK_EVENT_LIMIT)?.let { diskEvents ->
-                    changes = diskEvents
-                        .toRecentChanges(devices, checkNotNull(localDeviceId), getString(R.string.this_device))
-                }
-            } finally {
-                refreshInFlight = false
-                isRefreshing = false
-            }
+            repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.pollWhileShown() }
         }
     }
 
     private fun openChange(change: RecentChange) {
         if (!change.canOpen) return
         Log.v(TAG, "User clicked item with title '${change.rawPath}'")
-        val folder = activeApi?.getFolderByID(change.folderId)
-        if (folder == null) {
-            Log.e(TAG, "openChange: folder unavailable for id=[${change.folderId}]")
-            return
-        }
-        val fullPath = folder.path + File.separator + change.rawPath
+        val fullPath = viewModel.fullPathOf(change) ?: return
         when (change.type) {
             ChangeType.DIR -> FileOpener.openFolder(this, fullPath)
             ChangeType.FILE -> FileOpener.openFile(this, fullPath)
@@ -164,21 +73,8 @@ class RecentChangesActivity : SyncthingActivity(), SyncthingService.OnServiceSta
         }
     }
 
-    private fun toggleExactTimes() {
-        showExactTimes = !showExactTimes
-        preferences.edit { putBoolean(PREF_SHOW_EXACT_TIMES, showExactTimes) }
-    }
-
-    /** The [RestApi], but only once the service is actually running. */
-    private val activeApi: RestApi?
-        get() = api?.takeIf { service?.currentState == SyncthingService.State.ACTIVE }
-
-    companion object {
-        private const val TAG = "RecentChangesActivity"
-        private const val DISK_EVENT_LIMIT = 100
-
-        /** How often the foreground screen re-queries. Tune freely; each query is a local call. */
-        private val POLL_INTERVAL = 5.seconds
+    private companion object {
+        const val TAG = "RecentChangesActivity"
     }
 }
 
@@ -219,7 +115,7 @@ private val REQUEST_TIMEOUT = 30.seconds
  * Syncthing process it normally returns in milliseconds, so that was judged not worth the blast
  * radius. Revisit if these requests ever go off-device.
  */
-private suspend fun RestApi.awaitDiskEvents(limit: Int): List<DiskEvent>? =
+internal suspend fun RestApi.awaitDiskEvents(limit: Int): List<DiskEvent>? =
     withTimeoutOrNull(REQUEST_TIMEOUT) {
         suspendCancellableCoroutine { continuation ->
             val pending = AtomicReference(continuation)
@@ -273,7 +169,7 @@ data class RecentChange(
     val canOpen: Boolean get() = action != ChangeAction.DELETED && type != ChangeType.UNKNOWN
 }
 
-private fun List<DiskEvent>.toRecentChanges(
+internal fun List<DiskEvent>.toRecentChanges(
     devices: List<Device>,
     localDeviceId: String,
     thisDeviceLabel: String,

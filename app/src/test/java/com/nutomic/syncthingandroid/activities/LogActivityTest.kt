@@ -117,6 +117,23 @@ class LogActivityTest {
     }
 
     @Test
+    fun `a recreation keeps the shown log without reading it again`() {
+        Constants.getSyncthingLogFile(context).writeText("[ABCDE] INFO: before\n")
+
+        launch().use {
+            it.switchLogs()
+            it.awaitShown("[ABCDE] INFO: before\n")
+            Constants.getSyncthingLogFile(context).writeText("[ABCDE] INFO: after\n")
+
+            it.recreate()
+            compose.waitForIdle()
+
+            compose.onNodeWithText("Syncthing Log").assertExists()
+            compose.onNodeWithText("[ABCDE] INFO: before\n").assertExists()
+        }
+    }
+
+    @Test
     fun `sharing a missing log says so`() {
         Constants.getSyncthingLogFile(context).delete()
 
