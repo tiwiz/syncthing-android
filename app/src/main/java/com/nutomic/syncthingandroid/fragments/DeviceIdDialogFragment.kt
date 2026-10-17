@@ -58,6 +58,7 @@ import androidx.fragment.app.FragmentManager
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.activities.CARD_CORNER
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 
 class DeviceIdDialogFragment : DialogFragment() {
@@ -276,6 +277,7 @@ fun PortraitDialogContent(
     val qrMaxHeight = minOf(containerHeightDp * 0.30f, 280.dp)
 
     Column(modifier) {
+        // Tight corners: rounder ones would cut into the QR code's quiet zone.
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
@@ -289,7 +291,7 @@ fun PortraitDialogContent(
         }
         Spacer(Modifier.height(16.dp))
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(CARD_CORNER.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
             Text(deviceId, modifier = Modifier.padding(16.dp))
@@ -325,6 +327,7 @@ fun LandscapeDialogContent(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier.fillMaxWidth().heightIn(max = 250.dp)) {
+        // Tight corners: rounder ones would cut into the QR code's quiet zone.
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
@@ -339,7 +342,7 @@ fun LandscapeDialogContent(
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(CARD_CORNER.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 Text(deviceId, modifier = Modifier.padding(16.dp))
