@@ -1,39 +1,19 @@
 package com.nutomic.syncthingandroid.settings
 
 import dagger.hilt.android.AndroidEntryPoint
-import android.content.ComponentName
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.IBinder
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.nutomic.syncthingandroid.activities.SyncthingActivity
 import com.nutomic.syncthingandroid.service.NotificationHandler
-import com.nutomic.syncthingandroid.service.SyncthingService
+import com.nutomic.syncthingandroid.service.SyncthingConnection
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-
-/**
- * The service SettingsActivity is bound to, if any, and a counter that changes whenever the
- * service's state does. Both are snapshot state, so screens that read them recompose on changes.
- */
-@Stable
-class SyncthingServiceState {
-    var service by mutableStateOf<SyncthingService?>(null)
-        internal set
-
-    var updateTick by mutableIntStateOf(0)
-        internal set
-}
 
 @AndroidEntryPoint
 class SettingsActivity : SyncthingActivity() {
@@ -43,19 +23,13 @@ class SettingsActivity : SyncthingActivity() {
     lateinit var prefFlow: MutableStateFlow<Preferences>
     @Inject
     lateinit var notificationHandler: NotificationHandler
-
-    private val serviceState = SyncthingServiceState()
-
-    // The tick updates the UI whenever the state of the Syncthing service changes.
-    val stateChangeListener = SyncthingService.OnServiceStateChangeListener {
-        serviceState.updateTick++
-    }
+    @Inject
+    lateinit var connection: SyncthingConnection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val activityScope = this.lifecycleScope
-        prefFlow = createPreferenceFlow(sharedPreferences, activityScope)
+        prefFlow = createPreferenceFlow(sharedPreferences, lifecycleScope)
 
         val routeStr = intent.getStringExtra(EXTRA_START_DESTINATION)
         val startDestination: SettingsRoute = SettingsRoute.fromString(routeStr)
@@ -85,38 +59,18 @@ class SettingsActivity : SyncthingActivity() {
                     SettingsNavDisplay(
                         backStack = backStack,
                         navigator = navigator,
-                        serviceState = serviceState,
-                        activityScope = activityScope,
                     )
                 }
             }
         }
     }
 
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        super.onServiceConnected(name, service)
-        serviceState.service = this.service
-        serviceState.service?.registerOnServiceStateChangeListener(stateChangeListener)
-        serviceState.updateTick++
-    }
-
-    override fun onServiceDisconnected(name: ComponentName) {
-        serviceState.service?.unregisterOnServiceStateChangeListener(stateChangeListener)
-        super.onServiceDisconnected(name)
-        serviceState.service = null
-        serviceState.updateTick++
-    }
-
     override fun onStop() {
-        serviceState.service?.let {
+        // The screens keep the connection bound; it outlives them by a few seconds.
+        connection.snapshot.value.service?.let {
             notificationHandler.updatePersistentNotification(it)
         }
         super.onStop()
-    }
-
-    override fun onDestroy() {
-        serviceState.service?.unregisterOnServiceStateChangeListener(stateChangeListener)
-        super.onDestroy()
     }
 
     companion object {

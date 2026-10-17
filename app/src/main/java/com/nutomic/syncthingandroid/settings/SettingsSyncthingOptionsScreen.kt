@@ -3,73 +3,51 @@ package com.nutomic.syncthingandroid.settings
 import android.content.ClipData
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isSensitiveData
 import androidx.compose.ui.semantics.password
 import androidx.compose.ui.semantics.semantics
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.EntryProviderScope
-import com.google.common.base.Splitter
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.model.Folder
 import com.nutomic.syncthingandroid.service.Constants
-import com.nutomic.syncthingandroid.service.RestApi
-import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.util.FileUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.MapPreferences
 import me.zhanghai.compose.preference.Preferences
 import me.zhanghai.compose.preference.ProvidePreferenceFlow
 import me.zhanghai.compose.preference.rememberPreferenceState
-import org.mindrot.jbcrypt.BCrypt
-import java.io.File
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-
-private const val TAG = "SettingsSyncthingOptionsScreen"
 
 fun EntryProviderScope<SettingsRoute>.settingsSyncthingOptionsEntry(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
 ) {
     entry<SettingsRoute.SyncthingOptions> {
-        SettingsSyncthingOptionsScreen(
-            navigator = navigator,
-            serviceState = serviceState,
-            activityScope = activityScope,
-        )
+        SettingsSyncthingOptionsRoute(navigator = navigator)
     }
 }
 
-private object Keys {
+/** The preference keys of Syncthing's own options, as [SyncthingOptionsViewModel] maps them. */
+internal object SyncthingOptionKeys {
     const val DEVICE_NAME = "device_name"
     const val API_KEY = "api_key"
     const val USAGE_REPORTING = "usage_reporting"
@@ -91,45 +69,62 @@ private object Keys {
     const val CRASH_REPORTING = "crash_reporting"
 }
 
-private const val BIND_ALL = "0.0.0.0"
-private const val BIND_LOCALHOST = "127.0.0.1"
+private typealias Keys = SyncthingOptionKeys
 
+/** The maintenance actions of the advanced section. */
+@Stable
+class SyncthingMaintenance(
+    val supportBundle: SupportBundle,
+    val onClearVersions: () -> Unit,
+    val onDownloadSupportBundle: () -> Unit,
+    val onUndoIgnored: () -> Unit,
+)
 
-@OptIn(FlowPreview::class)
+@Composable
+fun SettingsSyncthingOptionsRoute(
+    navigator: Navigator<SettingsRoute>,
+    modifier: Modifier = Modifier,
+    viewModel: SyncthingOptionsViewModel = hiltViewModel(),
+) {
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
+    val supportBundle by viewModel.supportBundle.collectAsStateWithLifecycle()
+    val maintenance =
+        remember(supportBundle, viewModel) {
+            SyncthingMaintenance(
+                supportBundle = supportBundle,
+                onClearVersions = viewModel::clearVersions,
+                onDownloadSupportBundle = viewModel::downloadSupportBundle,
+                onUndoIgnored = viewModel::undoIgnoredDevicesAndFolders,
+            )
+        }
+    SettingsSyncthingOptionsScreen(
+        navigator = navigator,
+        apiPreferences = viewModel.apiPreferences,
+        serviceBound = snapshot.service != null,
+        isStServiceActive = snapshot.optionsAvailable,
+        maintenance = maintenance,
+        modifier = modifier,
+    )
+}
+
+// The preference library edits the options through the MutableStateFlow it is given.
+@Suppress("MutableParams")
 @Composable
 fun SettingsSyncthingOptionsScreen(
     navigator: Navigator<SettingsRoute>,
-    serviceState: SyncthingServiceState,
-    activityScope: CoroutineScope,
+    apiPreferences: MutableStateFlow<Preferences>,
+    serviceBound: Boolean,
+    isStServiceActive: Boolean,
+    maintenance: SyncthingMaintenance,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
-    val stService = serviceState.service
-    val stServiceTick = serviceState.updateTick
+    val scope = rememberCoroutineScope()
 
     val sharedPrefWebGuiPassword = rememberPreferenceState(Constants.PREF_WEBUI_PASSWORD, "")
 
-    val isStServiceActive by remember(stService, stServiceTick) { derivedStateOf {
-        stService?.currentState == SyncthingService.State.ACTIVE && stService.api?.isConfigLoaded == true
-    } }
-    val apiPrefFlow: MutableStateFlow<Preferences> = remember {
-        MutableStateFlow(stService?.api?.preferences ?: MapPreferences())
-    }
-
-    LaunchedEffect(stService?.api, isStServiceActive) {
-        val currentApi = stService?.api
-        if (currentApi != null && isStServiceActive) {
-            apiPrefFlow.value = currentApi.preferences
-            apiPrefFlow
-                .drop(1)
-                .debounce(0.5.seconds)
-                .collect { currentApi.preferences = it }
-        }
-    }
-
-
-    ProvidePreferenceFlow(apiPrefFlow) {
+    ProvidePreferenceFlow(apiPreferences) {
         val deviceName = rememberPreferenceState(Keys.DEVICE_NAME, "")
         val apiKey = rememberPreferenceState(Keys.API_KEY, "")
         val usageReporting = rememberPreferenceState(Keys.USAGE_REPORTING, false)
@@ -166,7 +161,7 @@ fun SettingsSyncthingOptionsScreen(
                     isStServiceActive,
                     context,
                     clipboard,
-                    activityScope,
+                    scope,
                 ),
             )
             groupedSection(
@@ -198,7 +193,7 @@ fun SettingsSyncthingOptionsScreen(
             )
             groupedSection(
                 R.string.category_advanced,
-                advancedItems(crashReporting, stService, isStServiceActive, navigator, activityScope),
+                advancedItems(crashReporting, serviceBound, isStServiceActive, navigator, maintenance),
             )
         }
     }
@@ -433,10 +428,10 @@ private fun webGuiItems(
 
 private fun advancedItems(
     crashReporting: MutableState<Boolean>,
-    stService: SyncthingService?,
+    serviceBound: Boolean,
     isStServiceActive: Boolean,
     navigator: Navigator<SettingsRoute>,
-    scope: CoroutineScope,
+    maintenance: SyncthingMaintenance,
 ): List<@Composable (Shape) -> Unit> = listOf(
     { shape ->
         SettingsSwitch(
@@ -452,51 +447,55 @@ private fun advancedItems(
             title = stringResource(R.string.webui_custom_cert_title),
             summary = stringResource(R.string.webui_custom_cert_summary),
             shape = shape,
-            enabled = stService != null,
+            enabled = serviceBound,
             onClick = { navigator.navigateTo(SettingsRoute.CustomCertificate) },
         )
     },
     { shape ->
-        ClearStVersionItem(
-            stService = stService,
+        ConfirmedItem(
+            title = stringResource(R.string.clear_stversions_title),
+            summary = stringResource(R.string.clear_stversions_summary),
+            question = stringResource(R.string.clear_stversions_question),
             enabled = isStServiceActive,
             shape = shape,
-            scope = scope,
+            onConfirm = maintenance.onClearVersions,
         )
     },
     { shape ->
         SupportBundleItem(
-            stService = stService,
+            supportBundle = maintenance.supportBundle,
             enabled = isStServiceActive,
             shape = shape,
-            scope = scope,
+            onClick = maintenance.onDownloadSupportBundle,
         )
     },
     { shape ->
-        UndoIgnoredDevicesFoldersItem(
-            stService = stService,
+        ConfirmedItem(
+            title = stringResource(R.string.undo_ignored_devices_folders_title),
+            summary = null,
+            question = stringResource(R.string.undo_ignored_devices_folders_question),
             enabled = isStServiceActive,
             shape = shape,
-            scope = scope,
+            onConfirm = maintenance.onUndoIgnored,
         )
     },
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** A row that asks [question] before running [onConfirm]. */
 @Composable
-private fun ClearStVersionItem(
-    stService: SyncthingService?,
+private fun ConfirmedItem(
+    title: String,
+    summary: String?,
+    question: String,
     enabled: Boolean,
     shape: Shape,
-    scope: CoroutineScope,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    onConfirm: () -> Unit,
 ) {
-    val context = LocalContext.current
     var showAlert by rememberSaveable { mutableStateOf(false) }
 
     SettingsItem(
-        title = stringResource(R.string.clear_stversions_title),
-        summary = stringResource(R.string.clear_stversions_summary),
+        title = title,
+        summary = summary,
         shape = shape,
         enabled = enabled,
         onClick = { showAlert = true },
@@ -504,26 +503,13 @@ private fun ClearStVersionItem(
     if (showAlert) {
         AlertDialog(
             onDismissRequest = { showAlert = false },
-            title = { Text(stringResource(R.string.clear_stversions_title)) },
-            text = { Text(stringResource(R.string.clear_stversions_question)) },
+            title = { Text(title) },
+            text = { Text(question) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        stService?.api?.let { api ->
-                            scope.launch(ioDispatcher) {
-                                val folders = api.folders
-                                if (clearStVersions(folders)) {
-                                    withContext(Dispatchers.Main) {
-                                        Toast.makeText(
-                                            context,
-                                            R.string.clear_stversions_done,
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                                showAlert = false
-                            }
-                        }
+                        showAlert = false
+                        onConfirm()
                     },
                 ) {
                     Text(stringResource(android.R.string.ok))
@@ -539,81 +525,20 @@ private fun ClearStVersionItem(
         )
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun UndoIgnoredDevicesFoldersItem(
-    stService: SyncthingService?,
-    enabled: Boolean,
-    shape: Shape,
-    scope: CoroutineScope,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) {
-    val context = LocalContext.current
-    var showAlert by rememberSaveable { mutableStateOf(false) }
-
-    SettingsItem(
-        title = stringResource(R.string.undo_ignored_devices_folders_title),
-        shape = shape,
-        enabled = enabled,
-        onClick = { showAlert = true },
-    )
-    if (showAlert) {
-        AlertDialog(
-            onDismissRequest = { showAlert = false },
-            title = { Text(stringResource(R.string.undo_ignored_devices_folders_title)) },
-            text = { Text(stringResource(R.string.undo_ignored_devices_folders_question)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        stService?.api?.let { api ->
-                            scope.launch(ioDispatcher) {
-                                api.undoIgnoredDevicesAndFolders()
-                                api.sendConfig()
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        context,
-                                        R.string.undo_ignored_devices_folders_done,
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                showAlert = false
-                            }
-                        }
-                    },
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showAlert = false }
-                ) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
-}
-
 
 @Composable
 private fun SupportBundleItem(
-    stService: SyncthingService?,
+    supportBundle: SupportBundle,
     enabled: Boolean,
     shape: Shape,
-    scope: CoroutineScope,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    onClick: () -> Unit,
 ) {
-    var supportBundleState by remember { mutableStateOf(SupportBundleDownloadState.INIT) }
-    var supportBundleFileName by remember { mutableStateOf("") }
-
-    val summary = when (supportBundleState) {
+    val summary = when (supportBundle.state) {
         SupportBundleDownloadState.INIT -> null
         SupportBundleDownloadState.DOWNLOADING -> stringResource(R.string.download_support_bundle_in_progress)
         SupportBundleDownloadState.SUCCESS -> stringResource(
             R.string.download_support_bundle_succeeded,
-            supportBundleFileName,
+            supportBundle.fileName,
         )
         SupportBundleDownloadState.FAILED -> stringResource(R.string.download_support_bundle_failed)
     }
@@ -622,148 +547,7 @@ private fun SupportBundleItem(
         title = stringResource(R.string.download_support_bundle_title),
         summary = summary,
         shape = shape,
-        enabled = enabled && supportBundleState != SupportBundleDownloadState.DOWNLOADING,
-        onClick = {
-            stService?.api?.let { api ->
-                supportBundleState = SupportBundleDownloadState.DOWNLOADING
-                scope.launch(ioDispatcher) {
-                    val deviceName = api.localDevice.displayName
-                    val downloadDir = FileUtils.getExternalStorageDownloadsDirectory()
-                    val targetFileName = "$downloadDir/syncthing-support-bundle_$deviceName.zip"
-                    supportBundleFileName = targetFileName
-                    val targetFile = File(targetFileName)
-                    api.downloadSupportBundle(targetFile) { success ->
-                        supportBundleState = if (success)
-                            SupportBundleDownloadState.SUCCESS
-                        else
-                            SupportBundleDownloadState.FAILED
-                    }
-                }
-            }
-        },
+        enabled = enabled && supportBundle.state != SupportBundleDownloadState.DOWNLOADING,
+        onClick = onClick,
     )
-}
-
-private enum class SupportBundleDownloadState {
-    INIT, DOWNLOADING, SUCCESS, FAILED
-}
-
-private var RestApi.preferences: Preferences
-    get() {
-        if (!this.isConfigLoaded) return MapPreferences()
-
-        val values = mutableMapOf<String, Any>()
-        values[Keys.DEVICE_NAME] = this.localDevice.name
-        values[Keys.API_KEY] = this.apiKey
-        values[Keys.USAGE_REPORTING] = this.isUsageReportingAccepted
-
-        this.options.let { options ->
-            values[Keys.LISTEN_ADDRESSES] = checkNotNull(options.listenAddresses).joinToString()
-            values[Keys.INCOMING_RATE_LIMIT] = options.maxRecvKbps
-            values[Keys.OUTGOING_RATE_LIMIT] = options.maxSendKbps
-            values[Keys.NAT_TRAVERSAL] = options.natEnabled
-            values[Keys.LOCAL_DISCOVERY] = options.localAnnounceEnabled
-            values[Keys.GLOBAL_DISCOVERY] = options.globalAnnounceEnabled
-            values[Keys.RELAYING] = options.relaysEnabled
-            values[Keys.GLOBAL_SERVERS] = checkNotNull(options.globalAnnounceServers).joinToString()
-            values[Keys.CRASH_REPORTING] = options.crashReportingEnabled
-        }
-
-        this.gui.let { gui ->
-            values[Keys.WEB_GUI_PORT] = gui.bindPort.toIntOrNull() ?: Constants.DEFAULT_WEBGUI_TCP_PORT
-            values[Keys.WEB_GUI_REMOTE_ACCESS] = gui.bindAddress != BIND_LOCALHOST
-            gui.user?.let { values[Keys.WEB_GUI_USERNAME] = it }
-            // use password saved in shared preference only
-            // values[Keys.WEB_GUI_PASSWORD] = gui.password
-        }
-
-        return MapPreferences(values)
-    }
-    set(value) {
-        val splitter = Splitter.on(",").trimResults().omitEmptyStrings()
-        val valueMap = value.asMap()
-
-        // update calls that change internal state of RestApi
-        valueMap[Keys.USAGE_REPORTING]?.let { this.setUsageReporting(it as Boolean) }
-
-        // assignments to options and gui
-        val options = this.options
-        val gui = this.gui
-        for ((key, mapValue) in valueMap) {
-            when (key) {
-                Keys.LISTEN_ADDRESSES -> {
-                    val addresses = splitter.splitToList(mapValue as String)
-                    options.listenAddresses = addresses.toTypedArray()
-                }
-                Keys.INCOMING_RATE_LIMIT -> {
-                    options.maxRecvKbps = mapValue as Int
-                }
-                Keys.OUTGOING_RATE_LIMIT -> {
-                    options.maxSendKbps = mapValue as Int
-                }
-                Keys.NAT_TRAVERSAL -> {
-                    options.natEnabled = mapValue as Boolean
-                }
-                Keys.LOCAL_DISCOVERY -> {
-                    options.localAnnounceEnabled = mapValue as Boolean
-                }
-                Keys.GLOBAL_DISCOVERY -> {
-                    options.globalAnnounceEnabled = mapValue as Boolean
-                }
-                Keys.RELAYING -> {
-                    options.relaysEnabled = mapValue as Boolean
-                }
-                Keys.GLOBAL_SERVERS -> {
-                    val servers = splitter.splitToList(mapValue as String)
-                    options.globalAnnounceServers = servers.toTypedArray()
-                }
-                Keys.CRASH_REPORTING -> {
-                    options.crashReportingEnabled = mapValue as Boolean
-                }
-                Keys.WEB_GUI_REMOTE_ACCESS -> {
-                    val address = if (mapValue as Boolean) BIND_ALL else BIND_LOCALHOST
-                    val port = (valueMap[Keys.WEB_GUI_PORT] as Int?) ?: Constants.DEFAULT_WEBGUI_TCP_PORT
-                    gui.address = "$address:$port"
-                }
-                Keys.WEB_GUI_PORT -> {/* Ignore here, handled in WEB_GUI_REMOTE_ACCESS */}
-                Keys.WEB_GUI_USERNAME -> {
-                    gui.user = mapValue as String
-                }
-                Keys.WEB_GUI_PASSWORD -> {
-                    val hashed = BCrypt.hashpw(mapValue as String, BCrypt.gensalt(4))
-                    gui.password = hashed
-                }
-            }
-        }
-        // does not call sendConfig
-        this.editSettings(gui, options)
-
-        val localDevice = this.localDevice
-        val deviceName = valueMap[Keys.DEVICE_NAME] as String? ?: localDevice.name
-        localDevice.name = deviceName
-        // this calls the sendConfig method
-        this.updateDevice(localDevice)
-    }
-
-private fun clearStVersions(folders: List<Folder>): Boolean {
-    for (folder in folders) {
-        val dir = File(folder.path + "/" + Constants.FOLDER_NAME_STVERSIONS)
-        if (dir.exists() && dir.isDirectory) {
-            Log.d(TAG, "Delete dir: $dir")
-            deleteContents(dir)
-        }
-    }
-    return true
-}
-
-private fun deleteContents(dir: File) {
-    val files = dir.listFiles()
-    files?.let {
-        for (file in it) {
-            if (file.isDirectory) {
-                deleteContents(file)
-            }
-            file.delete()
-        }
-    }
 }

@@ -13,6 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +34,12 @@ object SyncthingModule {
     fun getApplicationScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    // This is where the dispatcher gets injected from.
+    @Suppress("InjectDispatcher")
+    @Provides
+    @IoDispatcher
+    fun getIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
     @Provides
     @Singleton
     fun getNotificationHandler(@ApplicationContext context: Context): NotificationHandler =
@@ -41,6 +48,9 @@ object SyncthingModule {
 
 /** Lives as long as the app: for app-wide flows such as the service connection. */
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ApplicationScope
+
+/** For blocking work (files, the REST client); tests replace it. */
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class IoDispatcher
 
 /**
  * The app-wide dependencies for classes Hilt does not create (the REST client, the event processor,
