@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Looper
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
@@ -15,22 +16,28 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
+import com.nutomic.syncthingandroid.testutil.FakeSyncthing
+import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
+import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.awaitMain
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
 import java.nio.file.Files
+import java.time.Duration
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
 
@@ -46,6 +53,7 @@ import org.robolectric.shadows.ShadowToast
         [
             ShadowEnvironmentWithAllFilesAccess::class,
             ShadowContentResolverWithStatusListeners::class,
+            ShadowUtilDeviceShell::class,
         ],
 )
 class FolderActivityTest {
@@ -436,5 +444,29 @@ class FolderActivityTest {
             putExtra(FolderActivity.EXTRA_DEVICE_ID, REMOTE_DEVICE_ID)
         }
             .use { screen -> assertTrue(screen.deviceShared("laptop")) }
+    }
+
+    @Test
+    fun `with Syncthing stopped the folder shows no state`() {
+        editFolder().use { screen -> assertNull(screen.state()) }
+    }
+
+    @Test
+    fun `the folder's state shows while Syncthing runs`() {
+        val syncthing = FakeSyncthing(context)
+        try {
+            RunningSyncthingService.install(syncthing)
+            editFolder().use { screen ->
+                // Syncthing answers the first query later; the screen shows it on a refresh.
+                awaitMain {
+                    shadowOf(Looper.getMainLooper())
+                        .idleFor(Duration.ofMillis(Constants.GUI_UPDATE_INTERVAL))
+                    screen.state() != null
+                }
+                assertNotNull(screen.state())
+            }
+        } finally {
+            syncthing.close()
+        }
     }
 }

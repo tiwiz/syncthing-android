@@ -160,7 +160,7 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
 
 ## Order with the Material 3 Expressive plan
 
-- **A:** 8c (open) → 9 → H1 → H2 → H3 → H4 → H5 → 12 → H9 → 13.
+- **A:** 8c → 9 → H1 → H2 → H3 → H4 → H5 → 12 → H9 → 13.
 - **B:** 10 → 11 → (after H3 is merged) H6 → H7 → H8.
 - H1–H3 change shared infrastructure (`app/build.gradle.kts`, `gradle/libs.versions.toml`,
   `SyncthingApp`, `service/`): A announces them, B rebases after each.

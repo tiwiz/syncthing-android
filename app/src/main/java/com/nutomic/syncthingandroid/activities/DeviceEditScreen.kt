@@ -8,20 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,12 +35,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.SectionHeader
 import com.nutomic.syncthingandroid.util.Compression
 
 /** A device found by local discovery, with its addresses. */
@@ -56,6 +59,8 @@ internal data class DeviceScreenInfo(
     /** Null until queried, or once an id was entered. */
     val discovered: List<DiscoveredEntry>?,
     val localDiscoveryEnabled: Boolean,
+    /** What Syncthing reports about the device; null while adding one. */
+    val status: EditStatus? = null,
 )
 
 /** Which dialog the device screen shows. */
@@ -91,7 +96,7 @@ internal interface DeviceScreenActions {
     fun onConfirmDialog(dialog: DeviceDialog)
 }
 
-/** The device's id, name, addresses, folder shares and options. */
+/** The device's state, id, name, addresses, folder shares and options. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DeviceEditScreen(
@@ -127,11 +132,6 @@ internal fun DeviceEditScreen(
                             ),
                         )
                     }
-                    if (!info.createMode) {
-                        IconButton(onClick = { actions.onDialog(DeviceDialog.DELETE) }) {
-                            Icon(Icons.Filled.Delete, stringResource(R.string.delete_device))
-                        }
-                    }
                 },
             )
         },
@@ -141,14 +141,31 @@ internal fun DeviceEditScreen(
                 Modifier.fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .wrapContentWidth()
+                    .widthIn(max = EDIT_MAX_WIDTH.dp)
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            info.status?.let {
+                EditHero(
+                    title = form.name.ifEmpty { form.deviceId.take(SHORT_ID_LENGTH) },
+                    status = it,
+                    chips = listOf(form.deviceId.take(SHORT_ID_LENGTH)),
+                )
+            }
             DeviceIdSection(form, info, actions)
             Fields(form, actions)
             FoldersSection(form, actions)
             OptionsSection(form, info, actions)
             ConnectionSection(info)
+            EditButtons(
+                pauseLabel = stringResource(R.string.pause_device),
+                paused = form.paused,
+                onPausedChange = { actions.onFormChange(form.copy(paused = it, changed = true)) },
+                deleteLabel = if (info.createMode) null else stringResource(R.string.delete_device),
+                onDelete = { actions.onDialog(DeviceDialog.DELETE) },
+            )
         }
     }
     DeviceDialogs(form, dialog, actions)
@@ -161,7 +178,7 @@ private fun DeviceIdSection(
     actions: DeviceScreenActions,
 ) {
     if (info.createMode) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column {
             OutlinedTextField(
                 value = form.deviceId,
                 onValueChange = { actions.onFormChange(form.copy(deviceId = it, changed = true)) },
@@ -183,22 +200,26 @@ private fun DeviceIdSection(
             }
         }
     } else {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.device_id),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                SelectionContainer {
-                    Text(form.deviceId, style = MaterialTheme.typography.bodyMedium)
+        GroupItem(RoundedCornerShape(CARD_CORNER.dp)) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.device_id),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SelectionContainer {
+                        Text(form.deviceId, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
-            }
-            IconButton(onClick = actions::onShowDeviceId) {
-                Icon(Icons.Filled.Share, stringResource(R.string.share_device_id))
+                IconButton(onClick = actions::onShowDeviceId) {
+                    Icon(Icons.Filled.Share, stringResource(R.string.share_device_id))
+                }
             }
         }
     }
@@ -211,17 +232,20 @@ private fun DiscoveredDevices(
     form: DeviceForm,
     actions: DeviceScreenActions,
 ) {
-    Column(modifier = Modifier.padding(top = 8.dp)) {
+    Column {
         Row(
             modifier = Modifier.fillMaxWidth().clickable(onClick = actions::onRefreshDiscovered),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            SectionHeader(
                 stringResource(R.string.discovered_devices_title),
-                style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
-            Icon(Icons.Filled.Refresh, contentDescription = null)
+            Icon(
+                Icons.Filled.Refresh,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
+            )
         }
         if (discovered.isEmpty()) {
             Text(
@@ -236,34 +260,38 @@ private fun DiscoveredDevices(
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
             )
         }
-        for (entry in discovered) {
-            val caption =
-                entry.deviceId + if (entry.addresses.isEmpty()) "" else " (${entry.addresses})"
-            Text(
-                text = caption,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable {
-                            actions.onFormChange(
-                                form.copy(deviceId = entry.deviceId, changed = true)
-                            )
-                        }
-                        .padding(vertical = 12.dp),
-            )
-        }
+        Group(
+            discovered.map<DiscoveredEntry, GroupEntry> { entry ->
+                { shape ->
+                    val caption =
+                        entry.deviceId +
+                            if (entry.addresses.isEmpty()) "" else " (${entry.addresses})"
+                    GroupItem(shape) {
+                        Text(
+                            text = caption,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .clickable {
+                                        actions.onFormChange(
+                                            form.copy(deviceId = entry.deviceId, changed = true)
+                                        )
+                                    }
+                                    .padding(16.dp),
+                        )
+                    }
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun Fields(form: DeviceForm, actions: DeviceScreenActions) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = form.name,
             onValueChange = { actions.onFormChange(form.copy(name = it, changed = true)) },
@@ -283,109 +311,130 @@ private fun Fields(form: DeviceForm, actions: DeviceScreenActions) {
 @Composable
 private fun FoldersSection(form: DeviceForm, actions: DeviceScreenActions) {
     Column {
-        SectionTitle(R.string.folders)
+        SectionHeader(stringResource(R.string.folders))
         if (form.shares.isEmpty()) {
-            Text(
-                text = stringResource(R.string.folders_list_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable(onClick = actions::onAddFolder)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-            )
-        }
-        for (share in form.shares) {
-            fun update(changed: FolderShare) =
-                actions.onFormChange(
-                    form.copy(
-                        shares =
-                            form.shares.map { if (it.folderId == share.folderId) changed else it },
-                        changed = true,
+            Group(
+                listOf<GroupEntry> { shape ->
+                    LinkRow(
+                        text = stringResource(R.string.folders_list_empty),
+                        shape = shape,
+                        enabled = true,
+                        onClick = actions::onAddFolder,
                     )
-                )
-            SwitchRow(
-                title = share.label,
-                checked = share.shared,
-                onCheckedChange = { update(share.copy(shared = it)) },
+                }
             )
-            if (share.shared) {
-                OutlinedTextField(
-                    value = share.encryptionPassword,
-                    onValueChange = { update(share.copy(encryptionPassword = it)) },
-                    label = { Text(stringResource(R.string.deviceEncryptionPasswordHint)) },
-                    singleLine = true,
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .testTag("password:${share.label}"),
-                )
-            }
+            return
         }
-        HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+        Group(
+            form.shares.map<FolderShare, GroupEntry> { share ->
+                { shape ->
+                    fun update(changed: FolderShare) =
+                        actions.onFormChange(
+                            form.copy(
+                                shares =
+                                    form.shares.map {
+                                        if (it.folderId == share.folderId) changed else it
+                                    },
+                                changed = true,
+                            )
+                        )
+                    SwitchRow(
+                        title = share.label,
+                        checked = share.shared,
+                        shape = shape,
+                        onCheckedChange = { update(share.copy(shared = it)) },
+                    ) {
+                        if (share.shared) {
+                            OutlinedTextField(
+                                value = share.encryptionPassword,
+                                onValueChange = { update(share.copy(encryptionPassword = it)) },
+                                label = {
+                                    Text(stringResource(R.string.deviceEncryptionPasswordHint))
+                                },
+                                singleLine = true,
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                                        .testTag("password:${share.label}"),
+                            )
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun OptionsSection(form: DeviceForm, info: DeviceScreenInfo, actions: DeviceScreenActions) {
-    Column {
-        if (info.expertMode) {
-            val titles = stringArrayResource(R.array.compress_entries)
-            val values = stringArrayResource(R.array.compress_values)
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable { actions.onDialog(DeviceDialog.COMPRESSION) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    stringResource(R.string.compression),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    titles[compressionIndex(values, form.compression)],
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    fun change(changed: DeviceForm) = actions.onFormChange(changed.copy(changed = true))
+    Group(
+        buildList<GroupEntry> {
+            if (info.expertMode) add { shape -> CompressionRow(form, shape, actions) }
+            add { shape ->
+                SwitchRow(
+                    stringResource(R.string.introducer),
+                    form.introducer,
+                    shape,
+                    { change(form.copy(introducer = it)) },
                 )
             }
+            add { shape ->
+                SwitchRow(
+                    stringResource(R.string.autoAcceptFolders),
+                    form.autoAcceptFolders,
+                    shape,
+                    { change(form.copy(autoAcceptFolders = it)) },
+                )
+            }
+            add { shape ->
+                SwitchRow(
+                    stringResource(R.string.untrusted_device),
+                    form.untrusted,
+                    shape,
+                    { change(form.copy(untrusted = it)) },
+                    summary = stringResource(R.string.untrusted_device_explanation),
+                )
+            }
+            if (!info.createMode) {
+                add { shape ->
+                    SwitchRow(
+                        stringResource(R.string.custom_sync_conditions_title),
+                        form.customSyncConditions,
+                        shape,
+                        { change(form.copy(customSyncConditions = it)) },
+                        summary = stringResource(R.string.custom_sync_conditions_description),
+                    )
+                }
+                add { shape ->
+                    LinkRow(
+                        text = stringResource(R.string.custom_sync_conditions_dialog),
+                        shape = shape,
+                        enabled = form.customSyncConditions,
+                        onClick = actions::onOpenSyncConditions,
+                    )
+                }
+            }
         }
-        SwitchRow(stringResource(R.string.introducer), form.introducer) {
-            actions.onFormChange(form.copy(introducer = it, changed = true))
-        }
-        SwitchRow(stringResource(R.string.autoAcceptFolders), form.autoAcceptFolders) {
-            actions.onFormChange(form.copy(autoAcceptFolders = it, changed = true))
-        }
-        SwitchRow(stringResource(R.string.pause_device), form.paused) {
-            actions.onFormChange(form.copy(paused = it, changed = true))
-        }
-        SwitchRow(
-            stringResource(R.string.untrusted_device),
-            form.untrusted,
-            summary = stringResource(R.string.untrusted_device_explanation),
+    )
+}
+
+@Composable
+private fun CompressionRow(form: DeviceForm, shape: Shape, actions: DeviceScreenActions) {
+    val titles = stringArrayResource(R.array.compress_entries)
+    val values = stringArrayResource(R.array.compress_values)
+    GroupItem(shape) {
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clickable { actions.onDialog(DeviceDialog.COMPRESSION) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            actions.onFormChange(form.copy(untrusted = it, changed = true))
-        }
-        if (!info.createMode) {
-            SwitchRow(
-                stringResource(R.string.custom_sync_conditions_title),
-                form.customSyncConditions,
-                summary = stringResource(R.string.custom_sync_conditions_description),
-            ) {
-                actions.onFormChange(form.copy(customSyncConditions = it, changed = true))
-            }
+            Text(stringResource(R.string.compression), style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = stringResource(R.string.custom_sync_conditions_dialog),
-                style = MaterialTheme.typography.bodyLarge,
-                color =
-                    if (form.customSyncConditions) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable(
-                            enabled = form.customSyncConditions,
-                            onClick = actions::onOpenSyncConditions,
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                titles[compressionIndex(values, form.compression)],
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -393,21 +442,29 @@ private fun OptionsSection(form: DeviceForm, info: DeviceScreenInfo, actions: De
 
 @Composable
 private fun ConnectionSection(info: DeviceScreenInfo) {
-    Column {
-        info.currentAddress?.let { LabelledValue(R.string.current_address, it) }
-        info.syncthingVersion?.let { LabelledValue(R.string.syncthing_version_title, it) }
-    }
+    Group(
+        buildList<GroupEntry> {
+            info.currentAddress?.let {
+                add { shape -> LabelledValue(R.string.current_address, it, shape) }
+            }
+            info.syncthingVersion?.let {
+                add { shape -> LabelledValue(R.string.syncthing_version_title, it, shape) }
+            }
+        }
+    )
 }
 
 @Composable
-private fun LabelledValue(label: Int, value: String) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Text(
-            stringResource(label),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+private fun LabelledValue(label: Int, value: String, shape: Shape) {
+    GroupItem(shape) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+                stringResource(label),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(value, style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 
@@ -477,4 +534,5 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
 private fun compressionIndex(values: Array<String>, value: String): Int =
     Compression.fromIndex(values.lastIndexOf(value)).index
 
-private const val DISABLED_ALPHA = 0.38f
+/** The first block of a device id, enough to tell devices apart at a glance. */
+private const val SHORT_ID_LENGTH = 7

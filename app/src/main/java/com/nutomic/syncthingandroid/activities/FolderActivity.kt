@@ -57,6 +57,7 @@ class FolderActivity : SyncthingActivity() {
                         },
                         onLeave = ::finish,
                     ),
+                    viewModel::refreshWhileShown,
                 )
                 controller.form?.let {
                     FolderEditScreen(

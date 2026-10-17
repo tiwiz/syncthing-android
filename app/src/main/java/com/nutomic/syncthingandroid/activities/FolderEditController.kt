@@ -27,6 +27,7 @@ import com.nutomic.syncthingandroid.util.FileUtils
 import com.nutomic.syncthingandroid.util.SafUtils
 import com.nutomic.syncthingandroid.util.formatPath
 import com.nutomic.syncthingandroid.util.nativeBinaryCanWriteToPath
+import com.nutomic.syncthingandroid.views.FolderRowState
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -116,6 +117,16 @@ private constructor(
         outState.putString(STATE_FORM, Gson().toJson(form))
         outState.putString(STATE_DIALOG, dialog.name)
         outState.putString(STATE_FOLDER_URI, folderUri?.toString())
+    }
+
+    /** Shows the saved folder's state as Syncthing reports it; nothing for a new folder. */
+    fun refreshStatus() {
+        if (createMode) return
+        val restApi = host.restApi
+        val saved = configRouter.getFolders(restApi).firstOrNull { it.id == folder.id } ?: return
+        val running = restApi?.takeIf { it.isConfigLoaded }
+        val row = FolderRowState.of(context, saved, running?.getFolderStatus(saved.id))
+        info = info.copy(status = EditStatus(row.tone, row.state, row.progress))
     }
 
     /** A screen opened through [FolderEditHost.launch] returned [result]. */
@@ -490,6 +501,7 @@ private constructor(
         }
         form = initial
         info = info.copy(expertMode = preferences.getBoolean(Constants.PREF_EXPERT_MODE, false))
+        refreshStatus()
         dialog =
             savedState?.getString(STATE_DIALOG)?.let(FolderDialog::valueOf) ?: FolderDialog.NONE
         checkWriteAccess(initial.path)

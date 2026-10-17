@@ -117,6 +117,14 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
       size first.
 9. **Folder and device screens.** Hero with the state shape, grouped sections, wavy progress for
    folders, toggles in grouped rows, bottom button row (pause, remove). Drivers unchanged.
+   Done: when editing, a hero with the state badge, name, state and chips (folder id and type,
+   short device id) and a progress card while syncing, refreshed every second while the screen
+   is resumed (activity or pane); the label, id, name and addresses stay text fields; path,
+   folder type, pull order, versioning, shares, switches, connection details are grouped items;
+   at the end Pause (tonal toggle, saved with the form as before) and Delete (outlined, error
+   color), which replace the pause switch and the top bar's delete icon. Content is at most
+   840 dp wide. Behaviour tests unchanged; the drivers' `delete()` taps the button, and gained
+   `state()`.
 10. **Secondary screens**, one or two per PR: single choice dialogs (folder type, pull order),
     versioning, sync conditions, folder picker, share, log, QR scanner and camera, web GUI and web
     page top bars, recent changes, device ID dialog, onboarding.
