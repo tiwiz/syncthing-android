@@ -4,10 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,6 +21,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -166,7 +169,13 @@ private fun LogScreen(
                     text = logText ?: stringResource(R.string.retrieving_logs),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier =
+                        Modifier.padding(16.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainerLow,
+                                RoundedCornerShape(CARD_CORNER.dp),
+                            )
+                            .padding(16.dp),
                 )
             }
         }

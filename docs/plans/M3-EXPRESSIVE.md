@@ -126,9 +126,11 @@ agent can help are in [M3-EXPRESSIVE-HANDOFF.md](M3-EXPRESSIVE-HANDOFF.md).
     group, no more preference rows) and the folder picker (grouped rows with folder and file
     icons, new `other/folder_picker*` goldens). 10c the share screen's sub folder row a group
     of one and the QR scanner's cancel bar theme-styled; Syncthing Camera keeps the onboarding
-    scaffold, restyled with it in 10e. Behaviour tests and drivers unchanged. The recipe's
-    flexible top bars are not in material3 1.5.0-beta01 (only their tokens): the classic top
-    bars stay until the next bump.
+    scaffold, restyled with it in 10e. 10d the log in a card, the recent changes grouped rows
+    and the device ID dialog's id card on the app's card corners (the QR card keeps tight
+    corners for its quiet zone); the web GUI and web page screens keep the classic top bars.
+    Behaviour tests and drivers unchanged. The recipe's flexible top bars are not in material3
+    1.5.0-beta01 (only their tokens): the classic top bars stay until the next bump.
 11. **Settings.** Expressive styling of the preference lists (`me.zhanghai` preference library:
     theme it, or replace its rows with our grouped items where it falls short) and, on large
     windows, categories and detail side by side with a Navigation 3 list-detail scene.
