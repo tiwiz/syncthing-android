@@ -12,26 +12,25 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 
 /** Shows a web page, such as the usage statistics, with a warning for invalid certificates. */
 class WebViewActivity : SyncthingActivity() {
 
+    private val viewModel: WebViewViewModel by viewModels()
+
     private var isRunningOnTv = false
     private var webPageUrl = ""
     private var webView: WebView? = null
 
-    private var loading by mutableStateOf(true)
-
-    /** The certificate error waiting for the user's decision. */
+    /** The certificate error waiting for the user's decision; it belongs to this WebView. */
     private var pendingSslError by mutableStateOf<SslErrorHandler?>(null)
-
-    /** Once the user accepted an invalid certificate, later errors on the page do not ask again. */
-    private var sslNoticeUserDecision = false
 
     private val webViewClient =
         object : WebViewClient() {
@@ -41,7 +40,7 @@ class WebViewActivity : SyncthingActivity() {
                 handler: SslErrorHandler,
                 error: SslError,
             ) {
-                if (sslNoticeUserDecision) {
+                if (viewModel.certificateAccepted) {
                     handler.proceed()
                 } else {
                     pendingSslError = handler
@@ -49,14 +48,14 @@ class WebViewActivity : SyncthingActivity() {
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                loading = false
+                viewModel.onPageFinished()
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isRunningOnTv = isRunningOnTV(this)
-        val url = intent.getStringExtra(EXTRA_WEB_URL)
+        val url = viewModel.url
         if (url == null) {
             Log.e(TAG, "EXTRA_WEB_URL not set.")
             finish()
@@ -64,6 +63,7 @@ class WebViewActivity : SyncthingActivity() {
         }
         webPageUrl = url
         setContent {
+            val loading by viewModel.loading.collectAsStateWithLifecycle()
             ApplicationTheme {
                 WebViewScreen(
                     title = title.toString(),
@@ -88,6 +88,7 @@ class WebViewActivity : SyncthingActivity() {
     private fun createWebView(context: Context): WebView =
         WebView(context).also {
             webView = it
+            viewModel.onLoadStarted()
             it.settings.javaScriptEnabled = true
             it.settings.domStorageEnabled = true
             it.webViewClient = webViewClient
@@ -100,7 +101,7 @@ class WebViewActivity : SyncthingActivity() {
         pendingSslError = null
         if (proceed) {
             handler.proceed()
-            sslNoticeUserDecision = true
+            viewModel.certificateAccepted = true
         } else {
             handler.cancel()
             if (isRunningOnTv) {

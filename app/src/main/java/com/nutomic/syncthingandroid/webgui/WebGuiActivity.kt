@@ -2,13 +2,11 @@ package com.nutomic.syncthingandroid.webgui
 
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
@@ -18,9 +16,12 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
@@ -29,41 +30,20 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.SyncthingActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.service.SyncthingServiceBinder
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
-import com.nutomic.syncthingandroid.util.ConfigXml
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.InputStream
-import java.net.URL
 import java.security.GeneralSecurityException
-import java.security.cert.CertificateException
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import androidx.core.net.toUri
 
 /**
  * Holds a WebView that shows the web ui of the local syncthing instance.
  */
-class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChangeListener {
+@AndroidEntryPoint
+class WebGuiActivity : SyncthingActivity() {
 
-    private lateinit var config: ConfigXml
+    private val viewModel: WebGuiViewModel by viewModels()
 
-    /**
-     * Web GUI URL pinned to the loopback interface. The WebView only ever talks to the local
-     * Syncthing instance, so we connect on 127.0.0.1 regardless of the configured GUI listen
-     * address (which is 0.0.0.0 when remote access is enabled). This also keeps the WebView within
-     * the loopback domain-config in network_security_config.xml that trusts user-installed CAs.
-     */
-    private lateinit var webGuiUrl: URL
-    private var caCertificate: X509Certificate? = null
-    private var registeredService: SyncthingService? = null
     private var webView: WebView? = null
     private var webGuiLoadStarted = false
-    private var serviceActive = false
-    private var webGuiLoading by mutableStateOf(true)
-    private var webGuiLoadError by mutableStateOf<String?>(null)
 
     private val webViewClient = object : WebViewClient() {
         override fun onReceivedSslError(
@@ -90,15 +70,15 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
             request: WebResourceRequest,
             error: WebResourceError,
         ) {
-            if (!request.isForMainFrame || !webGuiLoading) {
+            if (!request.isForMainFrame || !viewModel.loadState.value.loading) {
                 return
             }
             Log.w(TAG, "Web GUI load failed: ${error.errorCode} ${error.description}")
-            webGuiLoadError = "${error.description} (${error.errorCode})"
+            viewModel.onLoadError("${error.description} (${error.errorCode})")
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            webGuiLoading = false
+            viewModel.onPageFinished()
         }
     }
 
@@ -116,19 +96,21 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        config = loadConfiguration(this)
-        webGuiUrl = toLoopback(config.webGuiUrl)
-        if (!loadCaCertificate()) {
+        if (viewModel.caCertificate == null) {
+            Toast.makeText(this, R.string.config_file_missing, Toast.LENGTH_LONG).show()
+            finish()
             return
         }
 
         setContent {
+            val loadState by viewModel.loadState.collectAsStateWithLifecycle()
             ApplicationTheme {
                 WebGuiScreen(
-                    loading = webGuiLoading,
-                    error = webGuiLoadError,
+                    loading = loadState.loading,
+                    error = loadState.error,
                     onNavigateBack = { finish() },
                     webViewFactory = { context ->
+                        viewModel.onWebViewCreated()
                         createWebView(context, webViewClient).also {
                             webView = it
                             // The WebView is created lazily during composition, which may run
@@ -143,22 +125,12 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
 
         startSyncthingService()
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
-    }
-
-    override fun onServiceConnected(componentName: ComponentName, binder: IBinder) {
-        super.onServiceConnected(componentName, binder)
-        registerServiceListener((binder as SyncthingServiceBinder).service)
-    }
-
-    override fun onServiceDisconnected(componentName: ComponentName) {
-        unregisterServiceListener()
-        super.onServiceDisconnected(componentName)
-    }
-
-    override fun onServiceStateChange(newState: SyncthingService.State) {
-        Log.v(TAG, "onServiceStateChange($newState)")
-        serviceActive = newState == SyncthingService.State.ACTIVE
-        loadWebGuiIfNeeded()
+        lifecycleScope.launch {
+            viewModel.serviceActive.collect { active ->
+                Log.v(TAG, "serviceActive($active)")
+                loadWebGuiIfNeeded()
+            }
+        }
     }
 
     override fun onPause() {
@@ -175,47 +147,14 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         if (webGuiLoadStarted && WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) {
             ProxyController.getInstance().clearProxyOverride(ContextCompat.getMainExecutor(this)) {}
         }
-        unregisterServiceListener()
         webView?.destroy()
         webView = null
         super.onDestroy()
     }
 
-    private fun loadCaCertificate(): Boolean {
-        val httpsCertFile: File = Constants.getHttpsCertFile(this)
-        if (!httpsCertFile.exists()) {
-            Toast.makeText(this, R.string.config_file_missing, Toast.LENGTH_LONG).show()
-            finish()
-            return false
-        }
-
-        try {
-            FileInputStream(httpsCertFile).use { input: InputStream ->
-                val certificateFactory = CertificateFactory.getInstance("X.509")
-                caCertificate = certificateFactory.generateCertificate(input) as X509Certificate
-            }
-            return true
-        } catch (e: FileNotFoundException) {
-            throw IllegalArgumentException("Untrusted Certificate", e)
-        } catch (e: CertificateException) {
-            throw IllegalArgumentException("Untrusted Certificate", e)
-        }
-    }
-
     private fun startSyncthingService() {
         val serviceIntent = Intent(this, SyncthingService::class.java)
         startForegroundService(serviceIntent)
-    }
-
-    private fun registerServiceListener(service: SyncthingService) {
-        unregisterServiceListener()
-        registeredService = service
-        service.registerOnServiceStateChangeListener(this)
-    }
-
-    private fun unregisterServiceListener() {
-        registeredService?.unregisterOnServiceStateChangeListener(this)
-        registeredService = null
     }
 
     private fun loadWebGuiIfNeeded() {
@@ -224,7 +163,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
             Log.v(TAG, "loadWebGuiIfNeeded: Skipped event due to webView == null")
             return
         }
-        if (!serviceActive || webGuiLoadStarted || currentWebView.url != null) {
+        if (!viewModel.serviceActive.value || webGuiLoadStarted || currentWebView.url != null) {
             return
         }
 
@@ -232,8 +171,8 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         currentWebView.stopLoading()
         bypassProxies {
             webView?.loadUrl(
-                webGuiUrl.toString(),
-                createAuthHeaders(config.webUIUsername, config.webUIPassword),
+                viewModel.webGuiUrl.toString(),
+                createAuthHeaders(viewModel.config.webUIUsername, viewModel.config.webUIPassword),
             )
         }
     }
@@ -261,7 +200,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
 
     private fun shouldOpenOutsideWebView(uri: Uri): Boolean {
         val host = uri.host
-        val webGuiHost = webGuiUrl.host
+        val webGuiHost = viewModel.webGuiUrl.host
         if (host != null && host == webGuiHost) {
             return false
         }
@@ -301,7 +240,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         // Otherwise, fall back to pinning against the local instance's self-signed certificate.
         val pinned = try {
             val certificate = extractCertificate(error.certificate)
-            val ca = caCertificate
+            val ca = viewModel.caCertificate
             if (certificate == null || ca == null) {
                 Log.w(TAG, "X509Certificate reference invalid")
                 false
@@ -325,9 +264,7 @@ class WebGuiActivity : SyncthingActivity(), SyncthingService.OnServiceStateChang
         handler.cancel()
         // The WebView then reports the page as finished without calling onReceivedError, so show
         // the load error here, or the screen would stay blank.
-        if (webGuiLoading) {
-            webGuiLoadError = "Untrusted certificate (SSL error ${error.primaryError})"
-        }
+        viewModel.onLoadError("Untrusted certificate (SSL error ${error.primaryError})")
     }
 
     companion object {

@@ -147,6 +147,20 @@ class WebViewActivityTest {
     }
 
     @Test
+    fun `an accepted certificate is not asked about again after a recreation`() {
+        launch().use { scenario ->
+            sslError(scenario)
+            compose.onNodeWithText("Continue").performClick()
+
+            scenario.recreate()
+            val second = sslError(scenario)
+
+            assertTrue(second.wasProceedCalled())
+            compose.onNodeWithText("Security Notice").assertDoesNotExist()
+        }
+    }
+
+    @Test
     fun `refusing an invalid certificate cancels the load and keeps the screen`() {
         launch().use { scenario ->
             val handler = sslError(scenario)
