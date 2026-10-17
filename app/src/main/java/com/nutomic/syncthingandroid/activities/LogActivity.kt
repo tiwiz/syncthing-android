@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,66 +37,31 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 /** Shows the Android log or Syncthing's log, and shares it as a file. */
+@AndroidEntryPoint
 class LogActivity : SyncthingActivity() {
 
-    /** The Android log is shown by default. */
-    private var showSyncthingLog by mutableStateOf(false)
-
-    /** The shown log; null while it is read. */
-    private var logText by mutableStateOf<String?>(null)
-
-    private var androidLog = ""
-    private var syncthingLog = ""
-    private var fetchJob: Job? = null
+    private val viewModel: LogViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        showSyncthingLog = savedInstanceState?.getBoolean(STATE_SHOW_SYNCTHING_LOG) ?: false
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             ApplicationTheme {
                 LogScreen(
-                    showSyncthingLog = showSyncthingLog,
-                    logText = logText,
-                    onSwitchLogs = {
-                        showSyncthingLog = !showSyncthingLog
-                        fetchAndViewLog()
-                    },
-                    onShare = {
-                        shareLogFile(
-                            if (showSyncthingLog) Constants.getSyncthingLogFile(this)
-                            else Constants.getAndroidLogFile(this)
-                        )
-                    },
+                    showSyncthingLog = state.showSyncthingLog,
+                    logText = state.logText,
+                    onSwitchLogs = viewModel::switchLogs,
+                    onShare = { shareLogFile(viewModel.shownLogFile) },
                     onNavigateBack = ::finish,
                 )
             }
-        }
-        fetchAndViewLog()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean(STATE_SHOW_SYNCTHING_LOG, showSyncthingLog)
-    }
-
-    /** Reads both logs again, writing the Android one to its file for sharing, then shows one. */
-    private fun fetchAndViewLog() {
-        fetchJob?.cancel()
-        logText = null
-        fetchJob = lifecycleScope.launch {
-            val logs = readLogs(this@LogActivity)
-            androidLog = logs.android
-            syncthingLog = logs.syncthing
-            logText = if (showSyncthingLog) syncthingLog else androidLog
         }
     }
 
@@ -111,10 +77,6 @@ class LogActivity : SyncthingActivity() {
                 .putExtra(Intent.EXTRA_STREAM, contentUri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(Intent.createChooser(shareIntent, getString(R.string.share_log_file)))
-    }
-
-    private companion object {
-        const val STATE_SHOW_SYNCTHING_LOG = "showSyncthingLog"
     }
 }
 

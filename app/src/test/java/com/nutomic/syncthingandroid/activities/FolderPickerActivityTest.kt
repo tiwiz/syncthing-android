@@ -116,6 +116,17 @@ class FolderPickerActivityTest {
     }
 
     @Test
+    fun `the folder shown survives a recreation`() {
+        launch().use { scenario ->
+            open("Music")
+
+            scenario.recreate()
+
+            assertEquals(listOf("Albums"), listed())
+        }
+    }
+
+    @Test
     fun `select returns the folder shown`() {
         launch(initial = File(root, "Music").path).use { scenario ->
             compose.onNodeWithContentDescription("Select Folder").performClick()

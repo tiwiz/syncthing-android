@@ -161,6 +161,12 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   - versioning and single-choice dialogs, only where they have more than UI-only state;
   - web GUI and web page, for their loading and certificate state;
   - recreation tests.
+  Done by A in three PRs, at the owner's request. H8a: `LogViewModel` (logs read once, the shown
+  one in `SavedStateHandle`), `FolderPickerViewModel` (roots from the intent extras, the folder
+  shown in `SavedStateHandle`: before, a rotation went back to the start folder) and
+  `RecentChangesViewModel` (list kept, refresh when Syncthing becomes active, polling run by the
+  activity while started). Recreation tests in `LogActivityTest`, `FolderPickerActivityTest` and
+  the new `RecentChangesActivityTest`.
 - **H9** `refactor: drop the per-activity service binding` (A):
   - `SyncthingActivity` binding and `OnServiceStateChangeListener` for the UI go;
   - the tiles use `SyncthingConnection`;

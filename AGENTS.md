@@ -269,8 +269,8 @@ Next steps (to be confirmed with the owner):
    device ViewModels (#84). 2026-10-17: M3 Expressive step 9, folder and device screens.
     2026-10-17: B finished steps 10 and 11 (#85, #87, #88, #89) and started step 12 (#90),
     which A finished. 2026-10-17: H6 onboarding `OnboardingViewModel` (B, #92), H7 settings
-    ViewModels per navigation entry (A). **Resume here (agent A):** H9 (after agent B's H8),
-    then 13. **Agent B:** H8.
+    ViewModels per navigation entry (A, #93); H8 remaining screens (A, three PRs: H8a log, folder
+    picker, recent changes). **Resume here (agent A):** H8b, H8c, H9, then 13.
 
 ## HANDOFF
 
