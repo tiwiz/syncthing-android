@@ -177,6 +177,45 @@ class PhotoShootActivityTest {
         }
     }
 
+    @Test
+    fun `a recreation while the camera is open asks for no second picture`() {
+        grantCamera()
+        prefs.edit().putBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, true).commit()
+
+        launch().use { scenario ->
+            checkNotNull(captureRequest())
+
+            scenario.recreate()
+            idle()
+
+            assertNull(captureRequest())
+        }
+    }
+
+    @Test
+    fun `a picture taken after a recreation is still reported`() {
+        grantCamera()
+        prefs.edit().putBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, true).commit()
+
+        launch().use { scenario ->
+            val request = checkNotNull(captureRequest())
+            checkNotNull(context.contentResolver.openOutputStream(checkNotNull(request.output())))
+                .use {
+                    Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888)
+                        .compress(Bitmap.CompressFormat.JPEG, 90, it)
+                }
+
+            scenario.recreate()
+            scenario.onActivity { shadowOf(it).receiveResult(request, Activity.RESULT_OK, null) }
+            idle()
+
+            assertEquals(
+                "Successfully saved picture to the Syncthing Camera folder.",
+                ShadowToast.getTextOfLatestToast(),
+            )
+        }
+    }
+
     private fun clickContinue() {
         compose.onNodeWithText("Continue").performClick()
         idle()

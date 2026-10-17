@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 
 /**
@@ -13,27 +15,17 @@ import com.nutomic.syncthingandroid.theme.ApplicationTheme
  */
 class VersioningDialogActivity : ThemedAppCompatActivity() {
 
-    /**
-     * All parameters seen so far, as strings; those of other types stay, as Syncthing ignores them.
-     */
-    private val params = mutableStateMapOf<String, String>()
+    private val viewModel: VersioningViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val arguments = savedInstanceState?.getBundle(STATE_PARAMS) ?: intent.extras ?: Bundle()
-        for (key in arguments.keySet()) {
-            arguments.getString(key)?.let { params[key] = it }
-        }
-        fillVersioningDefaults(params)
         setContent {
+            val params by viewModel.params.collectAsStateWithLifecycle()
             ApplicationTheme {
                 VersioningScreen(
                     params = params,
-                    onTypeChange = { type ->
-                        params[KEY_TYPE] = type
-                        fillVersioningDefaults(params)
-                    },
-                    onParamChange = { key, value -> params[key] = value },
+                    onTypeChange = viewModel::changeType,
+                    onParamChange = viewModel::changeParam,
                     onFinish = ::finishWithResult,
                 )
             }
@@ -41,20 +33,11 @@ class VersioningDialogActivity : ThemedAppCompatActivity() {
         onBackPressedDispatcher.addCallback(this) { finishWithResult() }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBundle(STATE_PARAMS, params.toBundle())
-    }
-
     private fun finishWithResult() {
-        setResult(RESULT_OK, Intent().putExtras(params.toBundle()))
+        setResult(RESULT_OK, Intent().putExtras(viewModel.params.value.toBundle()))
         finish()
     }
 
     private fun Map<String, String>.toBundle() =
         Bundle().apply { forEach { (key, value) -> putString(key, value) } }
-
-    private companion object {
-        const val STATE_PARAMS = "arguments"
-    }
 }

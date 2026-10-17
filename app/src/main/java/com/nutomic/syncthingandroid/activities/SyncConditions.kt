@@ -29,11 +29,18 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.settings.SettingsScaffold
 import com.nutomic.syncthingandroid.ui.SectionHeader
 import com.nutomic.syncthingandroid.ui.groupedItemShape
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * The global run conditions a folder's or device's own conditions can only narrow: what is off
@@ -360,4 +367,35 @@ private fun ConditionNoticeRow(text: String, shape: Shape) {
                 .background(MaterialTheme.colorScheme.surfaceContainerLow, shape)
                 .padding(16.dp),
     )
+}
+
+/**
+ * The run conditions of one folder or device, read once from the preferences and saved by the
+ * screen whenever it pauses.
+ */
+@HiltViewModel
+internal class SyncConditionsViewModel
+@Inject
+constructor(private val preferences: SharedPreferences, savedState: SavedStateHandle) :
+    ViewModel() {
+
+    private val prefixAndId: String? = savedState[SyncConditionsActivity.EXTRA_OBJECT_PREFIX_AND_ID]
+
+    val global: GlobalRunConditions = GlobalRunConditions.read(preferences)
+
+    private val state =
+        MutableStateFlow(prefixAndId?.let { ObjectRunConditions.read(preferences, it, global) })
+
+    /** Null when the screen was opened without its extras. */
+    val conditions: StateFlow<ObjectRunConditions?> = state.asStateFlow()
+
+    fun change(conditions: ObjectRunConditions) {
+        state.value = conditions
+    }
+
+    /** Saves the conditions, also unchanged: those turned off globally must be saved off. */
+    fun save() {
+        val id = prefixAndId ?: return
+        state.value?.save(preferences, id)
+    }
 }

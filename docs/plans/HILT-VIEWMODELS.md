@@ -166,7 +166,13 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   shown in `SavedStateHandle`: before, a rotation went back to the start folder) and
   `RecentChangesViewModel` (list kept, refresh when Syncthing becomes active, polling run by the
   activity while started). Recreation tests in `LogActivityTest`, `FolderPickerActivityTest` and
-  the new `RecentChangesActivityTest`.
+  the new `RecentChangesActivityTest`. H8b: `ShareViewModel` (typed names in `SavedStateHandle`,
+  folders loaded when Syncthing's state changes, the copy in `viewModelScope`),
+  `PhotoShootViewModel` (the picture in progress and whether the intro shows survive a recreation;
+  before, a recreation while the camera app was open asked for a second picture),
+  `SyncConditionsViewModel`, and plain `SavedStateHandle` ViewModels for the single-choice and
+  versioning dialogs (their `Bundle` state is gone). The QR scanner keeps no state of its own, so
+  it has no ViewModel.
 - **H9** `refactor: drop the per-activity service binding` (A):
   - `SyncthingActivity` binding and `OnServiceStateChangeListener` for the UI go;
   - the tiles use `SyncthingConnection`;
