@@ -5,6 +5,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
@@ -37,7 +38,7 @@ fun SettingsRootScreen(
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
-        modifier = modifier,
+        modifier = modifier.testTag("settingsRootList"),
         title = stringResource(R.string.settings_title),
     ) {
         item {
