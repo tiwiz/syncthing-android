@@ -56,6 +56,11 @@ class VersioningDialogActivityTest {
     }
 
     @Test
+    fun `the dialog draws its own title`() {
+        launch("type" to "none").use { compose.onNodeWithText("File Versioning").assertExists() }
+    }
+
+    @Test
     fun `each type fills in its default parameters`() {
         val expected =
             mapOf(

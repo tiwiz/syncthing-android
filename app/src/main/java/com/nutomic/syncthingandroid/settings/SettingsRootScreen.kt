@@ -70,7 +70,10 @@ fun SettingsRootScreen(
                 { shape ->
                     SettingsItem(
                         title = stringResource(R.string.category_syncthing_options),
-                        summary = stringResource(R.string.category_syncthing_options_summary),
+                        // Says why the screen is disabled; no need once it is not.
+                        summary =
+                            if (isSyncthingOptionsEnabled) null
+                            else stringResource(R.string.category_syncthing_options_summary),
                         shape = shape,
                         enabled = isSyncthingOptionsEnabled,
                         onClick = { navigator.navigateTo(SettingsRoute.SyncthingOptions) },

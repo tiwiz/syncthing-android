@@ -109,10 +109,13 @@ class SettingsNavigationTest {
     fun `screens follow the service state`() {
         launch("Root").use {
             compose.onNodeWithText("Syncthing Options").assertIsNotEnabled()
+            compose.onNodeWithText(ONLY_WHEN_RUNNING).assertExists()
 
             setServiceState(SyncthingService.State.ACTIVE)
 
             compose.onNodeWithText("Syncthing Options").assertIsEnabled()
+            // The hint why the screen is disabled goes once it is not.
+            compose.onNodeWithText(ONLY_WHEN_RUNNING).assertDoesNotExist()
         }
     }
 
@@ -124,5 +127,9 @@ class SettingsNavigationTest {
             .apply { isAccessible = true }
             .invoke(service, state)
         shadowOf(Looper.getMainLooper()).idle()
+    }
+
+    private companion object {
+        const val ONLY_WHEN_RUNNING = "This menu is only available if Syncthing is running."
     }
 }

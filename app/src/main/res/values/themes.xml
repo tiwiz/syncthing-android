@@ -44,6 +44,12 @@
         <item name="colorAccent">@color/primary_dark</item>
     </style>
 
+    <!-- Dialog-styled activities: the surface and title are drawn in Compose (ui/DialogSurface.kt). -->
+    <style name="Theme.Syncthing.DialogActivity" parent="Theme.Syncthing.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
     <!-- Toolbar themes -->
     <eat-comment/>
 

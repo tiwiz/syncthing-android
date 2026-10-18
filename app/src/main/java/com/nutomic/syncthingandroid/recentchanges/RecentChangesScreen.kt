@@ -157,7 +157,8 @@ internal fun RecentChangesScreen(
             .padding(paddingValues)
         val listContent: @Composable BoxScope.() -> Unit = {
             if (changes.isEmpty()) {
-                EmptyState(Modifier.align(Alignment.Center))
+                // Not while the list loads: "no changes" is only known once it has.
+                if (!isRefreshing) EmptyState(Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

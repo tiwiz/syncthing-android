@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -127,6 +128,25 @@ class MainActivityListDetailTest {
 
             screen.back()
             assertFalse(screen.finishing())
+        }
+    }
+
+    @Test
+    fun `a row is not marked as selected while the window is too narrow for its pane`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+
+            // A foldable folded, or a tablet split: the pane is kept but not shown.
+            RuntimeEnvironment.setQualifiers("w411dp-h891dp-port")
+            screen.recreate()
+            assertNull(screen.detailTitle())
+            assertFalse(screen.folderSelected("Camera"))
+
+            RuntimeEnvironment.setQualifiers("w900dp-h900dp-port")
+            screen.recreate()
+            assertEquals("Edit Folder", screen.detailTitle())
+            assertTrue(screen.folderSelected("Camera"))
         }
     }
 
