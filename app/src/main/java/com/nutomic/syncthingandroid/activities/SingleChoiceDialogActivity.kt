@@ -34,11 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import com.nutomic.syncthingandroid.ui.DialogSurface
 import com.nutomic.syncthingandroid.ui.groupedItemShape
 
 /**
  * A dialog-styled screen that picks one of a few values and hands it back as its result, on
- * "Finish" and on back alike. The window title comes from the activity label.
+ * "Finish" and on back alike. The dialog title is the activity label.
  */
 abstract class SingleChoiceDialogActivity : ThemedAppCompatActivity() {
 
@@ -62,13 +63,15 @@ abstract class SingleChoiceDialogActivity : ThemedAppCompatActivity() {
         setContent {
             val selected by selectedFlow.collectAsStateWithLifecycle()
             ApplicationTheme {
-                val names = stringArrayResource(labels)
-                SingleChoiceList(
-                    options = values.zip(names),
-                    selected = selected,
-                    onSelect = viewModel::select,
-                    onFinish = ::finishWithResult,
-                )
+                DialogSurface(title = title.toString()) {
+                    val names = stringArrayResource(labels)
+                    SingleChoiceList(
+                        options = values.zip(names),
+                        selected = selected,
+                        onSelect = viewModel::select,
+                        onFinish = ::finishWithResult,
+                    )
+                }
             }
         }
         onBackPressedDispatcher.addCallback(this) { finishWithResult() }

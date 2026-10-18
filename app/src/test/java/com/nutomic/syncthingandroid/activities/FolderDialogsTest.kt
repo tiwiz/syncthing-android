@@ -85,6 +85,22 @@ class FolderDialogsTest {
         ActivityScenario.launchActivityForResult(Intent(context, activity).putExtra(extra, value))
 
     @Test
+    fun `the folder type and pull order dialogs draw their own title`() {
+        launchDialog(
+                FolderTypeDialogActivity::class.java,
+                FolderTypeDialogActivity.EXTRA_FOLDER_TYPE,
+                Constants.FOLDER_TYPE_SEND_ONLY,
+            )
+            .use { compose.onNodeWithText("Folder Type").assertExists() }
+        launchDialog(
+                PullOrderDialogActivity::class.java,
+                PullOrderDialogActivity.EXTRA_PULL_ORDER,
+                "random",
+            )
+            .use { compose.onNodeWithText("File Pull Order").assertExists() }
+    }
+
+    @Test
     fun `the folder type screen returns the chosen type`() {
         launchDialog(
                 FolderTypeDialogActivity::class.java,

@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import com.nutomic.syncthingandroid.ui.DialogSurface
 
 /**
  * Picks the file versioning type of a folder and its parameters. The intent extras are the current
@@ -22,12 +23,14 @@ class VersioningDialogActivity : ThemedAppCompatActivity() {
         setContent {
             val params by viewModel.params.collectAsStateWithLifecycle()
             ApplicationTheme {
-                VersioningScreen(
-                    params = params,
-                    onTypeChange = viewModel::changeType,
-                    onParamChange = viewModel::changeParam,
-                    onFinish = ::finishWithResult,
-                )
+                DialogSurface(title = title.toString()) {
+                    VersioningScreen(
+                        params = params,
+                        onTypeChange = viewModel::changeType,
+                        onParamChange = viewModel::changeParam,
+                        onFinish = ::finishWithResult,
+                    )
+                }
             }
         }
         onBackPressedDispatcher.addCallback(this) { finishWithResult() }

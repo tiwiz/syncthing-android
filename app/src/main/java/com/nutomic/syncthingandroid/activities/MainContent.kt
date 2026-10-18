@@ -239,7 +239,11 @@ private class Panes(
     val backProgress: () -> Float,
 ) {
     val detailShown: Boolean
-        get() = detail != null && directive.twoPanes
+        get() = shownDetail != null
+
+    /** The detail next to the list; a detail kept while the window is too narrow is not shown. */
+    val shownDetail: Detail?
+        get() = detail.takeIf { directive.twoPanes }
 
     fun detailOf(tab: MainTab): Detail? =
         when (tab) {
@@ -303,7 +307,7 @@ private fun MainScaffold(
                             state.totalProgress,
                             actions,
                             selectedFolderId =
-                                (panes.detail as? Detail.FolderDetail)
+                                (panes.shownDetail as? Detail.FolderDetail)
                                     ?.key
                                     ?.removePrefix(DetailPanes.FOLDER),
                         )
@@ -318,7 +322,7 @@ private fun MainScaffold(
                             state.devices,
                             actions,
                             selectedDeviceId =
-                                (panes.detail as? Detail.DeviceDetail)
+                                (panes.shownDetail as? Detail.DeviceDetail)
                                     ?.key
                                     ?.removePrefix(DetailPanes.DEVICE),
                         )
