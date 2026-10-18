@@ -185,9 +185,13 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
   `includeNoLocationClasses`; without it the report is almost empty.
 - Look at the report before refactoring a class: code that no test runs is not protected.
 
-Snapshot on 2026-10-13 (lines): 66% overall. `receiver` 94%, `model` 87%, `http` 79%,
-`fragments/dialog` 77%, `recentchanges` 77%, `util` 74%, `fragments` 72%, `service` 71%,
-`onboarding` 71–72%, `settings` 59%, `views` 55%, `activities` 51%; `webgui` 10% (WebView).
+Snapshot on 2026-10-18, after H9 (lines; branches 61%): 85% overall. `theme` and `receiver` 100%,
+`views` 99%, `model` 97%, `webgui` 94%, `ui` 93%, `http` 92%, `activities` 90%, `service` 88%,
+`util` 87%, `recentchanges` 80%, `onboarding` 79% (pages 74%), `settings` 71%, `fragments` 66%.
+Weakest files: the run conditions and Syncthing options settings screens and
+`SyncthingOptionsViewModel`, `SyncthingService`'s error and restart paths, `Util.kt` (shell calls,
+shadowed in tests), `OnboardingActivity`, `BatteryOptimizationPage`, `DeviceIdDialogFragment`.
+The instrumented WebView tests are not counted.
 
 ## Not covered yet
 
