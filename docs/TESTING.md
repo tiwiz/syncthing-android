@@ -55,8 +55,9 @@ afterwards (`MainActivityListDetailTest`).
 - A text field in an `AlertDialog` takes focus as the dialog opens, and its blinking cursor keeps
   Compose from going idle in Robolectric: the test hangs for 60 s. Settings rows that open such a
   dialog are checked through their summary, not by typing (`SettingsRunConditionsScreenTest`).
-- Preferences written through `rememberPreferenceState` land asynchronously: wait for the stored
-  value with `compose.waitUntil` (`SettingsTroubleshootingScreenTest`).
+- Preferences written through `rememberPreferenceState` land from a coroutine on the main looper:
+  wait for the stored value with `compose.awaitPreference { }` (`testutil/PreferenceWrites.kt`),
+  which runs the looper and allows 5 s. A bare `waitUntil` (1 s) failed on a busy CI machine.
 - The onboarding pager keeps its neighbour pages composed; pick the button that is on screen
   (`BatteryOptimizationPageTest`).
 
