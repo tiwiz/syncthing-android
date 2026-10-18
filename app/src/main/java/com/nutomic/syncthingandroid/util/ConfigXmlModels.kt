@@ -293,8 +293,9 @@ internal fun readGui(elementGui: Element): Gui {
 internal fun writeGui(elementGui: Element, gui: Gui) {
     elementGui.setAttribute("enabled", gui.enabled.toString())
     elementGui.setAttribute("tls", gui.useTLS.toString())
-    elementGui.setChildText("address", gui.address)
-    elementGui.setChildText("user", gui.user)
+    // Syncthing leaves out an empty user (and could an address): unset, they stay out.
+    gui.address?.let { elementGui.setChildText("address", it) }
+    gui.user?.let { elementGui.setChildText("user", it) }
     elementGui.setChildText("password", gui.password)
     elementGui.setChildText("apikey", gui.apiKey)
     elementGui.setChildText("theme", gui.theme)

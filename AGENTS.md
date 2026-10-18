@@ -280,11 +280,12 @@ Next steps (to be confirmed with the owner):
    up when a detail pane opened, bottom bar and large titles on phones held sideways (#99);
    AppCompat-framed choice dialogs, stale "only while running" hint, stale row selection, empty
    message under the recent changes spinner (#100). Tests for the weakest files (#101, coverage
-   87%) pinned two bugs, now in [docs/TECH-DEBT.md](docs/TECH-DEBT.md). Left as is: "General" and
+   87%) pinned two bugs, fixed in #103: a failed support bundle stuck as downloading, and the web
+   GUI theme not written while stopped when `config.xml` has no `<user>`. Left as is: "General" and
    "No debug facility" untranslated in Italian (upstream keys, Weblate). Not checked: the folded
    outer screen (the emulator profile does not change size when folded) and the QR scanner
    camera. GitHub milestone "Material 3 Expressive & ViewModels" holds PRs #62–#101.
-   **Resume here:** the two bugs in TECH-DEBT, then whatever the owner picks next.
+   **Resume here:** whatever the owner picks next; TECH-DEBT has no bugs left.
 
 ## HANDOFF
 

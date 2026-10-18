@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -145,14 +146,14 @@ class SettingsViewModelsTest {
         }
 
     @Test
-    fun `without a web GUI user the theme is not written`() =
+    fun `without a web GUI user the theme is written and no user is added`() =
         runTest(UnconfinedTestDispatcher()) {
             // Syncthing leaves out <user> while it is empty, as in the fixture.
             userInterfaceViewModel().syncWebGuiTheme(AppCompatDelegate.MODE_NIGHT_YES.toString())
 
-            // CHARACTERIZATION: ConfigXml.updateGui throws on the missing user, and the theme sync
-            // only logs it (docs/TECH-DEBT.md).
-            assertTrue(Constants.getConfigFile(app).readText().contains("<theme>default</theme>"))
+            val config = Constants.getConfigFile(app).readText()
+            assertTrue(config.contains("<theme>dark</theme>"))
+            assertFalse(config.contains("<user>"))
         }
 
     @Test

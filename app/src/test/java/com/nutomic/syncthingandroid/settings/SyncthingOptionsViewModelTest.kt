@@ -13,7 +13,6 @@ import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.awaitMain
-import com.nutomic.syncthingandroid.testutil.drainMain
 import java.io.File
 import java.nio.file.Files
 import java.time.Duration
@@ -215,16 +214,13 @@ class SyncthingOptionsViewModelTest {
     }
 
     @Test
-    fun `a support bundle Syncthing fails to produce stays downloading`() {
+    fun `a support bundle Syncthing fails to produce ends as failed`() {
         syncthing.respond("GET", "/rest/debug/support", "", code = 500)
         val viewModel = viewModel()
 
         viewModel.downloadSupportBundle()
-        awaitMain { syncthing.requests("/rest/debug/support").isNotEmpty() }
-        drainMain()
+        awaitMain { viewModel.supportBundle.value.state == SupportBundleDownloadState.FAILED }
 
-        // CHARACTERIZATION: RestApi.downloadSupportBundle reports only a response, never an error,
-        // so the screen keeps its progress indicator (docs/TECH-DEBT.md).
-        assertEquals(SupportBundleDownloadState.DOWNLOADING, viewModel.supportBundle.value.state)
+        assertFalse(File(viewModel.supportBundle.value.fileName).exists())
     }
 }
