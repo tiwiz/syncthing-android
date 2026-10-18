@@ -271,8 +271,8 @@ Next steps (to be confirmed with the owner):
     which A finished. 2026-10-17: H6 onboarding `OnboardingViewModel` (B, #92), H7 settings
     ViewModels per navigation entry (A, #93); H8 remaining screens (A, three PRs: H8a log, folder
     picker, recent changes; H8b share, photo shoot, sync conditions, dialogs; H8c web GUI and web
-    page); H9 no per-activity service binding (A, #97). Coverage after H9: 85% of lines
-    ([docs/TESTING.md](docs/TESTING.md#coverage)). **Resume here (agent A):** milestone 13 with the
+    page); H9 no per-activity service binding (A, #97). Coverage after H9: 85% of lines, 87% after the milestone 13
+    test pass ([docs/TESTING.md](docs/TESTING.md#coverage)). **Resume here (agent A):** milestone 13 with the
     owner.
 
 ## HANDOFF

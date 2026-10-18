@@ -2,9 +2,13 @@ package com.nutomic.syncthingandroid.settings
 
 import android.app.Application
 import android.os.Looper
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.SavedStateHandle
+import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingConnection
 import com.nutomic.syncthingandroid.service.SyncthingService.HttpsCertReplaceResult
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -20,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -116,5 +121,72 @@ class SettingsViewModelsTest {
                 app.getString(com.nutomic.syncthingandroid.R.string.config_import_failed_no_path),
                 ShadowToast.getTextOfLatestToast(),
             )
+        }
+
+    private fun TestScope.userInterfaceViewModel() =
+        UserInterfaceViewModel(
+            app,
+            boundConnection(),
+            backgroundScope,
+            UnconfinedTestDispatcher(testScheduler),
+        )
+
+    @Test
+    fun `the app theme goes to the web GUI while Syncthing is stopped`() =
+        runTest(UnconfinedTestDispatcher()) {
+            ConfigFixture.install(app) { it.replace("<apikey>", "<user>me</user><apikey>") }
+            val viewModel = userInterfaceViewModel()
+
+            viewModel.syncWebGuiTheme(AppCompatDelegate.MODE_NIGHT_YES.toString())
+            assertTrue(Constants.getConfigFile(app).readText().contains("<theme>dark</theme>"))
+
+            viewModel.syncWebGuiTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM.toString())
+            assertTrue(Constants.getConfigFile(app).readText().contains("<theme>default</theme>"))
+        }
+
+    @Test
+    fun `without a web GUI user the theme is not written`() =
+        runTest(UnconfinedTestDispatcher()) {
+            // Syncthing leaves out <user> while it is empty, as in the fixture.
+            userInterfaceViewModel().syncWebGuiTheme(AppCompatDelegate.MODE_NIGHT_YES.toString())
+
+            // CHARACTERIZATION: ConfigXml.updateGui throws on the missing user, and the theme sync
+            // only logs it (docs/TECH-DEBT.md).
+            assertTrue(Constants.getConfigFile(app).readText().contains("<theme>default</theme>"))
+        }
+
+    @Test
+    fun `an export writes the backup and closes the screen`() =
+        runTest(UnconfinedTestDispatcher()) {
+            // An import also needs the native binary to clean the index, so only export runs here.
+            val viewModel =
+                ImportExportViewModel(
+                    app,
+                    boundConnection(),
+                    PreferenceManager.getDefaultSharedPreferences(app),
+                    backgroundScope,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            viewModel.exportConfig()
+
+            assertEquals(SettingsEvent.CLOSE, viewModel.events.first())
+            assertEquals(
+                app.getString(R.string.config_export_successful_no_path),
+                ShadowToast.getTextOfLatestToast(),
+            )
+        }
+
+    @Test
+    fun `about names the app version and an unknown core version while stopped`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val viewModel =
+                AboutViewModel(app, boundConnection(), UnconfinedTestDispatcher(testScheduler))
+            backgroundScope.launch { viewModel.state.collect {} }
+
+            val state =
+                viewModel.state.first { it.coreVersion != app.getString(R.string.state_loading) }
+            assertTrue(state.appVersion, state.appVersion.startsWith("v"))
+            assertEquals(app.getString(R.string.state_unknown), state.coreVersion)
         }
 }
