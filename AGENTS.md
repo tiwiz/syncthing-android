@@ -23,7 +23,7 @@ Read it at the start of every task and keep it current.
 | [docs/TESTING.md](docs/TESTING.md) | TDD flow, test layers, what to test first |
 | [docs/STATIC-ANALYSIS.md](docs/STATIC-ANALYSIS.md) | The gate, Lint, planned detekt/ktfmt, suppressions |
 | [docs/TECH-DEBT.md](docs/TECH-DEBT.md) | Things to fix: pinned bugs, detekt suppressions, TODOs |
-| [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md) | Planned: Hilt instead of hand-written Dagger, screen state in ViewModels (steps H1–H9) |
+| [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md) | Done (H1–H9): Hilt instead of hand-written Dagger, screen state in ViewModels, service reached through `SyncthingConnection` |
 | [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md) | Material 3 Expressive work: UI architecture, pitfalls, detailed plan for steps 8–13, split between two agents |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Upstream rules (commits, DCO, AI policy) |
 | [wiki/developers/](wiki/developers/) | Upstream build guide, sync-status broadcast API |
@@ -121,7 +121,7 @@ app/                         Android application (only Gradle module with code)
     model/         Gson POJOs for Syncthing's JSON + local caches
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
     activities/    Compose screens: Main (+ overflow menu, detail pane on large windows), Folder, Device, pickers, dialogs, Share,
-                   PhotoShoot, QR scanner, Log, web page; base classes for theme and service
+                   PhotoShoot, QR scanner, Log, web page, their ViewModels; `ThemedAppCompatActivity` base class
     fragments/     DeviceIdDialogFragment (Compose)
     views/         FolderRowState, DeviceRowState (main screen list rows)
     onboarding/    Compose launcher flow (permissions, key generation)
@@ -271,7 +271,8 @@ Next steps (to be confirmed with the owner):
     which A finished. 2026-10-17: H6 onboarding `OnboardingViewModel` (B, #92), H7 settings
     ViewModels per navigation entry (A, #93); H8 remaining screens (A, three PRs: H8a log, folder
     picker, recent changes; H8b share, photo shoot, sync conditions, dialogs; H8c web GUI and web
-    page); H9 no per-activity service binding (A). **Resume here (agent A):** milestone 13 with the
+    page); H9 no per-activity service binding (A, #97). Coverage after H9: 85% of lines
+    ([docs/TESTING.md](docs/TESTING.md#coverage)). **Resume here (agent A):** milestone 13 with the
     owner.
 
 ## HANDOFF

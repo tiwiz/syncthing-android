@@ -20,7 +20,10 @@ panes split on the hinge of an unfolded foldable.
    `adaptive-navigation` (window size classes, `ListDetailPaneScaffold`, hinge-aware pane
    directive) and `material3-adaptive-navigation-suite` (`NavigationSuiteScaffold`).
 3. **Font: Roboto Flex is bundled** (variable font, width axis for display text). F-Droid rules out
-   downloadable fonts through Google Play services; the Play Store build is looked at later.
+   downloadable fonts through Google Play services. The Play Store build keeps the bundled font
+   too (2026-10-18): Play and F-Droid get the same APK (no build flavors), the font is 1.7 MB next
+   to about 80 MB of native binaries, and a downloadable font would make the first screen depend on
+   Play services and the network.
 4. **Run mode labels:** "Automatic", "Run", "Stop" with a helper line, as new string keys.
    **New fork strings stay English only.** The `syncthing-fork` Weblate project translates
    upstream (`researchxxl`) strings, so fork-only keys are never translated there. The old three
