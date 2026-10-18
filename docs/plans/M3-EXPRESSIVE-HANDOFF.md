@@ -261,6 +261,10 @@ pixel_fold` and `-d pixel_tablet`. Walk every screen in light/dark, English/Ital
 landscape, folded/unfolded; record results in AGENTS.md; create a GitHub milestone with the PRs.
 Phone screenshots show the real device ID and API key: keep them in the scratchpad.
 
+Done on 2026-10-18; results in AGENTS.md ("STATO ATTUALE", point 8). The command-line
+`avdmanager` has no `pixel_fold` device: the foldable AVD uses the "7.6in Foldable" profile, whose
+screen keeps its size when folded (`adb emu fold`).
+
 ## Hilt and ViewModels
 
 A second plan runs alongside this one: [HILT-VIEWMODELS.md](HILT-VIEWMODELS.md) (steps H1–H9,

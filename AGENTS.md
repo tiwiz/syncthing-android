@@ -260,7 +260,7 @@ Next steps (to be confirmed with the owner):
      PR 11b list-detail settings layout on expanded windows (#89).
      PR 12 motion and polish (#90): morphing selected/pressed rows, `LoadingIndicator` while
      starting, predictive back shrinking the detail pane, wave only with animations on.
-     Steps 8–12 done; milestone 13 is left, as planned in
+     Steps 8–12 done; milestone 13 done on 2026-10-18 (see point 8), as planned in
      [docs/plans/M3-EXPRESSIVE-HANDOFF.md](docs/plans/M3-EXPRESSIVE-HANDOFF.md).
 7. 2026-10-16: Hilt and ViewModels (state survives configuration changes) planned in
    [docs/plans/HILT-VIEWMODELS.md](docs/plans/HILT-VIEWMODELS.md), interleaved with the Expressive
@@ -272,8 +272,19 @@ Next steps (to be confirmed with the owner):
     ViewModels per navigation entry (A, #93); H8 remaining screens (A, three PRs: H8a log, folder
     picker, recent changes; H8b share, photo shoot, sync conditions, dialogs; H8c web GUI and web
     page); H9 no per-activity service binding (A, #97). Coverage after H9: 85% of lines, 87% after the milestone 13
-    test pass ([docs/TESTING.md](docs/TESTING.md#coverage)). **Resume here (agent A):** milestone 13 with the
-    owner.
+    test pass ([docs/TESTING.md](docs/TESTING.md#coverage)).
+8. 2026-10-18, milestone 13: native debug build on the Pixel 8 (Android 17) over the existing data,
+   plus AVDs `fold` (7.6in foldable profile, API 35; `avdmanager` has no `pixel_fold`) and `tablet`
+   (`pixel_tablet`, API 35). Every screen walked in light/dark, English/Italian, portrait/landscape;
+   onboarding on both emulators. No crashes, the service starts everywhere. Fixed: keyboard popping
+   up when a detail pane opened, bottom bar and large titles on phones held sideways (#99);
+   AppCompat-framed choice dialogs, stale "only while running" hint, stale row selection, empty
+   message under the recent changes spinner (#100). Tests for the weakest files (#101, coverage
+   87%) pinned two bugs, now in [docs/TECH-DEBT.md](docs/TECH-DEBT.md). Left as is: "General" and
+   "No debug facility" untranslated in Italian (upstream keys, Weblate). Not checked: the folded
+   outer screen (the emulator profile does not change size when folded) and the QR scanner
+   camera. GitHub milestone "Material 3 Expressive & ViewModels" holds PRs #62–#101.
+   **Resume here:** the two bugs in TECH-DEBT, then whatever the owner picks next.
 
 ## HANDOFF
 
