@@ -6,6 +6,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
@@ -79,6 +80,26 @@ class MainActivityListDetailTest {
 
             assertEquals("Edit Device", screen.detailTitle())
             assertEquals(listOf("laptop"), screen.devices())
+        }
+    }
+
+    @Test
+    fun `opening a pane does not focus a field, so the keyboard stays down`() {
+        // As on a phone or tablet: only text fields take focus, which brings up the keyboard.
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.setInTouchMode(true)
+        try {
+            stopped().use { screen ->
+                screen.showTab(MainScreen.Tab.FOLDERS)
+                screen.open(MainScreen.Tab.FOLDERS, "Camera")
+                assertFalse(screen.anyFieldFocused())
+
+                screen.showTab(MainScreen.Tab.DEVICES)
+                screen.open(MainScreen.Tab.DEVICES, "laptop")
+                assertFalse(screen.anyFieldFocused())
+            }
+        } finally {
+            instrumentation.setInTouchMode(false)
         }
     }
 

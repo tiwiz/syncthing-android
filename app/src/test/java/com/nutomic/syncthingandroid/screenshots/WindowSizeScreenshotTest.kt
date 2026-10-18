@@ -46,6 +46,8 @@ class WindowSizeScreenshotTest(
         EXPANDED("w840dp-h900dp-port"),
         /** A tablet in landscape. */
         LARGE("w1280dp-h800dp-land"),
+        /** A phone turned sideways: wide but short. */
+        PHONE_LANDSCAPE("w891dp-h411dp-land"),
     }
 
     enum class Locale(val qualifiers: String) {
@@ -90,7 +92,7 @@ class WindowSizeScreenshotTest(
                     listOf(Window.COMPACT, Window.LARGE).map { arrayOf<Any>(screen, it, Locale.IT) }
             } +
                 DETAIL_SCREENS.flatMap { screen ->
-                    listOf(Window.EXPANDED, Window.LARGE).map {
+                    listOf(Window.EXPANDED, Window.LARGE, Window.PHONE_LANDSCAPE).map {
                         arrayOf<Any>(screen, it, Locale.EN)
                     }
                 }

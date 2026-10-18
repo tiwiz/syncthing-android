@@ -19,6 +19,7 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
@@ -80,6 +81,9 @@ internal fun ListWithDetail(
                                 transformOrigin = BACK_SHRINK_ORIGIN
                             }
                             .testTag("detailPane")
+                            // The scaffold focuses the pane it opens; the pane keeps that focus
+                            // itself, or its first field would take it and bring up the keyboard.
+                            .focusTarget()
                 ) {
                     DetailContent(detail)
                 }
