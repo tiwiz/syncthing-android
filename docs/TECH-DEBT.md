@@ -5,7 +5,14 @@ item is done, delete it here in the same PR.
 
 ## Bugs pinned by characterization tests
 
-None left. When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
+When a test commented `// CHARACTERIZATION:` pins a new bug, list it here.
+
+- `RestApi.downloadSupportBundle` calls its listener only when Syncthing answers; on an error the
+  support bundle stays `DOWNLOADING` and the Syncthing options screen keeps its progress indicator
+  (`SyncthingOptionsViewModelTest`).
+- With Syncthing stopped, the app theme does not reach the web GUI when `config.xml` has no
+  `<user>` (Syncthing leaves it out while empty): `writeGui` calls `setChildText("user", null)`,
+  which throws, and `syncWebGuiTheme` only logs it (`SettingsViewModelsTest`).
 
 ## detekt suppressions
 

@@ -45,6 +45,21 @@ open the camera again). Work that finishes after the recreation must reach the n
 a round-trip test of the handle (`OnboardingViewModelTest`, `SettingsViewModelsTest`).
 `ServiceBindingTest` checks that screens bind Syncthing only through `SyncthingConnection`.
 
+### Focus and touch mode
+
+Robolectric runs outside touch mode, where a click focuses what it clicks. On a phone only text
+fields take focus, so a field that grabs it brings up the keyboard. Tests about focus call
+`InstrumentationRegistry.getInstrumentation().setInTouchMode(true)` before launching and reset it
+afterwards (`MainActivityListDetailTest`).
+
+- A text field in an `AlertDialog` takes focus as the dialog opens, and its blinking cursor keeps
+  Compose from going idle in Robolectric: the test hangs for 60 s. Settings rows that open such a
+  dialog are checked through their summary, not by typing (`SettingsRunConditionsScreenTest`).
+- Preferences written through `rememberPreferenceState` land asynchronously: wait for the stored
+  value with `compose.waitUntil` (`SettingsTroubleshootingScreenTest`).
+- The onboarding pager keeps its neighbour pages composed; pick the button that is on screen
+  (`BatteryOptimizationPageTest`).
+
 ```bash
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest                         # unit tests only
 IS_COPILOT=true ./gradlew :app:testDebugUnitTest --tests '*ConfigXmlTest' # one class
@@ -185,12 +200,12 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
   `includeNoLocationClasses`; without it the report is almost empty.
 - Look at the report before refactoring a class: code that no test runs is not protected.
 
-Snapshot on 2026-10-18, after H9 (lines; branches 61%): 85% overall. `theme` and `receiver` 100%,
-`views` 99%, `model` 97%, `webgui` 94%, `ui` 93%, `http` 92%, `activities` 90%, `service` 88%,
-`util` 87%, `recentchanges` 80%, `onboarding` 79% (pages 74%), `settings` 71%, `fragments` 66%.
-Weakest files: the run conditions and Syncthing options settings screens and
-`SyncthingOptionsViewModel`, `SyncthingService`'s error and restart paths, `Util.kt` (shell calls,
-shadowed in tests), `OnboardingActivity`, `BatteryOptimizationPage`, `DeviceIdDialogFragment`.
+Snapshot on 2026-10-18, after the milestone 13 test pass (lines; branches 63%): 87% overall.
+`theme` and `receiver` 100%, `views` 99%, `fragments` 98%, `model` 97%, `onboarding/pages` 95%,
+`ui` 94%, `webgui` 94%, `http` 92%, `activities` 90%, `service` 88%, `util` 87%, `settings` 83%,
+`recentchanges` 80%, `onboarding` 79%. Weakest files: `SettingsSyncthingOptionsScreen` and
+`SettingsComponents` (text field dialogs, see "Focus and touch mode"), `SyncthingService`'s error
+and restart paths, `Util.kt` (shell calls, shadowed in tests), `OnboardingActivity` (TV paths).
 The instrumented WebView tests are not counted.
 
 ## Not covered yet
@@ -201,3 +216,7 @@ The instrumented WebView tests are not counted.
   shadow decodes any picture, so only the success path is tested.
 - The QR scanner's camera preview: Robolectric has no camera, so `QrScanTest` reports a scan to the
   scanner's callback directly.
+- Typing into the settings text field dialogs (sync duration, environment variables, web GUI
+  options): see "Focus and touch mode".
+- A successful config import: it cleans the index with the native binary.
+- Confirming the verbose log switch: it restarts the process.
