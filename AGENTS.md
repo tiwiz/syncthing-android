@@ -7,6 +7,9 @@ Read it at the start of every task and keep it current.
 
 - **Syncthing-Fork for Android**: an Android wrapper that runs the Syncthing daemon (Go) as a
   child process and controls it through its local REST API.
+- Shown to users as **Expressive Syncthing** (`fork_app_name`, not translated; since 2026-10-18).
+  Upstream's `app_name` ("Syncthing-Fork", translated on Weblate) stays for the version extra
+  Syncthing reports (`STVERSIONEXTRA`) and for upstream merges.
 - This checkout is `tiwiz/syncthing-android`, a fork of `researchxxl/syncthing-android`
   (itself forked from `syncthing/syncthing-android`). Application id
   `com.github.catfriend1.syncthingfork`, namespace `com.nutomic.syncthingandroid`.

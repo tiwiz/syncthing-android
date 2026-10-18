@@ -47,7 +47,13 @@ fun SettingsAboutScreen(
             val items: List<@Composable (Shape) -> Unit> = listOf(
                 { shape ->
                     SettingsItem(
-                        title = stringResource(R.string.app_version_title),
+                        // The translations name upstream's app; the fork has its own name.
+                        title =
+                            stringResource(R.string.app_version_title)
+                                .replace(
+                                    stringResource(R.string.app_name),
+                                    stringResource(R.string.fork_app_name),
+                                ),
                         summary = state.appVersion,
                         shape = shape,
                         onClick = {},
