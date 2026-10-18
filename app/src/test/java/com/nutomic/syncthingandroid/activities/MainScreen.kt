@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Looper
 import android.view.KeyEvent
 import androidx.activity.BackEventCompat
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -16,9 +17,11 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import java.time.Duration
@@ -281,6 +284,27 @@ internal class MainScreen(
             .fetchSemanticsNode()
             .config[SemanticsProperties.EditableText]
             .text
+
+    /** Where the destination [tab] is drawn, in pixels. */
+    fun tabBounds(tab: Tab): Rect =
+        compose.onNode(hasText(tab.title) and hasClickAction()).fetchSemanticsNode().boundsInRoot
+
+    /** The size of the whole screen, in pixels. */
+    fun rootSize(): IntSize = compose.onRoot().fetchSemanticsNode().size
+
+    /** How tall the title above the list of the current tab is, in pixels. */
+    fun listTitleHeight(): Float =
+        compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
+
+    /** Whether any field on the screen has the input focus, which brings up the keyboard. */
+    fun anyFieldFocused(): Boolean =
+        compose
+            .onAllNodes(
+                SemanticsMatcher.expectValue(SemanticsProperties.Focused, true) and
+                    SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText)
+            )
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
     fun discardAsked(): Boolean =
         compose.onAllNodes(hasText("Discard your changes?")).fetchSemanticsNodes().isNotEmpty()

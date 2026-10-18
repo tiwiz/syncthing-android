@@ -65,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SyncProgress
@@ -157,19 +158,29 @@ private const val EXPANDED_RAIL_MIN_WIDTH_DP = 1200
 
 /**
  * A short navigation bar on phones, a rail from medium windows and an expanded rail on large ones
- * (docs/plans/M3-EXPRESSIVE.md).
+ * (docs/plans/M3-EXPRESSIVE.md). A phone turned sideways gets the rail too: a bar would take height
+ * the lists need.
  */
 @Composable
 private fun navigationType(): NavigationSuiteType {
     val info = currentWindowAdaptiveInfo(supportLargeAndXLargeWidth = true)
     val type = NavigationSuiteScaffoldDefaults.navigationSuiteType(info)
     val large = info.windowSizeClass.isWidthAtLeastBreakpoint(EXPANDED_RAIL_MIN_WIDTH_DP)
-    return if (type == NavigationSuiteType.WideNavigationRailCollapsed && large) {
-        NavigationSuiteType.WideNavigationRailExpanded
-    } else {
-        type
+    return when {
+        type == NavigationSuiteType.WideNavigationRailCollapsed && large ->
+            NavigationSuiteType.WideNavigationRailExpanded
+        type == NavigationSuiteType.ShortNavigationBarMedium && shortWindow() ->
+            NavigationSuiteType.WideNavigationRailCollapsed
+        else -> type
     }
 }
+
+/** Whether the window is short, as a phone turned sideways. */
+@Composable
+private fun shortWindow(): Boolean =
+    !currentWindowAdaptiveInfo()
+        .windowSizeClass
+        .isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
 
 /**
  * The main screen: the destinations in a navigation bar or rail, the top bar with the overflow
@@ -418,13 +429,19 @@ private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** A list's title, with room above it under the top bar. */
+/** A list's title, with room above it under the top bar; smaller in a short window. */
 @Composable
 internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
+    val short = shortWindow()
     Text(
         stringResource(tab.title),
-        style = MaterialTheme.typography.displaySmallEmphasized,
-        modifier = modifier.padding(start = 8.dp, top = 8.dp, bottom = 16.dp),
+        style =
+            if (short) MaterialTheme.typography.titleLargeEmphasized
+            else MaterialTheme.typography.displaySmallEmphasized,
+        modifier =
+            modifier
+                .padding(start = 8.dp, top = 8.dp, bottom = if (short) 8.dp else 16.dp)
+                .testTag("listTitle"),
     )
 }
 
