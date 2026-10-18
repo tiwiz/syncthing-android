@@ -243,7 +243,7 @@ class NotificationHandler(private val context: Context) {
         notificationManager.cancel(notificationId)
         val n =
             getNotificationBuilder(infoChannel)
-                .setContentTitle(context.getString(R.string.app_name))
+                .setContentTitle(context.getString(R.string.fork_app_name))
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setContentIntent(piAccept)

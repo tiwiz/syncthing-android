@@ -62,11 +62,11 @@ class SettingsNavigationTest {
     fun `a screen opened from the root goes back to the root`() {
         launch("Root").use {
             compose.onNodeWithText("About").performClick()
-            compose.onNodeWithText("Syncthing-Fork Wrapper Version").assertIsDisplayed()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertIsDisplayed()
 
             compose.onNodeWithContentDescription("Back").performClick()
 
-            compose.onNodeWithText("Syncthing-Fork Wrapper Version").assertDoesNotExist()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
             compose.onNodeWithText("Settings").assertIsDisplayed()
         }
     }
@@ -96,7 +96,7 @@ class SettingsNavigationTest {
                 .performClick()
 
             // Detail pane shows the selected screen.
-            compose.onNodeWithText("Syncthing-Fork Wrapper Version").assertIsDisplayed()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertIsDisplayed()
             // List pane is still visible next to it.
             compose.onNodeWithText("Settings").assertIsDisplayed()
             compose

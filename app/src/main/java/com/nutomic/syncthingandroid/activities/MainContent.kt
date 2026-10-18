@@ -272,7 +272,7 @@ private fun MainScaffold(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { Text(stringResource(R.string.fork_app_name)) },
                 actions = {
                     StatusLight(state.serviceState)
                     TabActions(tab, actions)

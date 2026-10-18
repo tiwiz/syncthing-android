@@ -208,7 +208,7 @@ class RestApiTest {
 
         val notification = shadowOf(manager).allNotifications.single()
         assertEquals(
-            "Syncthing-Fork",
+            "Expressive Syncthing",
             notification.extras.getString(NotificationCompat.EXTRA_TITLE),
         )
         assertEquals(
