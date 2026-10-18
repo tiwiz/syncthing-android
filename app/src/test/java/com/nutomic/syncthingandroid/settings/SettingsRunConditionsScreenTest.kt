@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
@@ -22,6 +23,7 @@ import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitPreference
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -72,9 +74,10 @@ class SettingsRunConditionsScreenTest {
         launch().use {
             row("Run on Wi-Fi").performClick()
 
-            compose.waitUntil { !prefs.getBoolean(Constants.PREF_RUN_ON_WIFI, true) }
+            row("Run on Wi-Fi").assertIsOff()
             row("Run on metered Wi-Fi").assertIsNotEnabled()
             row("Run on specified Wi-Fi networks").assertIsNotEnabled()
+            compose.awaitPreference { !prefs.getBoolean(Constants.PREF_RUN_ON_WIFI, true) }
         }
     }
 
@@ -111,8 +114,7 @@ class SettingsRunConditionsScreenTest {
             compose.onNodeWithText("home").performClick()
             compose.onNodeWithText("OK").performClick()
 
-            // The preference is written asynchronously: wait for it.
-            compose.waitUntil {
+            compose.awaitPreference {
                 prefs.getStringSet(Constants.PREF_WIFI_SSID_WHITELIST, null) == setOf("\"home\"")
             }
             compose.onNodeWithText("home", substring = true).assertExists()

@@ -21,6 +21,7 @@ import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitPreference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -127,8 +128,7 @@ class SettingsTroubleshootingScreenTest {
             clickRow("STTRACE Options")
             compose.onNodeWithText("db").performClick()
             compose.onNodeWithText("OK").performClick()
-            // The preference is written asynchronously: wait for it.
-            compose.waitUntil {
+            compose.awaitPreference {
                 prefs.getStringSet(Constants.PREF_DEBUG_FACILITIES_ENABLED, null) == setOf("db")
             }
             compose.onNodeWithText("No debug facility").assertDoesNotExist()
