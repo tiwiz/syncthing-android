@@ -979,9 +979,18 @@ class RestApi(
         synchronized(configLock) { checkNotNull(config).options = newOptions }
     }
 
-    /** Saves the support bundle to [targetFile]; the listener learns whether that worked. */
+    /**
+     * Saves the support bundle to [targetFile]; the listener learns whether that worked, also when
+     * Syncthing could not produce it.
+     */
     fun downloadSupportBundle(targetFile: File, listener: OnResultListener1<Boolean>?) {
-        get(GetRequest.URI_DEBUG_SUPPORT) { result ->
+        get(
+            GetRequest.URI_DEBUG_SUPPORT,
+            onError = {
+                Log.w(TAG, "downloadSupportBundle: Syncthing did not send the support bundle")
+                listener?.onResult(false)
+            },
+        ) { result ->
             logV("downloadSupportBundle: Writing '${targetFile.path}' ...")
             val ok =
                 try {
