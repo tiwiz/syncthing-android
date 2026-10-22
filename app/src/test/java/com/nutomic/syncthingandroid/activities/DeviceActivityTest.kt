@@ -248,6 +248,49 @@ class DeviceActivityTest {
         }
     }
 
+    /** Edits the laptop while [syncthing] runs, then closes [syncthing]. */
+    private fun editLaptopRunning(syncthing: FakeSyncthing, test: (DeviceScreen) -> Unit) {
+        try {
+            RunningSyncthingService.install(syncthing)
+            DeviceScreen(
+                    ActivityScenario.launchActivityForResult(
+                        Intent(context, DeviceActivity::class.java)
+                            .putExtra(DeviceActivity.EXTRA_IS_CREATE, false)
+                            .putExtra(DeviceActivity.EXTRA_DEVICE_ID, REMOTE_DEVICE_ID)
+                    ),
+                    compose,
+                )
+                .use(test)
+        } finally {
+            syncthing.close()
+        }
+    }
+
+    @Test
+    fun `saving without changes while Syncthing runs sends nothing`() {
+        val syncthing = FakeSyncthing(context)
+        editLaptopRunning(syncthing) { screen ->
+            screen.save()
+            drainMain()
+
+            assertEquals(Activity.RESULT_CANCELED, screen.resultCode())
+            assertEquals(0, syncthing.requests("/rest/system/config", "POST").size)
+        }
+    }
+
+    @Test
+    fun `renaming while Syncthing runs sends the config once, folders untouched`() {
+        val syncthing = FakeSyncthing(context)
+        editLaptopRunning(syncthing) { screen ->
+            screen.setName("work laptop")
+            screen.save()
+            awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+            drainMain()
+
+            assertEquals(1, syncthing.requests("/rest/system/config", "POST").size)
+        }
+    }
+
     @Test
     fun `a new device can take the id of a device discovered nearby`() {
         val syncthing = FakeSyncthing(context)
