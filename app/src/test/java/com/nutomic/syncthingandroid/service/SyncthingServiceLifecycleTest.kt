@@ -17,6 +17,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.net.ServerSocket
 import java.time.Duration
+import kotlin.concurrent.thread
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -160,7 +161,103 @@ class SyncthingServiceLifecycleTest {
         controller.withIntent(Intent(SyncthingService.ACTION_STOP)).startCommand(0, 2)
 
         assertEquals(SyncthingService.State.DISABLED, service.currentState)
+        // Syncthing is asked to exit off the main thread.
+        awaitWithClock { fake.requests("/rest/system/shutdown", "POST").isNotEmpty() }
         assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    /** Syncthing that takes [EXIT_MILLIS] to exit after the REST shutdown. */
+    private fun slowToExit(fake: FakeSyncthing) {
+        fake.onShutdown = {
+            thread {
+                Thread.sleep(EXIT_MILLIS)
+                binary.stop()
+            }
+        }
+    }
+
+    private fun millisTaken(action: () -> Unit): Long {
+        val begin = System.nanoTime()
+        action()
+        return (System.nanoTime() - begin) / NANOS_PER_MILLI
+    }
+
+    private fun wifi(connected: Boolean) {
+        val info =
+            ShadowNetworkInfo.newInstance(
+                    NetworkInfo.DetailedState.CONNECTED,
+                    ConnectivityManager.TYPE_WIFI,
+                    0,
+                    true,
+                    NetworkInfo.State.CONNECTED,
+                )
+                .takeIf { connected }
+        shadowOf(context.getSystemService(ConnectivityManager::class.java))
+            .setActiveNetworkInfo(info)
+        context.sendBroadcast(Intent(ConnectivityManager.CONNECTIVITY_ACTION))
+    }
+
+    @Test
+    fun `a stop intent does not wait on the main thread for Syncthing to exit`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_STOP)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+        assertNull(service.api)
+        awaitWithClock { "exited" in binary.runs }
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    @Test
+    fun `a start while Syncthing is still exiting waits until it has exited`() {
+        val (_, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            wifi(connected = false)
+            shadowOf(Looper.getMainLooper()).idle()
+        }
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+        wifi(connected = true)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(listOf("serve --no-browser"), binary.runs)
+
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "serve --no-browser"),
+            binary.runs.take(3),
+        )
+    }
+
+    @Test
+    fun `resetting the database waits off the main thread, then starts Syncthing again`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_RESET_DATABASE)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { binary.runs.size >= 4 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "debug reset-database", "exited"),
+            binary.runs.take(4),
+        )
+        awaitWithClock { binary.runs.size >= 5 }
+        assertEquals("serve --no-browser", binary.runs[4])
     }
 
     @Test
@@ -182,5 +279,7 @@ class SyncthingServiceLifecycleTest {
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
         const val STEP_MILLIS = 20L
+        const val EXIT_MILLIS = 1500L
+        const val NANOS_PER_MILLI = 1_000_000L
     }
 }
