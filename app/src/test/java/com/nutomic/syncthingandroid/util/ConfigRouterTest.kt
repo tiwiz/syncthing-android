@@ -44,7 +44,10 @@ class ConfigRouterTest {
             setOf(LOCAL_DEVICE_ID, REMOTE_DEVICE_ID),
             router.getDevices(null, true).map { it.deviceID }.toSet(),
         )
-        assertEquals(listOf("cam-photos"), router.getSharedFolders(REMOTE_DEVICE_ID).map { it.id })
+        assertEquals(
+            listOf("cam-photos"),
+            router.getSharedFolders(null, REMOTE_DEVICE_ID).map { it.id },
+        )
         assertEquals("127.0.0.1:8384", router.getGui(null).address)
     }
 

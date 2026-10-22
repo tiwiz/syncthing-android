@@ -191,7 +191,8 @@ constructor(
                                 context,
                                 it,
                                 lastSeen(it.deviceID),
-                                configRouter.getSharedFolders(it.deviceID),
+                                // From the list above: no config read per device.
+                                folders.filter { folder -> folder.getDevice(it.deviceID) != null },
                                 running?.let { api ->
                                     DeviceRowState.Status(
                                         api.getRemoteDeviceStatus(it.deviceID),

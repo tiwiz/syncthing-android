@@ -53,9 +53,9 @@ class ConfigRouter(context: Context) {
 
     fun getFolders(restApi: RestApi?): List<Folder> = route(restApi, { folders }) { it.folders }
 
-    /** The folders in config.xml shared with [deviceID]. */
-    fun getSharedFolders(deviceID: String?): List<Folder> =
-        getFolders(null).filter { it.getDevice(deviceID) != null }
+    /** The folders shared with [deviceID]. */
+    fun getSharedFolders(restApi: RestApi?, deviceID: String?): List<Folder> =
+        getFolders(restApi).filter { it.getDevice(deviceID) != null }
 
     fun addFolder(restApi: RestApi?, folder: Folder) =
         change(restApi, { addFolder(folder) }) { it.addFolder(folder) }

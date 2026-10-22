@@ -10,6 +10,8 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.recentchanges.RecentChangesActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
@@ -85,9 +87,14 @@ class MainActivityTest {
     }
 
     /** With [usageReport], Syncthing answers the usage report, so the question can be asked. */
-    private fun running(usageReport: Boolean = false): MainScreen {
+    private fun running(
+        usageReport: Boolean = false,
+        config: (JsonObject) -> Unit = {},
+    ): MainScreen {
         val fake = FakeSyncthing(context).also { syncthing = it }
         if (usageReport) fake.respond("GET", "/rest/svc/report", """{"uniqueID":"fake"}""")
+        val served = JsonParser.parseString(fake.configJson()).asJsonObject.also(config)
+        fake.respond("GET", "/rest/system/config", served.toString())
         service = RunningSyncthingService.install(fake)
         return MainScreen(ActivityScenario.launch(MainActivity::class.java), compose).also {
             it.idle()
@@ -338,6 +345,26 @@ class MainActivityTest {
             // The fixture's completion leaves a few bytes for the laptop.
             assertEquals("Disconnected (3 B pending)", screen.deviceStatus("laptop"))
             assertEquals(MainScreen.Light.ACTIVE, screen.light())
+        }
+    }
+
+    @Test
+    fun `with Syncthing running a device lists the folders Syncthing shares with it`() {
+        // config.xml still shares the camera folder with the laptop; Syncthing no longer does.
+        val unshared: (JsonObject) -> Unit = { config ->
+            val devices = config.getAsJsonArray("folders")[0].asJsonObject.getAsJsonArray("devices")
+            devices.remove(
+                devices.single { it.asJsonObject["deviceID"].asString == REMOTE_DEVICE_ID }
+            )
+        }
+        running(config = unshared).use { screen ->
+            screen.showTab(MainScreen.Tab.DEVICES)
+            awaitMain { screen.deviceStatus("laptop").startsWith("Disconnected") }
+
+            assertTrue(
+                screen.deviceTexts("laptop").toString(),
+                "Unused" in screen.deviceTexts("laptop"),
+            )
         }
     }
 
