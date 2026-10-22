@@ -44,7 +44,7 @@ fun BatteryOptimizationPage(
     val description = if (uiState.isRunningOnTv) {
         stringResource(
             R.string.ignore_doze_permission_os_notice,
-            stringResource(R.string.wiki_url),
+            stringResource(R.string.fork_wiki_url),
             "manufacturer-specific/Android-TV-preparations.md",
         ) + "\n\n" + stringResource(R.string.ignore_doze_permission_desc)
     } else {

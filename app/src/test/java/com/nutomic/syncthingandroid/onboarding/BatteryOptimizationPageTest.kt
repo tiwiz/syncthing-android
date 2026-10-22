@@ -2,9 +2,11 @@ package com.nutomic.syncthingandroid.onboarding
 
 import android.Manifest
 import android.app.Application
+import android.app.UiModeManager
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ResolveInfo
+import android.content.res.Configuration
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -83,6 +85,21 @@ class BatteryOptimizationPageTest {
                     val bounds = it.boundsInRoot
                     bounds.width > 0 && bounds.left >= 0 && bounds.right <= width
                 }]
+    }
+
+    @Test
+    fun `on a TV the page points to the TV preparations in this app's wiki`() {
+        shadowOf(app.getSystemService(UiModeManager::class.java))
+            .setCurrentModeType(Configuration.UI_MODE_TYPE_TELEVISION)
+        launch().use {
+            compose
+                .onNodeWithText(
+                    "https://github.com/tiwiz/syncthing-android/tree/main/wiki/" +
+                        "manufacturer-specific/Android-TV-preparations.md",
+                    substring = true,
+                )
+                .assertExists()
+        }
     }
 
     @Test

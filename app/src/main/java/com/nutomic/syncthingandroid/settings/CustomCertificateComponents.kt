@@ -178,7 +178,7 @@ internal fun checkTitle(check: CertificateValidator.Check): Int =
         CertificateValidator.Check.KEY -> R.string.cert_check_key
     }
 
-/** Relative to [R.string.wiki_url], matching how the onboarding pages link into the wiki. */
+/** Relative to [R.string.fork_wiki_url], matching how the onboarding pages link into the wiki. */
 internal const val CUSTOM_CERT_WIKI_PATH =
     "/tips-and-tricks/Use-a-custom-HTTPS-certificate-for-the-Web-GUI.md"
 
@@ -196,7 +196,7 @@ internal fun toast(context: Context, resId: Int) {
 @Composable
 internal fun HelpRow(shape: Shape) {
     val context = LocalContext.current
-    val url = stringResource(R.string.wiki_url) + CUSTOM_CERT_WIKI_PATH
+    val url = stringResource(R.string.fork_wiki_url) + CUSTOM_CERT_WIKI_PATH
     SettingsItem(
         title = stringResource(R.string.generic_help),
         summary = stringResource(R.string.wiki_open_setup_guide),

@@ -10,6 +10,8 @@
     <!-- This fork's issue tracker: reports about this build do not belong upstream. -->
     <string name="fork_issue_tracker_url" translatable="false">https://github.com/tiwiz/syncthing-android/issues</string>
     <string name="fork_open_issue_tracker_summary" translatable="false">Open the Expressive Syncthing issue tracker at %1$s</string>
+    <!-- This fork's copy of the wiki, the repository's wiki folder. -->
+    <string name="fork_wiki_url" translatable="false">https://github.com/tiwiz/syncthing-android/tree/main/wiki</string>
 
     <string name="app_description">An open, trustworthy and decentralized file synchronization application.</string>
 
