@@ -18,6 +18,7 @@ class FakeSyncthingBinary(context: Context) {
     private val stdoutFile = File(dir, "stdout")
     private val stderrFile = File(dir, "stderr")
     private val stopFile = File(dir, "stop")
+    private val runsFile = File(dir, "runs")
     private val generatedConfigFile = File(dir, "generated-config.xml")
     private val binary = File(dir, Constants.FILENAME_SYNCTHING_BINARY)
 
@@ -28,6 +29,10 @@ class FakeSyncthingBinary(context: Context) {
 
     /** If set, `generate` writes it as `$STHOMEDIR/config.xml`, like the real binary does. */
     var generatedConfig: String? = null
+
+    /** The arguments of every run, one string per run, and "exited" after each run ended. */
+    val runs: List<String>
+        get() = if (runsFile.exists()) runsFile.readLines() else emptyList()
 
     /** True once the binary has been started at least once. */
     val started: Boolean
@@ -55,6 +60,7 @@ class FakeSyncthingBinary(context: Context) {
         stderrFile.writeText(stderr)
         argsFile.delete()
         stopFile.delete()
+        runsFile.delete()
         val generate =
             generatedConfig
                 ?.let {
@@ -72,11 +78,13 @@ class FakeSyncthingBinary(context: Context) {
             """
             #!/bin/sh
             printf '%s\n' "${'$'}@" > '${argsFile.path}'
+            echo "${'$'}*" >> '${runsFile.path}'
             env > '${envFile.path}'
             cat '${stdoutFile.path}'
             cat '${stderrFile.path}' >&2
             $generate
             $wait
+            echo exited >> '${runsFile.path}'
             exit $exitCode
             """
                 .trimIndent() + "\n"

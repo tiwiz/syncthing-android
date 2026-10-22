@@ -18,6 +18,9 @@ import com.nutomic.syncthingandroid.util.killProcess
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import javax.inject.Inject
 
 /** Holds the native Syncthing instance and provides an API to access it. */
@@ -109,6 +112,15 @@ class SyncthingService : Service() {
     @Inject lateinit var notificationHandler: NotificationHandler
 
     @Inject lateinit var preferences: SharedPreferences
+
+    /**
+     * Waits for SyncthingNative to exit after a stop, and resets the database, off the main thread;
+     * one job at a time, in order.
+     */
+    private val lifecycleExecutor = Executors.newSingleThreadExecutor()
+
+    /** The last job on [lifecycleExecutor]; main thread only. */
+    private var lifecycleJob: CompletableFuture<*>? = null
 
     /** Must be locked when changing [currentState]. */
     private val stateLock = Any()
@@ -220,10 +232,10 @@ class SyncthingService : Service() {
             // The native binary crashed. Changing the state skips the "defer until Syncthing is
             // started" routine of a clean shutdown: the crashed instance is shut down forcefully.
             currentState = State.ERROR
-            shutdown(State.DISABLED)
+            shutdownInBackground(State.DISABLED)
         } else if (currentState == State.STARTING || currentState == State.ACTIVE) {
             // Graceful shutdown.
-            shutdown(State.DISABLED)
+            shutdownInBackground(State.DISABLED)
         }
     }
 
@@ -232,20 +244,28 @@ class SyncthingService : Service() {
      * starts it again if it was running before.
      */
     private fun onResetDatabaseAction() {
-        Log.i(TAG, "Invoking reset of database")
-        if (currentState != State.DISABLED) {
-            // Shutdown synchronously.
-            shutdown(State.DISABLED)
+        if (currentState == State.STARTING) {
+            Log.w(TAG, "Deferring the database reset until State.STARTING was left")
+            handler.postDelayed({ onResetDatabaseAction() }, DEFER_MILLIS)
+            return
         }
-        SyncthingRunnable(
+        Log.i(TAG, "Invoking reset of database")
+        val waitForExit =
+            if (currentState != State.DISABLED) beginShutdown(State.DISABLED) else null
+        val reset =
+            SyncthingRunnable(
                 this,
                 SyncthingRunnable.Command.RESET_DATABASE,
                 preferences,
                 notificationHandler,
             )
-            .run()
-        if (lastDeterminedShouldRun) {
-            launchStartupTask(SyncthingRunnable.Command.MAIN)
+        inBackground({
+            waitForExit?.invoke()
+            reset.run()
+        }) {
+            if (lastDeterminedShouldRun) {
+                launchStartupTask(SyncthingRunnable.Command.MAIN)
+            }
         }
     }
 
@@ -314,7 +334,7 @@ class SyncthingService : Service() {
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
             }
         } else if (currentState != State.DISABLED) {
-            shutdown(State.DISABLED)
+            shutdownInBackground(State.DISABLED)
         }
     }
 
@@ -347,6 +367,10 @@ class SyncthingService : Service() {
                 Log.e(TAG, "launchStartupTask: Wrong state $currentState detected. Cancelling.")
                 return
             }
+        }
+        if (afterLifecycleJob { launchStartupTask(srCommand) }) {
+            Log.i(TAG, "launchStartupTask: Waiting for the previous SyncthingNative to exit")
+            return
         }
         val loadedConfig = loadConfigOrStop("launchStartupTask:OpenConfigException") ?: return
         config = loadedConfig
@@ -460,6 +484,7 @@ class SyncthingService : Service() {
             Log.i(TAG, "Shutting down syncthing binary due to missing storage permission.")
         }
         shutdown(State.DISABLED)
+        lifecycleExecutor.shutdown()
         super.onDestroy()
     }
 
@@ -473,6 +498,35 @@ class SyncthingService : Service() {
             handler.postDelayed({ shutdown(newState) }, DEFER_MILLIS)
             return
         }
+        val waitForExit = beginShutdown(newState)
+        try {
+            lifecycleJob?.get()
+        } catch (e: ExecutionException) {
+            Log.w(TAG, "shutdown: The previous lifecycle job failed", e)
+        } catch (_: InterruptedException) {
+            Log.w(TAG, "shutdown: Interrupted waiting for the previous lifecycle job")
+        }
+        waitForExit()
+    }
+
+    /**
+     * Like [shutdown], but waits for SyncthingNative to exit off the main thread. Starting again
+     * waits until it has exited.
+     */
+    private fun shutdownInBackground(newState: State) {
+        if (currentState == State.STARTING) {
+            Log.w(TAG, "Deferring shutdown until State.STARTING was left")
+            handler.postDelayed({ shutdownInBackground(newState) }, DEFER_MILLIS)
+            return
+        }
+        inBackground(beginShutdown(newState))
+    }
+
+    /**
+     * Moves to [newState] and stops the helpers (event processor, API); returns the slow part,
+     * which asks SyncthingNative to exit and waits until it did.
+     */
+    private fun beginShutdown(newState: State): () -> Unit {
         synchronized(stateLock) { onServiceStateChange(newState) }
 
         pollWebGuiAvailableTask?.cancelRequestsAndCallback()
@@ -483,30 +537,49 @@ class SyncthingService : Service() {
 
         notificationHandler.cancelRestartNotification()
 
-        val restApi = api
-        if (restApi != null) {
-            if (syncthingRunnable != null) {
-                restApi.shutdown()
-            }
-            api = null
-        }
-
-        if (syncthingRunnable != null) {
-            killProcess(Constants.FILENAME_SYNCTHING_BINARY)
-            syncthingRunnableThread?.let { thread ->
-                logV(
-                    "Waiting for mSyncthingRunnableThread to finish after killProcess(Syncthing) ..."
-                )
-                try {
-                    thread.join()
-                } catch (_: InterruptedException) {
-                    Log.w(TAG, "mSyncthingRunnableThread InterruptedException")
-                }
-                Log.d(TAG, "Finished mSyncthingRunnableThread.")
-                syncthingRunnableThread = null
-            }
+        val running = syncthingRunnable != null
+        val restApi = api?.takeIf { running }
+        api = null
+        val thread = syncthingRunnableThread.takeIf { running }
+        if (running) {
+            syncthingRunnableThread = null
             syncthingRunnable = null
         }
+        return {
+            restApi?.shutdown()
+            if (running) {
+                killProcess(Constants.FILENAME_SYNCTHING_BINARY)
+                thread?.let {
+                    logV(
+                        "Waiting for mSyncthingRunnableThread to finish after killProcess(Syncthing) ..."
+                    )
+                    try {
+                        it.join()
+                    } catch (_: InterruptedException) {
+                        Log.w(TAG, "mSyncthingRunnableThread InterruptedException")
+                    }
+                    Log.d(TAG, "Finished mSyncthingRunnableThread.")
+                }
+            }
+        }
+    }
+
+    /**
+     * Runs [work] on [lifecycleExecutor] after the earlier jobs, then [then] on the main thread.
+     */
+    private fun inBackground(work: () -> Unit, then: () -> Unit = {}) {
+        lifecycleJob =
+            CompletableFuture.runAsync(work, lifecycleExecutor).whenComplete { _, error ->
+                error?.let { Log.e(TAG, "A lifecycle job failed", it) }
+                handler.post(then)
+            }
+    }
+
+    /** Runs [action] on the main thread once the last lifecycle job is done; false if it is. */
+    private fun afterLifecycleJob(action: () -> Unit): Boolean {
+        val job = lifecycleJob?.takeUnless { it.isDone } ?: return false
+        job.whenComplete { _, _ -> handler.post(action) }
+        return true
     }
 
     /** Re-evaluates the run conditions now, e.g. after the settings changed. */
