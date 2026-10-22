@@ -111,6 +111,21 @@ class SettingsTroubleshootingScreenTest {
     }
 
     @Test
+    fun `reporting an issue opens this app's issue tracker`() {
+        val tracker = "https://github.com/tiwiz/syncthing-android/issues"
+        launch().use {
+            compose
+                .onNodeWithText("Open the Expressive Syncthing issue tracker at $tracker")
+                .assertExists()
+            clickRow("Report Issue")
+
+            val opened = shadowOf(app).nextStartedActivity
+            assertEquals(Intent.ACTION_VIEW, opened?.action)
+            assertEquals(tracker, opened?.dataString)
+        }
+    }
+
+    @Test
     fun `the log opens from here`() {
         launch().use {
             clickRow("Open Log")

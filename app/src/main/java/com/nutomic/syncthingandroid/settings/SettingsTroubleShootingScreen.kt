@@ -45,7 +45,7 @@ fun SettingsTroubleshootingScreen(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
-    val issueTrackerUrl = stringResource(R.string.issue_tracker_url)
+    val issueTrackerUrl = stringResource(R.string.fork_issue_tracker_url)
 
     val stTraceOptions by rememberPreferenceState(
         Constants.PREF_DEBUG_FACILITIES_AVAILABLE,
@@ -66,7 +66,7 @@ fun SettingsTroubleshootingScreen(
                 { shape ->
                     SettingsItem(
                         title = stringResource(R.string.report_issue_title),
-                        summary = stringResource(R.string.open_issue_tracker_summary, issueTrackerUrl),
+                        summary = stringResource(R.string.fork_open_issue_tracker_summary, issueTrackerUrl),
                         shape = shape,
                         onClick = { uriHandler.openUri(issueTrackerUrl) },
                     )
