@@ -255,8 +255,13 @@ class RestApi(
         }
     }
 
-    /** Every tenth start, lowers the versioning cleanup interval for a while to force a cleanup. */
+    /**
+     * Every tenth start, lowers the versioning cleanup interval for a while to force a cleanup.
+     * Syncthing has no request for that. Each folder's own interval is saved first and put back
+     * afterwards, or on the next start when Syncthing stopped too soon.
+     */
     private fun triggerVersioningCleanupIfNecessary() {
+        restoreVersioningCleanupIntervals()
         var startupCounter = preferences.getInt(Constants.PREF_APP_START_COUNTER, 0) + 1
         if (startupCounter == Int.MAX_VALUE) startupCounter = 1
         preferences.edit { putInt(Constants.PREF_APP_START_COUNTER, startupCounter) }
@@ -266,20 +271,74 @@ class RestApi(
             )
             return
         }
-        setVersioningCleanupIntervalS(FORCED_CLEANUP_INTERVAL_S)
+        if (!forceVersioningCleanup()) return
         Handler(Looper.getMainLooper())
             .postDelayed(
                 {
                     if (hasShutdown) {
-                        logV(
-                            "Skipping setVersioningCleanupIntervalS(3600) due to hasShutdown == true"
-                        )
+                        logV("Restoring the versioning cleanup intervals on the next start.")
                     } else {
-                        setVersioningCleanupIntervalS(DEFAULT_CLEANUP_INTERVAL_S)
+                        restoreVersioningCleanupIntervals()
                     }
                 },
                 FORCED_CLEANUP_MILLIS,
             )
+    }
+
+    /**
+     * Saves the intervals of the folders that clean up their versions, then lowers them. False when
+     * there is no such folder.
+     */
+    private fun forceVersioningCleanup(): Boolean {
+        synchronized(configLock) {
+            val folders =
+                checkNotNull(checkNotNull(config).folders).filter {
+                    val versioning = checkNotNull(it.versioning)
+                    !versioning.type.isNullOrEmpty() && versioning.cleanupIntervalS > 0
+                }
+            if (folders.isEmpty()) return false
+            val saved = folders.associate {
+                checkNotNull(it.id) to checkNotNull(it.versioning).cleanupIntervalS
+            }
+            preferences.edit(commit = true) {
+                putString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, gson.toJson(saved))
+            }
+            for (folder in folders) {
+                checkNotNull(folder.versioning).cleanupIntervalS = FORCED_CLEANUP_INTERVAL_S
+            }
+            logV("Set VersioningCleanupIntervalS to $FORCED_CLEANUP_INTERVAL_S")
+            sendConfig()
+            return true
+        }
+    }
+
+    /**
+     * Puts back the intervals [forceVersioningCleanup] saved, where the forced one is still set.
+     */
+    private fun restoreVersioningCleanupIntervals() {
+        val json =
+            preferences.getString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, null) ?: return
+        val saved: Map<String, Int> =
+            try {
+                gson.fromJson(json, CLEANUP_INTERVALS_TYPE)
+            } catch (e: JsonParseException) {
+                Log.w(TAG, "restoreVersioningCleanupIntervals: Unreadable saved intervals", e)
+                emptyMap()
+            }
+        synchronized(configLock) {
+            var changed = false
+            for (folder in checkNotNull(checkNotNull(config).folders)) {
+                val interval = saved[folder.id] ?: continue
+                val versioning = checkNotNull(folder.versioning)
+                if (versioning.cleanupIntervalS == FORCED_CLEANUP_INTERVAL_S) {
+                    versioning.cleanupIntervalS = interval
+                    changed = true
+                }
+            }
+            preferences.edit(commit = true) { remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS) }
+            logV("Restored the versioning cleanup intervals: $saved")
+            if (changed) sendConfig()
+        }
     }
 
     fun reloadConfig() {
@@ -1042,16 +1101,6 @@ class RestApi(
         }
     }
 
-    private fun setVersioningCleanupIntervalS(cleanupIntervalS: Int) {
-        synchronized(configLock) {
-            for (folder in checkNotNull(checkNotNull(config).folders)) {
-                checkNotNull(folder.versioning).cleanupIntervalS = cleanupIntervalS
-            }
-            logV("Set VersioningCleanupIntervalS to $cleanupIntervalS")
-            sendConfig()
-        }
-    }
-
     /** Updates the persistent notification when the device count or overall completion changed. */
     private fun onTotalSyncCompletionChange() {
         val onlineDeviceCount = remoteCompletion.onlineDeviceCount
@@ -1100,13 +1149,13 @@ class RestApi(
         const val STARTUP_RETRY_DELAY_MS = 2000L
         const val VERSIONING_CLEANUP_EVERY_STARTS = 10
         const val FORCED_CLEANUP_INTERVAL_S = 2
-        const val DEFAULT_CLEANUP_INTERVAL_S = 3600
         const val FORCED_CLEANUP_MILLIS = 10_000L
         const val COMPLETE = 100
 
         val FOLDER_LIST_TYPE: Type = object : TypeToken<List<Folder>>() {}.type
         val DEVICE_LIST_TYPE: Type = object : TypeToken<List<Device>>() {}.type
         val DISCOVERED_TYPE: Type = object : TypeToken<Map<String, DiscoveredDevice>>() {}.type
+        val CLEANUP_INTERVALS_TYPE: Type = object : TypeToken<Map<String, Int>>() {}.type
 
         /** Compares folders by labels, uses the folder ID as fallback if the label is empty. */
         val FOLDERS_COMPARATOR = compareBy<Folder> { checkNotNull(it.label.ifEmpty { it.id }) }

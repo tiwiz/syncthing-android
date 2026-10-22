@@ -120,6 +120,8 @@ object Constants {
     // from SystemClock.elapsedRealtime()
     const val PREF_LAST_RUN_TIME = "last_run_time"
     const val PREF_APP_START_COUNTER = "app_start_counter"
+    // Folder ID to cleanup interval while the versioning cleanup is forced, as JSON.
+    const val PREF_VERSIONING_CLEANUP_INTERVALS = "versioning_cleanup_intervals"
 
     /** Cached device stats. */
     const val PREF_CACHE_DEVICE_LASTSEEN_PREFIX = "device_lastseen_"

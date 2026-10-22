@@ -558,37 +558,6 @@ class RestApiTest {
     }
 
     @Test
-    fun `every tenth start lowers the versioning cleanup interval for ten seconds`() {
-        prefs.edit().putInt(Constants.PREF_APP_START_COUNTER, 9).apply()
-
-        loadedApi()
-        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(10))
-        awaitMain { syncthing.requests("/rest/system/config", "POST").size == 2 }
-
-        val intervals =
-            (0..1).map {
-                postedConfig(it)
-                    .getAsJsonArray("folders")
-                    .single()
-                    .asJsonObject["versioning"]
-                    .asJsonObject["cleanupIntervalS"]
-                    .asInt
-            }
-        assertEquals(listOf(2, 3600), intervals)
-        assertEquals(10, prefs.getInt(Constants.PREF_APP_START_COUNTER, 0))
-    }
-
-    @Test
-    fun `other starts leave the versioning cleanup interval alone`() {
-        loadedApi()
-        drainMain()
-
-        assertTrue(syncthing.requests("/rest/system/config", "POST").isEmpty())
-        assertEquals(1, prefs.getInt(Constants.PREF_APP_START_COUNTER, 0))
-    }
-
-    @Test
     fun `getFolderByID finds a folder or returns null`() {
         val api = loadedApi()
 

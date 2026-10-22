@@ -55,6 +55,7 @@ private val CACHE_PREFS =
         Constants.PREF_LAST_BINARY_VERSION,
         Constants.PREF_LOCAL_DEVICE_ID,
         Constants.PREF_LAST_RUN_TIME,
+        Constants.PREF_VERSIONING_CLEANUP_INTERVALS,
     )
 
 /**
