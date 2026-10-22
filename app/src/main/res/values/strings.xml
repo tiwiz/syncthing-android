@@ -7,6 +7,9 @@
     <!-- This fork's name: a brand name, the same in every language. -->
     <string name="fork_app_name" translatable="false">Expressive Syncthing</string>
     <string name="fork_camera_title" translatable="false">Expressive Syncthing Camera</string>
+    <!-- This fork's issue tracker: reports about this build do not belong upstream. -->
+    <string name="fork_issue_tracker_url" translatable="false">https://github.com/tiwiz/syncthing-android/issues</string>
+    <string name="fork_open_issue_tracker_summary" translatable="false">Open the Expressive Syncthing issue tracker at %1$s</string>
 
     <string name="app_description">An open, trustworthy and decentralized file synchronization application.</string>
 
