@@ -192,16 +192,16 @@ private constructor(
             toast(error)
             return
         }
+        if (!createMode && !current.changed) {
+            // Nothing to save.
+            host.close(saved = false)
+            return
+        }
         saveFolderShares(current, edited)
         if (createMode) {
             Log.v(TAG, "onSave: Adding device with ID = '${edited.deviceID}'")
             configRouter.updateDevice(host.restApi, edited)
             host.close(saved = true)
-            return
-        }
-        if (!current.changed) {
-            // Nothing to save.
-            host.close(saved = false)
             return
         }
         Log.v(TAG, "onSave: Updating device with ID = '${edited.deviceID}'")
@@ -212,11 +212,16 @@ private constructor(
         host.close(saved = true)
     }
 
-    /** Shares or unshares every folder with the device, with its encryption password. */
+    /**
+     * Shares or unshares the folders whose share or encryption password changed. Each one is a
+     * config change of its own, so the others are left alone.
+     */
     private fun saveFolderShares(current: DeviceForm, edited: Device) {
         val shares = current.shares.associateBy { it.folderId }
-        for (folder in folders) {
-            val share = shares[folder.id] ?: continue
+        // As saved now: the list loaded with the screen may come from config.xml.
+        for (folder in configRouter.getFolders(host.restApi)) {
+            val share = shares[folder.id]?.takeIf { it.differsFrom(folder, edited.deviceID) }
+            if (share == null) continue
             if (share.shared) {
                 folder.addDevice(edited)
                 checkNotNull(folder.getDevice(edited.deviceID)).encryptionPassword =
@@ -226,6 +231,13 @@ private constructor(
             }
             configRouter.updateFolder(host.restApi, folder)
         }
+    }
+
+    /** Whether this share or its encryption password is not what [folder] has for [deviceId]. */
+    private fun FolderShare.differsFrom(folder: Folder, deviceId: String?): Boolean {
+        val saved = folder.getDevice(deviceId)
+        return if (shared) saved?.encryptionPassword.orEmpty() != encryptionPassword
+        else saved != null
     }
 
     /** Asks Syncthing for the devices local discovery found; create mode only. */
