@@ -180,7 +180,10 @@ private var RestApi.preferences: Preferences
         val valueMap = value.asMap()
 
         // update calls that change internal state of RestApi
-        valueMap[SyncthingOptionKeys.USAGE_REPORTING]?.let { this.setUsageReporting(it as Boolean) }
+        // Only when the switch changed: it shows "off" also while the question is unanswered.
+        (valueMap[SyncthingOptionKeys.USAGE_REPORTING] as Boolean?)
+            ?.takeIf { it != this.isUsageReportingAccepted }
+            ?.let { this.setUsageReporting(it) }
 
         // assignments to options and gui
         val options = this.options

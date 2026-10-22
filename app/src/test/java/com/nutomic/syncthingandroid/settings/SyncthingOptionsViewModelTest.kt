@@ -133,6 +133,39 @@ class SyncthingOptionsViewModelTest {
     }
 
     @Test
+    fun `changing another option leaves an unanswered usage reporting question open`() {
+        val viewModel = viewModel()
+        val changed = viewModel.apiPreferences.value.asMap().toMutableMap()
+        assertEquals(false, changed[SyncthingOptionKeys.USAGE_REPORTING])
+        changed[SyncthingOptionKeys.NAT_TRAVERSAL] = false
+        viewModel.apiPreferences.value = MapPreferences(changed)
+        idleFor(600)
+        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+        val options = postedConfig().getAsJsonObject("options")
+        assertFalse(options.get("natEnabled").asBoolean)
+        assertEquals(0, options.get("urAccepted").asInt)
+    }
+
+    @Test
+    fun `turning usage reporting on accepts the latest version, off declines it`() {
+        val viewModel = viewModel()
+        val accepted = viewModel.apiPreferences.value.asMap().toMutableMap()
+        accepted[SyncthingOptionKeys.USAGE_REPORTING] = true
+        viewModel.apiPreferences.value = MapPreferences(accepted)
+        idleFor(600)
+        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+        assertEquals(3, postedConfig().getAsJsonObject("options").get("urAccepted").asInt)
+
+        val declined = accepted.toMutableMap()
+        declined[SyncthingOptionKeys.USAGE_REPORTING] = false
+        viewModel.apiPreferences.value = MapPreferences(declined)
+        idleFor(600)
+        awaitMain { syncthing.requests("/rest/system/config", "POST").size > 1 }
+        assertEquals(-1, postedConfig().getAsJsonObject("options").get("urAccepted").asInt)
+    }
+
+    @Test
     fun `remote access binds the web GUI to every address on its port`() {
         val viewModel = viewModel()
         val changed = viewModel.apiPreferences.value.asMap().toMutableMap()
