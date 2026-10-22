@@ -101,6 +101,10 @@ internal class MainScreen(
             false
         }
 
+    /** Every text in the row of device [name], e.g. its shared folders. */
+    fun deviceTexts(name: String): List<String> =
+        compose.onNodeWithTag("device:$name").fetchSemanticsNode().texts()
+
     fun deviceStatus(name: String): String =
         compose
             .onNodeWithTag("deviceStatus:$name", useUnmergedTree = true)

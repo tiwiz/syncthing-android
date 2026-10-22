@@ -117,7 +117,7 @@ private constructor(
                 saved,
                 // The screen does not show when the device was last seen.
                 lastSeen = "",
-                configRouter.getSharedFolders(id),
+                configRouter.getSharedFolders(restApi, id),
                 running?.let {
                     DeviceRowState.Status(
                         it.getRemoteDeviceStatus(id),

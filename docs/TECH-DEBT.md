@@ -31,4 +31,7 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
-None.
+- While Syncthing is stopped, the main screen's refresh (every second) reads `config.xml` twice on
+  the main thread, once for the folders and once for the devices (`ConfigRouter` loads the file for
+  every offline read). Reading it off the main thread, and only when the file changed, needs
+  `MainViewModel.refresh()` to become asynchronous. The per-device reads are gone (#110).
