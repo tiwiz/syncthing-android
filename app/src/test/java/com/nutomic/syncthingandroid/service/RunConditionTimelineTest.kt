@@ -137,9 +137,57 @@ class RunConditionTimelineTest {
         context.sendStickyBroadcast(
             Intent(Intent.ACTION_BATTERY_CHANGED).putExtra(BatteryManager.EXTRA_PLUGGED, 0)
         )
+        val uptime = SystemClock.uptimeMillis()
+        broadcast(Intent(Intent.ACTION_POWER_DISCONNECTED))
+        // The receiver lets the charging state settle without holding the main thread.
+        assertEquals(uptime, SystemClock.uptimeMillis())
+        assertEquals(listOf(true), decisions)
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5))
+        assertEquals(listOf(true, false), decisions)
+    }
+
+    @Test
+    fun `quick charger changes are decided once, after the last one settled`() {
+        network(ConnectivityManager.TYPE_WIFI)
+        prefs.edit().putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER).commit()
+        context.sendStickyBroadcast(
+            Intent(Intent.ACTION_BATTERY_CHANGED)
+                .putExtra(BatteryManager.EXTRA_PLUGGED, BatteryManager.BATTERY_PLUGGED_AC)
+        )
+        start()
+
+        context.sendStickyBroadcast(
+            Intent(Intent.ACTION_BATTERY_CHANGED).putExtra(BatteryManager.EXTRA_PLUGGED, 0)
+        )
+        broadcast(Intent(Intent.ACTION_POWER_DISCONNECTED))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        broadcast(Intent(Intent.ACTION_POWER_CONNECTED))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        assertEquals(listOf(true), decisions)
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
+        assertEquals(listOf(true, false), decisions)
+    }
+
+    @Test
+    fun `a charger change still settling is dropped on shutdown`() {
+        network(ConnectivityManager.TYPE_WIFI)
+        prefs.edit().putString(Constants.PREF_POWER_SOURCE, Constants.PowerSource.CHARGER).commit()
+        context.sendStickyBroadcast(
+            Intent(Intent.ACTION_BATTERY_CHANGED)
+                .putExtra(BatteryManager.EXTRA_PLUGGED, BatteryManager.BATTERY_PLUGGED_AC)
+        )
+        val monitor = start()
+        context.sendStickyBroadcast(
+            Intent(Intent.ACTION_BATTERY_CHANGED).putExtra(BatteryManager.EXTRA_PLUGGED, 0)
+        )
         broadcast(Intent(Intent.ACTION_POWER_DISCONNECTED))
 
-        assertEquals(listOf(true, false), decisions)
+        monitor.shutdown()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5))
+
+        assertEquals(listOf(true), decisions)
     }
 
     @Test

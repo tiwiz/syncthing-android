@@ -48,6 +48,8 @@ class RunConditionMonitor(
     private val syncStatusObserver = SyncStatusObserver {
         Handler(Looper.getMainLooper()).post { updateShouldRunDecision() }
     }
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val decideAfterBatterySettled = Runnable { updateShouldRunDecision() }
     private var syncTriggerReceiver: SyncTriggerReceiver? = null
     private var updateShouldRunDecisionReceiver: UpdateShouldRunDecisionReceiver? = null
 
@@ -166,6 +168,7 @@ class RunConditionMonitor(
         updateShouldRunDecisionReceiver?.let(localBroadcastManager::unregisterReceiver)
         updateShouldRunDecisionReceiver = null
         ReceiverManager.unregisterAllReceivers(context)
+        mainHandler.removeCallbacks(decideAfterBatterySettled)
     }
 
     /** Decides again when it receives [action]. */
@@ -183,8 +186,9 @@ class RunConditionMonitor(
                 Intent.ACTION_POWER_CONNECTED == intent.action ||
                     Intent.ACTION_POWER_DISCONNECTED == intent.action
             ) {
-                SystemClock.sleep(BATTERY_SETTLE_MILLIS)
-                updateShouldRunDecision()
+                // Decides once the charging state settled, without holding the main thread.
+                mainHandler.removeCallbacks(decideAfterBatterySettled)
+                mainHandler.postDelayed(decideAfterBatterySettled, BATTERY_SETTLE_MILLIS)
             }
         }
     }
