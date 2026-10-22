@@ -288,7 +288,9 @@ Next steps (to be confirmed with the owner):
    "No debug facility" untranslated in Italian (upstream keys, Weblate). Not checked: the folded
    outer screen (the emulator profile does not change size when folded) and the QR scanner
    camera. GitHub milestone "Material 3 Expressive & ViewModels" holds PRs #62–#101.
-   **Resume here:** whatever the owner picks next; TECH-DEBT has no bugs left.
+   2026-10-22, app review: eight verified bugs filed as GitHub issues #106–#113 (issues enabled on
+   the fork). The biggest: config posts reset every Syncthing setting the Gson models lack (#106).
+   **Resume here:** the open issues, starting with #106; or whatever the owner picks next.
 
 ## HANDOFF
 
