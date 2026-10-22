@@ -2,6 +2,9 @@ package com.nutomic.syncthingandroid.service
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.model.Connection
 import com.nutomic.syncthingandroid.model.Connections
@@ -17,6 +20,58 @@ private const val TAG = "RestApi"
 /** A deep copy through Gson; only works with objects Gson can convert. */
 internal fun <T> deepCopyWithGson(value: T, type: java.lang.reflect.Type): T =
     Gson().run { fromJson(toJson(value, type), type) }
+
+/**
+ * The config to post: the [model]'s JSON laid over the config Syncthing [served]. Syncthing resets
+ * every field a posted config lacks, and the Gson models only declare some of them, so the fields
+ * the models drop come from [served]. List entries are matched by their `id` or `deviceID`; the
+ * model decides which entries exist and in what order. Maps the app edits as a whole, like the
+ * versioning `params`, are taken from the model.
+ */
+internal fun mergeConfigJson(served: JsonObject, model: JsonObject): JsonObject {
+    val merged = model.deepCopy()
+    for ((key, servedValue) in served.entrySet()) {
+        val modelValue = model[key]
+        merged.add(
+            key,
+            when {
+                modelValue == null -> servedValue.deepCopy()
+                key in WHOLE_MAPS -> modelValue.deepCopy()
+                else -> mergeConfigElement(servedValue, modelValue)
+            },
+        )
+    }
+    return merged
+}
+
+private val WHOLE_MAPS = setOf("params")
+private val LIST_KEYS = listOf("id", "deviceID")
+
+private fun mergeConfigElement(served: JsonElement, model: JsonElement): JsonElement =
+    when {
+        served.isJsonObject && model.isJsonObject ->
+            mergeConfigJson(served.asJsonObject, model.asJsonObject)
+        served.isJsonArray && model.isJsonArray ->
+            mergeConfigList(served.asJsonArray, model.asJsonArray)
+        else -> model.deepCopy()
+    }
+
+private fun mergeConfigList(served: JsonArray, model: JsonArray): JsonArray {
+    val merged = JsonArray()
+    for (entry in model) {
+        val match =
+            listEntryKey(entry)?.let { key -> served.firstOrNull { listEntryKey(it) == key } }
+        merged.add(if (match == null) entry.deepCopy() else mergeConfigElement(match, entry))
+    }
+    return merged
+}
+
+private fun listEntryKey(entry: JsonElement): Pair<String, String>? {
+    if (!entry.isJsonObject) return null
+    val obj = entry.asJsonObject
+    val name = LIST_KEYS.firstOrNull { obj[it]?.isJsonPrimitive == true } ?: return null
+    return name to obj[name].asString
+}
 
 /** Shows a consent notification for each device in a /rest/cluster/pending/devices answer. */
 internal fun notifyPendingDevices(

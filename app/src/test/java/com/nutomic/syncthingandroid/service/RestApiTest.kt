@@ -275,6 +275,95 @@ class RestApiTest {
     }
 
     @Test
+    fun `sending an unchanged config posts back every field Syncthing served`() {
+        val api = loadedApi()
+
+        api.sendConfig()
+        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+        // The models also post a few config.xml names Syncthing's JSON ignores, like "stunServer".
+        val served = JsonParser.parseString(syncthing.configJson())
+        assertEquals(served, onlyKeysOf(served, postedConfig()))
+    }
+
+    @Test
+    fun `settings the app does not model survive edits of folders, devices and options`() {
+        val api = loadedApi()
+        val folder = checkNotNull(api.getFolderByID("cam-photos")).apply { label = "Renamed" }
+        val laptop = api.getDevices(false).single().apply { name = "renamed" }
+
+        api.updateFolder(folder)
+        api.updateDevice(laptop)
+        api.editSettings(api.gui, api.options.apply { natEnabled = false })
+        api.sendConfig()
+        awaitMain { syncthing.requests("/rest/system/config", "POST").size == 3 }
+
+        val served = JsonParser.parseString(syncthing.configJson()).asJsonObject
+        val posted = postedConfig()
+        assertEquals(served["ldap"], posted["ldap"])
+        for (key in listOf("stunServers", "unackedNotificationIDs", "connectionPriorityTcpLan")) {
+            assertEquals(
+                key,
+                served["options"].asJsonObject[key],
+                posted["options"].asJsonObject[key],
+            )
+        }
+        assertFalse(posted["options"].asJsonObject["natEnabled"].asBoolean)
+        assertEquals(served["gui"].asJsonObject["authMode"], posted["gui"].asJsonObject["authMode"])
+        val postedFolder = posted.getAsJsonArray("folders").single().asJsonObject
+        assertEquals("Renamed", postedFolder["label"].asString)
+        val servedFolder = served.getAsJsonArray("folders").single().asJsonObject
+        assertEquals(servedFolder["fsWatcherTimeoutS"], postedFolder["fsWatcherTimeoutS"])
+        assertEquals(servedFolder["xattrFilter"], postedFolder["xattrFilter"])
+        val servedLaptop =
+            served
+                .getAsJsonArray("devices")
+                .map { it.asJsonObject }
+                .single { it["deviceID"].asString == LAPTOP_ID }
+        val postedLaptop =
+            posted
+                .getAsJsonArray("devices")
+                .map { it.asJsonObject }
+                .single { it["deviceID"].asString == LAPTOP_ID }
+        assertEquals("renamed", postedLaptop["name"].asString)
+        assertEquals(servedLaptop["maxRequestKiB"], postedLaptop["maxRequestKiB"])
+    }
+
+    @Test
+    fun `versioning parameters the app removed are not posted back`() {
+        val api = loadedApi()
+        val staggered =
+            checkNotNull(api.getFolderByID("cam-photos")).apply {
+                versioning =
+                    Folder.Versioning().apply {
+                        type = "staggered"
+                        params = mapOf("maxAge" to "86400", "cleanInterval" to "3600")
+                    }
+            }
+        api.updateFolder(staggered)
+        val simple =
+            checkNotNull(api.getFolderByID("cam-photos")).apply {
+                versioning =
+                    Folder.Versioning().apply {
+                        type = "simple"
+                        params = mapOf("keep" to "5")
+                    }
+            }
+
+        api.updateFolder(simple)
+        awaitMain { syncthing.requests("/rest/system/config", "POST").size == 2 }
+
+        val versioning =
+            postedConfig()
+                .getAsJsonArray("folders")
+                .single()
+                .asJsonObject["versioning"]
+                .asJsonObject
+        assertEquals("simple", versioning["type"].asString)
+        assertEquals(setOf("keep"), versioning["params"].asJsonObject.keySet())
+    }
+
+    @Test
     fun `ignoring a device records it once`() {
         val api = loadedApi()
 
@@ -607,6 +696,26 @@ class RestApiTest {
             syncCompleteBroadcasts().single().action,
         )
     }
+
+    /** [posted] without the object keys [served] lacks, at every level. */
+    private fun onlyKeysOf(served: JsonElement, posted: JsonElement): JsonElement =
+        when {
+            served.isJsonObject && posted.isJsonObject ->
+                com.google.gson.JsonObject().apply {
+                    for ((key, value) in posted.asJsonObject.entrySet()) {
+                        served.asJsonObject[key]?.let { add(key, onlyKeysOf(it, value)) }
+                    }
+                }
+            served.isJsonArray &&
+                posted.isJsonArray &&
+                served.asJsonArray.size() == posted.asJsonArray.size() ->
+                com.google.gson.JsonArray().apply {
+                    served.asJsonArray.zip(posted.asJsonArray).forEach { (s, p) ->
+                        add(onlyKeysOf(s, p))
+                    }
+                }
+            else -> posted
+        }
 
     private fun syncCompleteBroadcasts(): List<Intent> =
         shadowOf(context as Application).broadcastIntents.filter {
