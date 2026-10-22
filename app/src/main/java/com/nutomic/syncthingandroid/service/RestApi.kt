@@ -11,6 +11,7 @@ import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
@@ -110,6 +111,9 @@ class RestApi(
 
     /** Guarded by [configLock]. */
     private var config: Config? = null
+
+    /** The config as Syncthing last served it, with every field; guarded by [configLock]. */
+    private var servedConfig: JsonObject? = null
     private val configLock = Any()
 
     // Results cached from the system status.
@@ -284,7 +288,10 @@ class RestApi(
 
     private fun onReloadConfigComplete(configResult: String) {
         val parsed = gson.fromJson(configResult, Config::class.java)
-        synchronized(configLock) { config = parsed }
+        synchronized(configLock) {
+            config = parsed
+            servedConfig = JsonParser.parseString(configResult).asJsonObject
+        }
         checkNotNull(parsed) { "config is null: $configResult" }
         Log.d(TAG, "onReloadConfigComplete: Successfully parsed configuration.")
         synchronized(configLock) {
@@ -471,7 +478,14 @@ class RestApi(
      * EventProcessor call [reloadConfig].
      */
     fun sendConfig() {
-        val jsonConfig = synchronized(configLock) { gson.toJson(config) }
+        val jsonConfig =
+            synchronized(configLock) {
+                val model = gson.toJsonTree(config).asJsonObject
+                val merged = servedConfig?.let { mergeConfigJson(it, model) } ?: model
+                // Later posts before the next reload build on this one.
+                servedConfig = merged
+                gson.toJson(merged)
+            }
         post(PostRequest.URI_SYSTEM_CONFIG, body = jsonConfig)
         url = webGuiUrl
         onConfigChangedListener.onConfigChanged()
