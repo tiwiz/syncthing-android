@@ -297,7 +297,16 @@ Next steps (to be confirmed with the owner):
    list, stop and database reset wait for the binary on a lifecycle executor, device save touches
    only changed shares, "Report Issue" opens this fork's tracker. Checked on the emulator with the
    native build. Left in TECH-DEBT: `config.xml` read twice a second while Syncthing is stopped.
-   **Resume here:** whatever the owner picks next.
+   Wiki help links point to the fork (#124). The instrumented CI job failed now and then because a
+   system dialog kept the emulator's window focus (all four Espresso-Web tests timed out); the
+   emulator script now hides and closes system dialogs and logs the focused window (#125).
+   Second review, same day, from reading the code (not reproduced on a device): eight bugs filed as
+   #126–#133 (truncated `config.xml` after a failed write, folder edit resetting `markerName`,
+   export/import during startup, Ignore on the wrong consent notification, certificate change on
+   the main thread, full photo decode in Syncthing Camera, consent notification IDs, JSON escapes
+   in file names), plus two private draft security advisories on the fork (share screen and the
+   loopback trust store fallback); upstream has the same code.
+   **Resume here:** whatever the owner picks next from #126–#133 and the advisories.
 
 ## HANDOFF
 
