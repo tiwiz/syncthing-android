@@ -101,7 +101,17 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          # A freshly booted emulator can show a "System UI isn't responding" dialog that keeps the
+          # window focus for the whole run, and Espresso-Web then fails every test that waits for
+          # it. Hide error dialogs, close what is open and log who holds the focus. Each line runs
+          # as its own command.
+          script: |
+            adb shell settings put global hide_error_dialogs 1
+            adb shell wm dismiss-keyguard
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
+            adb shell input keyevent KEYCODE_HOME
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' || true
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest || (adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'; exit 1)
 
       - name: Upload reports
         if: failure()
