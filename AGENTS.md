@@ -290,7 +290,14 @@ Next steps (to be confirmed with the owner):
    camera. GitHub milestone "Material 3 Expressive & ViewModels" holds PRs #62–#101.
    2026-10-22, app review: eight verified bugs filed as GitHub issues #106–#113 (issues enabled on
    the fork). The biggest: config posts reset every Syncthing setting the Gson models lack (#106).
-   **Resume here:** the open issues, starting with #106; or whatever the owner picks next.
+   Same day, all eight fixed (PRs #115–#122): config posts lay the model over the config Syncthing
+   served (`mergeConfigJson`), usage reporting written only when its switch changed, forced
+   versioning cleanup restores each folder's interval (`PREF_VERSIONING_CLEANUP_INTERVALS`), no
+   main-thread sleep in the battery receiver, device rows take shared folders from the folder
+   list, stop and database reset wait for the binary on a lifecycle executor, device save touches
+   only changed shares, "Report Issue" opens this fork's tracker. Checked on the emulator with the
+   native build. Left in TECH-DEBT: `config.xml` read twice a second while Syncthing is stopped.
+   **Resume here:** whatever the owner picks next.
 
 ## HANDOFF
 
