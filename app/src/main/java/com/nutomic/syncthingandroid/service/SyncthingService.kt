@@ -244,14 +244,6 @@ class SyncthingService : Service() {
      * starts it again if it was running before.
      */
     private fun onResetDatabaseAction() {
-        if (currentState == State.STARTING) {
-            Log.w(TAG, "Deferring the database reset until State.STARTING was left")
-            handler.postDelayed({ onResetDatabaseAction() }, DEFER_MILLIS)
-            return
-        }
-        Log.i(TAG, "Invoking reset of database")
-        val waitForExit =
-            if (currentState != State.DISABLED) beginShutdown(State.DISABLED) else null
         val reset =
             SyncthingRunnable(
                 this,
@@ -259,10 +251,13 @@ class SyncthingService : Service() {
                 preferences,
                 notificationHandler,
             )
-        inBackground({
-            waitForExit?.invoke()
-            reset.run()
-        }) {
+        afterStopped(
+            ::onResetDatabaseAction,
+            {
+                Log.i(TAG, "Invoking reset of database")
+                reset.run()
+            },
+        ) {
             if (lastDeterminedShouldRun) {
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
             }
@@ -697,21 +692,11 @@ class SyncthingService : Service() {
     /**
      * Stops Syncthing, waiting while it is STARTING, and runs [work] off the main thread once it
      * has exited. Then starts Syncthing again if the run conditions say so and passes the result of
-     * [work] to [onDone]. Main thread only, like [onResetDatabaseAction].
+     * [work] to [onDone].
      */
     private fun whileStopped(work: () -> Boolean, onDone: (Boolean) -> Unit) {
-        if (currentState == State.STARTING) {
-            Log.w(TAG, "Deferring the backup until State.STARTING was left")
-            handler.postDelayed({ whileStopped(work, onDone) }, DEFER_MILLIS)
-            return
-        }
-        val waitForExit =
-            if (currentState != State.DISABLED) beginShutdown(State.DISABLED) else null
         var success = false
-        inBackground({
-            waitForExit?.invoke()
-            success = work()
-        }) {
+        afterStopped({ whileStopped(work, onDone) }, { success = work() }) {
             onDone(success)
             if (lastDeterminedShouldRun) {
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
@@ -749,20 +734,19 @@ class SyncthingService : Service() {
         keyPem: ByteArray,
         listener: OnHttpsCertReplaceResultListener,
     ) {
-        // shutdown() defers while STARTING; wait it out so our file writes don't race the binary.
-        if (currentState == State.STARTING) {
-            handler.postDelayed(
-                { doReplaceHttpsCertificate(certPem, keyPem, listener) },
-                DEFER_MILLIS,
-            )
-            return
+        // Stop the binary so it releases the cert/key before we overwrite them.
+        afterStopped({ doReplaceHttpsCertificate(certPem, keyPem, listener) }) {
+            writeHttpsCertificate(certPem, keyPem, listener)
         }
+    }
+
+    private fun writeHttpsCertificate(
+        certPem: ByteArray,
+        keyPem: ByteArray,
+        listener: OnHttpsCertReplaceResultListener,
+    ) {
         val certFile = Constants.getHttpsCertFile(this)
         val keyFile = Constants.getHttpsKeyFile(this)
-        // Stop the binary so it releases the cert/key before we overwrite them.
-        if (currentState != State.DISABLED) {
-            shutdown(State.DISABLED)
-        }
         val certBak = backupFile(certFile)
         val keyBak = backupFile(keyFile)
         try {
@@ -788,23 +772,43 @@ class SyncthingService : Service() {
     }
 
     private fun doResetHttpsCertificate(listener: OnHttpsCertReplaceResultListener) {
+        afterStopped({ doResetHttpsCertificate(listener) }) {
+            val certFile = Constants.getHttpsCertFile(this)
+            val keyFile = Constants.getHttpsKeyFile(this)
+            val certBak = backupFile(certFile)
+            val keyBak = backupFile(keyFile)
+            // Removing the files makes Syncthing generate a fresh self-signed certificate at
+            // startup.
+            deleteQuietly(certFile)
+            deleteQuietly(keyFile)
+            // No expected fingerprint: regenerating is the whole point, so any certificate
+            // Syncthing comes up with is the right one.
+            applyCertChangeWithVerify(
+                CertChange(certFile, keyFile, certBak, keyBak, null, listener)
+            )
+        }
+    }
+
+    /**
+     * Stops Syncthing unless it is DISABLED and runs [work] off the main thread once it has exited,
+     * then [then] on the main thread. While STARTING, runs [retry] later instead, so that the work
+     * does not race the binary. Main thread only.
+     */
+    private fun afterStopped(retry: () -> Unit, work: () -> Unit = {}, then: () -> Unit) {
         if (currentState == State.STARTING) {
-            handler.postDelayed({ doResetHttpsCertificate(listener) }, DEFER_MILLIS)
+            Log.w(TAG, "Deferring until State.STARTING was left")
+            handler.postDelayed(retry, DEFER_MILLIS)
             return
         }
-        val certFile = Constants.getHttpsCertFile(this)
-        val keyFile = Constants.getHttpsKeyFile(this)
-        if (currentState != State.DISABLED) {
-            shutdown(State.DISABLED)
-        }
-        val certBak = backupFile(certFile)
-        val keyBak = backupFile(keyFile)
-        // Removing the files makes Syncthing generate a fresh self-signed certificate at startup.
-        deleteQuietly(certFile)
-        deleteQuietly(keyFile)
-        // No expected fingerprint: regenerating is the whole point, so any certificate Syncthing
-        // comes up with is the right one.
-        applyCertChangeWithVerify(CertChange(certFile, keyFile, certBak, keyBak, null, listener))
+        val waitForExit =
+            if (currentState != State.DISABLED) beginShutdown(State.DISABLED) else null
+        inBackground(
+            {
+                waitForExit?.invoke()
+                work()
+            },
+            then,
+        )
     }
 
     /** A certificate change on disk, with the backups to roll back to. */
@@ -894,16 +898,20 @@ class SyncthingService : Service() {
             // serving a certificate that differs from the file on disk; restoring the file under a
             // live instance would leave ApiRequest pinning a certificate that is not the one being
             // served, so any request in that window fails.
-            if (
-                this@SyncthingService.currentState != State.DISABLED &&
-                    this@SyncthingService.currentState != State.INIT
-            ) {
-                shutdown(State.INIT)
+            val state = this@SyncthingService.currentState
+            if (state == State.STARTING) {
+                handler.postDelayed(::finishFailure, DEFER_MILLIS)
+                return
             }
-            change.restore()
-            // Bring the previous, known-good certificate back online.
-            launchStartupTask(SyncthingRunnable.Command.MAIN)
-            change.listener.onResult(failureReason, null)
+            val waitForExit =
+                if (state != State.DISABLED && state != State.INIT) beginShutdown(State.INIT)
+                else null
+            inBackground({ waitForExit?.invoke() }) {
+                change.restore()
+                // Bring the previous, known-good certificate back online.
+                launchStartupTask(SyncthingRunnable.Command.MAIN)
+                change.listener.onResult(failureReason, null)
+            }
         }
 
         private fun finishSuccess() {
