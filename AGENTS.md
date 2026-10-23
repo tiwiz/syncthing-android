@@ -306,7 +306,15 @@ Next steps (to be confirmed with the owner):
    the main thread, full photo decode in Syncthing Camera, consent notification IDs, JSON escapes
    in file names), plus two private draft security advisories on the fork (share screen and the
    loopback trust store fallback); upstream has the same code.
-   **Resume here:** whatever the owner picks next from #126–#133 and the advisories.
+   2026-10-23, all eight fixed (PRs #135–#142): `config.xml` kept when the temporary file cannot
+   be written (and synced before the rename); folder screen loads from REST while running and
+   `config.xml` reading fills `markerName` and four more fields; export/import are lifecycle jobs
+   with a callback (`exportConfig(onDone)`, wait while STARTING, zip work on `lifecycleExecutor`);
+   certificate replace/reset/rollback stop Syncthing off the main thread through `afterStopped()`,
+   which the backup and the database reset share; one Ignore `PendingIntent` per consent
+   notification; picture checked by its bounds only (the OOM cannot be reproduced on the host JVM);
+   consent ids with `Math.floorMod`; file names read with `asString`.
+   **Resume here:** the two private security advisories, with the owner.
 
 ## HANDOFF
 
