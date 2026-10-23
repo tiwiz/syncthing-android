@@ -210,6 +210,22 @@ class NotificationHandlerTest {
     }
 
     @Test
+    fun `each consent notification ignores its own device`() {
+        handler.showDeviceConnectNotification("AAAAAAA-device", "phone", null)
+        handler.showDeviceConnectNotification("BBBBBBB-device", "tablet", null)
+
+        val first =
+            checkNotNull(
+                shadowOf(manager)
+                    .getNotification(
+                        handler.getNotificationIdFromText("Device \"phone\" wants to connect")
+                    )
+            )
+        val ignore = intentOf(first.actions[1].actionIntent)
+        assertEquals("AAAAAAA-device", ignore.getStringExtra(SyncthingService.EXTRA_DEVICE_ID))
+    }
+
+    @Test
     fun `a folder offered by a device can be accepted or ignored`() {
         handler.showFolderShareNotification(
             REMOTE_DEVICE_ID,

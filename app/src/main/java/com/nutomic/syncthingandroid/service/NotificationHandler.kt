@@ -313,7 +313,7 @@ class NotificationHandler(private val context: Context) {
             notificationId,
             title,
             consentAcceptIntent(context, notificationId, intentAccept),
-            consentIgnoreIntent(context, intentIgnore),
+            consentIgnoreIntent(context, notificationId, intentIgnore),
         )
     }
 
@@ -364,7 +364,7 @@ class NotificationHandler(private val context: Context) {
             notificationId,
             title,
             consentAcceptIntent(context, notificationId, intentAccept),
-            consentIgnoreIntent(context, intentIgnore),
+            consentIgnoreIntent(context, notificationId, intentIgnore),
         )
     }
 
@@ -424,11 +424,18 @@ private fun consentAcceptIntent(
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-/** Asks the service to ignore a device or folder. */
-private fun consentIgnoreIntent(context: Context, intent: Intent): PendingIntent =
+/**
+ * Asks the service to ignore a device or folder. One per notification: PendingIntents that differ
+ * only in their extras are the same one.
+ */
+private fun consentIgnoreIntent(
+    context: Context,
+    notificationId: Int,
+    intent: Intent,
+): PendingIntent =
     PendingIntent.getService(
         context,
-        0,
+        notificationId,
         intent,
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
