@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -179,11 +181,7 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         val taken =
             photoUri != null &&
                 try {
-                    @Suppress(
-                        "DEPRECATION"
-                    ) // getBitmap: the simplest check that a picture is there.
-                    MediaStore.Images.Media.getBitmap(contentResolver, photoUri).width
-                    true
+                    hasPicture(photoUri)
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     // Whatever the decoder throws means there is no picture.
                     Log.d(TAG, "User cancelled or failed to take a picture.", e)
@@ -206,6 +204,13 @@ class PhotoShootActivity : ThemedAppCompatActivity() {
         Log.d(TAG, "User took a picture.")
         Toast.makeText(this, R.string.photo_shoot_take_picture_success, Toast.LENGTH_SHORT).show()
         finish()
+    }
+
+    /** Whether [uri] holds an image; reads only its size, not its pixels. */
+    private fun hasPicture(uri: Uri): Boolean {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+        return options.outWidth > 0 && options.outHeight > 0
     }
 
     override fun onRequestPermissionsResult(
