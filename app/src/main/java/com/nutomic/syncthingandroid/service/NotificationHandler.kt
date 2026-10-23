@@ -216,11 +216,10 @@ class NotificationHandler(private val context: Context) {
 
     /**
      * A deterministic ID for consent notifications from EventProcessor, so the same device or
-     * folder reuses its notification. Meant to be between 1000 and 2000; a negative hash code gives
-     * one below 1000.
+     * folder reuses its notification. Between 1000 and 1999, away from the fixed IDs.
      */
     fun getNotificationIdFromText(text: String): Int =
-        CONSENT_ID_BASE + text.hashCode() % CONSENT_ID_BASE
+        CONSENT_ID_BASE + Math.floorMod(text.hashCode(), CONSENT_ID_BASE)
 
     /** Closes a notification. Required after the user hit an action button. */
     fun cancelConsentNotification(notificationId: Int) {

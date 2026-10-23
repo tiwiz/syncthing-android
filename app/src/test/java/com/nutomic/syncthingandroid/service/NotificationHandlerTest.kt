@@ -183,6 +183,14 @@ class NotificationHandlerTest {
     }
 
     @Test
+    fun `a text with a negative hash still gets a consent id from 1000 to 1999`() {
+        // Its hash is Int.MIN_VALUE.
+        val id = handler.getNotificationIdFromText("polygenelubricants")
+
+        assertTrue("id $id", id in 1000..1999)
+    }
+
+    @Test
     fun `a device asking to connect can be accepted or ignored`() {
         handler.showDeviceConnectNotification(REMOTE_DEVICE_ID, "", "tcp://192.0.2.1:22000")
 
