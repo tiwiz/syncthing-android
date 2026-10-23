@@ -83,6 +83,13 @@ private fun readFolderOptions(r: Element, folder: Folder) {
     folder.sendXattrs = child("sendXattrs").contentOr(checkNotNull(folder.sendXattrs))
     folder.blockIndexing = child("blockIndexing").contentOr(checkNotNull(folder.blockIndexing))
     folder.filesystemType = child("filesystemType").contentOr(folder.filesystemType)
+    // Not edited by the app, but read so that a save through the REST API keeps them.
+    folder.markerName = child("markerName").contentOr(folder.markerName)
+    folder.disableSparseFiles = child("disableSparseFiles").contentOr(folder.disableSparseFiles)
+    folder.scanProgressIntervalS =
+        child("scanProgressIntervalS").contentOr(folder.scanProgressIntervalS)
+    folder.pullerMaxPendingKiB = child("pullerMaxPendingKiB").contentOr(folder.pullerMaxPendingKiB)
+    folder.pullerPauseS = child("pullerPauseS").contentOr(folder.pullerPauseS)
 }
 
 /**
