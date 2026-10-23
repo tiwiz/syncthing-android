@@ -415,7 +415,6 @@ class EventProcessor(
 }
 
 private const val TOP_TAG = "EventProcessor"
-private val QUOTES = Regex("^\"|\"$")
 
 private fun onFolderCompletion(restApi: RestApi, event: Event) {
     val data = checkNotNull(event.data)
@@ -467,9 +466,9 @@ private fun onLocalIndexUpdated(
         return
     }
     for (i in 0 until filenames.size()) {
-        val raw = filenames.get(i).toString()
-        if (TextUtils.isEmpty(raw)) continue
-        val filename = raw.replace(QUOTES, "")
+        val element = filenames.get(i)
+        val filename = if (element.isJsonPrimitive) element.asString else ""
+        if (TextUtils.isEmpty(filename)) continue
         logV("onLocalIndexUpdated: filename=[$filename], time=[$dateTimeStamp]")
         if (i == filenames.size() - 1) {
             restApi.setLocalFolderLastItemFinished(folderId, "update", filename, dateTimeStamp)

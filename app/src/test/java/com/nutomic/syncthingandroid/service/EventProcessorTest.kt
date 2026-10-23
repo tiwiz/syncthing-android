@@ -347,6 +347,23 @@ class EventProcessorTest {
     }
 
     @Test
+    fun `a local change keeps the file name as Syncthing sent it`() {
+        val dir = java.nio.file.Files.createTempDirectory("camera").toFile()
+        useCameraFolder(dir.path)
+        java.io.File(dir, "Tom's \"best\".jpg").writeText("x")
+
+        send(
+            """{"id": 1, "type": "LocalIndexUpdated", "time": "2026-10-13T11:00:00Z",
+               "data": {"folder": "cam-photos", "filenames": ["Tom's \"best\".jpg"]}}"""
+        )
+
+        assertEquals(
+            "Tom's \"best\".jpg",
+            api.getFolderStatus("cam-photos").value.lastItemFinishedItem,
+        )
+    }
+
+    @Test
     fun `running out of disk space shows a notification`() {
         fun crashTitle() =
             shadowOf(notifications)
