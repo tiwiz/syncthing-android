@@ -23,6 +23,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
+import java.nio.ByteBuffer
+import java.util.zip.CRC32
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -34,6 +36,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowToast
 
 /**
@@ -178,6 +181,50 @@ class PhotoShootActivityTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE) // Decodes for real, as on a device.
+    fun `a picture too large to decode whole is still reported`() {
+        grantCamera()
+        prefs.edit().putBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, true).commit()
+
+        launch().use { scenario ->
+            val request = checkNotNull(captureRequest())
+            checkNotNull(context.contentResolver.openOutputStream(checkNotNull(request.output())))
+                .use { it.write(pngHeader(width = 30_000, height = 30_000)) }
+            scenario.onActivity { shadowOf(it).receiveResult(request, Activity.RESULT_OK, null) }
+            idle()
+
+            assertEquals(
+                "Successfully saved picture to the Syncthing Camera folder.",
+                ShadowToast.getTextOfLatestToast(),
+            )
+        }
+    }
+
+    /** A PNG of [width] x [height] pixels without pixel data: enough to read its size only. */
+    private fun pngHeader(width: Int, height: Int): ByteArray {
+        val ihdr =
+            ByteBuffer.allocate(IHDR_LENGTH)
+                .putInt(width)
+                .putInt(height)
+                .put(byteArrayOf(8, 6, 0, 0, 0)) // 8 bits per channel, RGBA, no interlacing.
+                .array()
+        return PNG_SIGNATURE +
+            chunk("IHDR", ihdr) +
+            chunk("IDAT", ByteArray(0)) +
+            chunk("IEND", ByteArray(0))
+    }
+
+    private fun chunk(type: String, data: ByteArray): ByteArray {
+        val typeAndData = type.toByteArray() + data
+        val crc = CRC32().apply { update(typeAndData) }.value.toInt()
+        return ByteBuffer.allocate(Int.SIZE_BYTES * 2 + typeAndData.size)
+            .putInt(data.size)
+            .put(typeAndData)
+            .putInt(crc)
+            .array()
+    }
+
+    @Test
     fun `a recreation while the camera is open asks for no second picture`() {
         grantCamera()
         prefs.edit().putBoolean(Constants.PREF_ENABLE_SYNCTHING_CAMERA, true).commit()
@@ -224,5 +271,10 @@ class PhotoShootActivityTest {
     private fun clickGrantCamera() {
         compose.onNodeWithText("Grant camera permission").performClick()
         idle()
+    }
+
+    private companion object {
+        const val IHDR_LENGTH = 13
+        val PNG_SIGNATURE = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
     }
 }
