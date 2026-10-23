@@ -19,6 +19,7 @@ import java.nio.file.Files
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -119,6 +120,22 @@ class ConfigXmlEditTest {
         val folder = config.folders.single()
         assertEquals(".custom", folder.markerName)
         assertEquals(7, folder.pullerPauseS)
+    }
+
+    @Test
+    fun `a temporary file that cannot be written does not replace the config`() {
+        val config = loaded()
+        val before = Constants.getConfigFile(context).readText()
+        val tempFile = Constants.getConfigTempFile(context)
+        tempFile.writeText("<configuration")
+        tempFile.setWritable(false)
+
+        config.setFolderPause("cam-photos", true)
+        config.saveChanges()
+
+        tempFile.setWritable(true)
+        assertEquals(before, Constants.getConfigFile(context).readText())
+        assertFalse(tempFile.exists())
     }
 
     @Test

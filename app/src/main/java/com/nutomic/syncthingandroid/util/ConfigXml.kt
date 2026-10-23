@@ -688,12 +688,18 @@ class ConfigXml(private val context: Context) {
                     StreamResult(OutputStreamWriter(byteArrayOutputStream, Charsets.UTF_8)),
                 )
                 fileOutputStream.write(byteArrayOutputStream.toByteArray())
+                // Make the new file durable before it replaces the old one.
+                fileOutputStream.fd.sync()
             }
         } catch (e: TransformerException) {
             Log.w(TAG, "Failed to transform object to xml and save temporary config file", e)
+            configTempFile.delete()
             return
         } catch (e: IOException) {
+            // A partly written file must never replace a good config.
             Log.w(TAG, "Failed to save temporary config file", e)
+            configTempFile.delete()
+            return
         }
         if (!configTempFile.renameTo(configFile)) {
             Log.w(TAG, "Failed to rename temporary config file to original file")
