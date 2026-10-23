@@ -110,6 +110,18 @@ class ConfigXmlEditTest {
     }
 
     @Test
+    fun `folder settings the app does not edit are read from config xml`() {
+        val config = loaded {
+            it.replaceFirst("<markerName>.stfolder<", "<markerName>.custom<")
+                .replaceFirst("<pullerPauseS>0<", "<pullerPauseS>7<")
+        }
+
+        val folder = config.folders.single()
+        assertEquals(".custom", folder.markerName)
+        assertEquals(7, folder.pullerPauseS)
+    }
+
+    @Test
     fun `the ignore list is written to the folder and read back`() {
         val config = loaded()
         val folder = Folder().apply { path = tempDir.path }

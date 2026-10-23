@@ -433,7 +433,7 @@ private constructor(
                     newFolder(args)
                 } else {
                     Log.d(TAG, "Initializing edit mode: folder.id=${args.folderId}")
-                    configRouter.getFolders(null).firstOrNull { it.id == args.folderId }
+                    configRouter.getFolders(host.restApi).firstOrNull { it.id == args.folderId }
                 }
             if (folder == null) {
                 Log.w(TAG, "Folder not found in API update, maybe it was deleted?")

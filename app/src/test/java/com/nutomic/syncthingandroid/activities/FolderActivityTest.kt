@@ -12,6 +12,7 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -449,6 +450,37 @@ class FolderActivityTest {
     @Test
     fun `with Syncthing stopped the folder shows no state`() {
         editFolder().use { screen -> assertNull(screen.state()) }
+    }
+
+    @Test
+    fun `saving while Syncthing runs keeps the folder settings the app does not edit`() {
+        ConfigFixture.install(context) { it.replaceFirst(".stfolder", ".custom") }
+        val syncthing = FakeSyncthing(context)
+        try {
+            syncthing.respond(
+                "GET",
+                "/rest/system/config",
+                syncthing.configJson().replaceFirst("\".stfolder\"", "\".custom\""),
+            )
+            RunningSyncthingService.install(syncthing)
+            editFolder().use { screen ->
+                screen.setLabel("Photos")
+                screen.save()
+                awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+            }
+            val posted =
+                JsonParser.parseString(
+                        syncthing.requests("/rest/system/config", "POST").last().body!!.utf8()
+                    )
+                    .asJsonObject
+                    .getAsJsonArray("folders")
+                    .map { it.asJsonObject }
+                    .single { it["id"].asString == "cam-photos" }
+            assertEquals("Photos", posted["label"].asString)
+            assertEquals(".custom", posted["markerName"].asString)
+        } finally {
+            syncthing.close()
+        }
     }
 
     @Test
