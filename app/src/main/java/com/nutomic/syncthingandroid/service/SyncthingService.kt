@@ -646,61 +646,74 @@ class SyncthingService : Service() {
 
     /**
      * Exports the config, keys, index database and preferences to the backup zip. Stops Syncthing
-     * for it and starts it again afterwards if the run conditions say so.
+     * for it and starts it again afterwards if the run conditions say so. [onDone] gets whether the
+     * export worked, on the main thread.
      *
      * To test on an emulator: adb shell su 0 "ls -a -l -R /data/data/${applicationId}/files; echo
      * === SDCARD ===; ls -a -l -R /storage/emulated/0/backups/syncthing"
      */
-    fun exportConfig(): Boolean {
-        Log.d(TAG, "exportConfig BEGIN")
-        if (currentState != State.DISABLED) {
-            // Shutdown synchronously.
-            shutdown(State.DISABLED)
+    fun exportConfig(onDone: (Boolean) -> Unit) {
+        handler.post {
+            Log.d(TAG, "exportConfig BEGIN")
+            val zipFile = backupZipFile
+            whileStopped({ exportBackup(this, preferences, zipFile) }) { success ->
+                Log.d(TAG, "exportConfig END")
+                onDone(success)
+            }
         }
-        val success = exportBackup(this, preferences, backupZipFile)
-        Log.d(TAG, "exportConfig END")
-        startAfterBackupIfShouldRun()
-        return success
     }
 
     /**
      * Imports the config, keys and preferences from the backup zip, replacing the index database.
-     * Stops Syncthing for it and starts it again afterwards if the run conditions say so.
-     *
-     * @return True if the import was successful, false otherwise (e.g. if files aren't found).
+     * Stops Syncthing for it and starts it again afterwards if the run conditions say so. [onDone]
+     * gets whether the import worked (false e.g. if files aren't found), on the main thread.
      */
-    fun importConfig(): Boolean {
-        Log.d(TAG, "importConfig PRECHECK")
-        val zipFilePath = backupZipFile
-        if (!zipFilePath.exists()) {
-            Log.e(
-                TAG,
-                "importConfig: ZIP file is missing. Please check if it is present at '" +
-                    zipFilePath.absolutePath +
-                    "' as specified in the settings screen.",
-            )
-            return false
+    fun importConfig(onDone: (Boolean) -> Unit) {
+        handler.post {
+            val zipFilePath = backupZipFile
+            // If the user set one, decrypt the zip file with a password.
+            val zipEncryptionPassword =
+                preferences.getString(Constants.PREF_BACKUP_PASSWORD, "").orEmpty()
+            CompletableFuture.supplyAsync(
+                    { openBackupZip(zipFilePath, zipEncryptionPassword, cacheDir) },
+                    lifecycleExecutor,
+                )
+                .whenComplete { zipFile, _ ->
+                    handler.post {
+                        if (zipFile == null) {
+                            onDone(false)
+                        } else {
+                            Log.d(TAG, "importConfig BEGIN")
+                            whileStopped(
+                                { restoreBackup(this, preferences, zipFile, ::logV) },
+                                onDone,
+                            )
+                        }
+                    }
+                }
         }
-        // If the user set one, decrypt the zip file with a password.
-        val zipEncryptionPassword =
-            preferences.getString(Constants.PREF_BACKUP_PASSWORD, "").orEmpty()
-        val zipFile = openBackupZip(zipFilePath, zipEncryptionPassword, cacheDir) ?: return false
-
-        Log.d(TAG, "importConfig BEGIN")
-        if (currentState != State.DISABLED) {
-            // Shutdown synchronously.
-            shutdown(State.DISABLED)
-        }
-
-        val success = restoreBackup(this, preferences, zipFile, ::logV)
-        startAfterBackupIfShouldRun()
-        return success
     }
 
-    /** Starts Syncthing after an export or import if the run conditions apply. */
-    private fun startAfterBackupIfShouldRun() {
-        if (lastDeterminedShouldRun) {
-            Handler(Looper.getMainLooper()).post {
+    /**
+     * Stops Syncthing, waiting while it is STARTING, and runs [work] off the main thread once it
+     * has exited. Then starts Syncthing again if the run conditions say so and passes the result of
+     * [work] to [onDone]. Main thread only, like [onResetDatabaseAction].
+     */
+    private fun whileStopped(work: () -> Boolean, onDone: (Boolean) -> Unit) {
+        if (currentState == State.STARTING) {
+            Log.w(TAG, "Deferring the backup until State.STARTING was left")
+            handler.postDelayed({ whileStopped(work, onDone) }, DEFER_MILLIS)
+            return
+        }
+        val waitForExit =
+            if (currentState != State.DISABLED) beginShutdown(State.DISABLED) else null
+        var success = false
+        inBackground({
+            waitForExit?.invoke()
+            success = work()
+        }) {
+            onDone(success)
+            if (lastDeterminedShouldRun) {
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
             }
         }

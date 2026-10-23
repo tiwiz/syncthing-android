@@ -261,6 +261,25 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `an export while Syncthing starts waits until it has exited, then starts it again`() {
+        val (_, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+
+        var runsWhenExported: List<String>? = null
+        service.exportConfig { exported ->
+            assertTrue(exported)
+            runsWhenExported = binary.runs
+        }
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { runsWhenExported != null }
+        assertEquals(listOf("serve --no-browser", "exited"), runsWhenExported)
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals("serve --no-browser", binary.runs[2])
+    }
+
+    @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
         PreferenceManager.getDefaultSharedPreferences(context)

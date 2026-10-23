@@ -9,6 +9,8 @@ import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.exportAndWait
+import com.nutomic.syncthingandroid.testutil.importAndWait
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -51,10 +53,10 @@ class BackupTest {
     fun `export then import restores the config and the preferences`() {
         prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
 
-        assertTrue(service.exportConfig())
+        assertTrue(service.exportAndWait())
         prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, false).commit()
         Constants.getPrivateKeyFile(context).delete()
-        assertTrue(service.importConfig())
+        assertTrue(service.importAndWait())
 
         assertTrue(prefs.getBoolean(Constants.PREF_START_SERVICE_ON_BOOT, false))
         assertEquals("fake key.pem", Constants.getPrivateKeyFile(context).readText())
@@ -62,8 +64,8 @@ class BackupTest {
 
     @Test
     fun `import keeps an unset backup path unset`() {
-        assertTrue(service.exportConfig())
-        assertTrue(service.importConfig())
+        assertTrue(service.exportAndWait())
+        assertTrue(service.importAndWait())
 
         assertFalse(prefs.contains(Constants.PREF_BACKUP_REL_PATH_TO_ZIP))
         assertFalse(prefs.contains(Constants.PREF_BACKUP_PASSWORD))
@@ -76,10 +78,10 @@ class BackupTest {
             .edit()
             .putString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, "backups/syncthing/config.zip")
             .commit()
-        assertTrue(service.exportConfig())
+        assertTrue(service.exportAndWait())
         prefs.edit().remove(Constants.PREF_BACKUP_REL_PATH_TO_ZIP).commit()
 
-        assertTrue(service.importConfig())
+        assertTrue(service.importAndWait())
 
         assertFalse(prefs.contains(Constants.PREF_BACKUP_REL_PATH_TO_ZIP))
     }
@@ -92,8 +94,8 @@ class BackupTest {
             .putString(Constants.PREF_BACKUP_PASSWORD, "secret")
             .commit()
 
-        assertTrue(service.exportConfig())
-        assertTrue(service.importConfig())
+        assertTrue(service.exportAndWait())
+        assertTrue(service.importAndWait())
 
         assertEquals(
             "backups/mine.zip",

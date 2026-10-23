@@ -25,6 +25,8 @@ import com.nutomic.syncthingandroid.util.runShellCommandGetOutput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -136,13 +138,12 @@ constructor(
     connection: SyncthingConnection,
     private val preferences: SharedPreferences,
     @ApplicationScope private val appScope: CoroutineScope,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : SettingsViewModel(connection) {
 
     fun exportConfig() {
         val service = snapshot.value.service ?: return
         appScope.launch {
-            if (withContext(ioDispatcher) { service.exportConfig() }) {
+            if (suspendCoroutine { done -> service.exportConfig { done.resume(it) } }) {
                 toast(R.string.config_export_successful_no_path)
                 send(SettingsEvent.CLOSE)
             } else {
@@ -155,7 +156,7 @@ constructor(
     fun importConfig() {
         val service = snapshot.value.service ?: return
         appScope.launch {
-            if (withContext(ioDispatcher) { service.importConfig() }) {
+            if (suspendCoroutine { done -> service.importConfig { done.resume(it) } }) {
                 toast(R.string.config_imported_successful)
                 // Apply the theme from the restored preferences.
                 val theme =
