@@ -280,6 +280,30 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `replacing the certificate does not wait on the main thread for Syncthing to exit`() {
+        val (_, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        // The certificate the fake serves, so the restarted Syncthing passes verification.
+        val certPem = Constants.getHttpsCertFile(context).readBytes()
+        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
+
+        val millis = millisTaken {
+            service.replaceHttpsCertificate(certPem, "new key".toByteArray()) { result, _ ->
+                results += result
+            }
+            shadowOf(Looper.getMainLooper()).idle()
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { results.isNotEmpty() }
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS), results)
+        assertEquals("new key", Constants.getHttpsKeyFile(context).readText())
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs.take(2))
+    }
+
+    @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
         PreferenceManager.getDefaultSharedPreferences(context)
