@@ -21,6 +21,7 @@ import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitMain
 import java.io.File
 import java.time.Duration
 import org.junit.Assert.assertEquals
@@ -84,7 +85,11 @@ class SettingsRecreationTest {
             assertFalse(activity.isFinishing)
 
             RunningSyncthingService.setState(service, SyncthingService.State.DISABLED)
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+            // The reset runs once the lifecycle executor has seen Syncthing exit.
+            awaitMain {
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+                ShadowToast.getTextOfLatestToast() != null
+            }
             compose.waitForIdle()
 
             assertEquals(
