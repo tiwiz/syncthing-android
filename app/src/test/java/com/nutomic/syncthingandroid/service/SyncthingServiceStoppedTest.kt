@@ -14,6 +14,8 @@ import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.drainMain
+import com.nutomic.syncthingandroid.testutil.exportAndWait
+import com.nutomic.syncthingandroid.testutil.importAndWait
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -173,17 +175,17 @@ class SyncthingServiceStoppedTest {
     fun `import without a backup zip fails`() {
         val service = StoppedSyncthingService.install()
 
-        assertFalse(service.importConfig())
+        assertFalse(service.importAndWait())
     }
 
     @Test
     fun `import with a password fails on a zip without encryption`() {
         val service = StoppedSyncthingService.install()
         writeFakeKeys()
-        assertTrue(service.exportConfig())
+        assertTrue(service.exportAndWait())
         prefs.edit().putString(Constants.PREF_BACKUP_PASSWORD, "secret").commit()
 
-        assertFalse(service.importConfig())
+        assertFalse(service.importAndWait())
     }
 
     @Test
@@ -191,10 +193,10 @@ class SyncthingServiceStoppedTest {
         val service = StoppedSyncthingService.install()
         writeFakeKeys()
         prefs.edit().putString(Constants.PREF_BACKUP_PASSWORD, "secret").commit()
-        assertTrue(service.exportConfig())
+        assertTrue(service.exportAndWait())
         Constants.getPublicKeyFile(context).delete()
 
-        assertTrue(service.importConfig())
+        assertTrue(service.importAndWait())
         assertEquals("fake cert.pem", Constants.getPublicKeyFile(context).readText())
     }
 
@@ -210,10 +212,10 @@ class SyncthingServiceStoppedTest {
             .putLong("some_long", 5L)
             .putFloat("some_float", 1.5f)
             .commit()
-        assertTrue(service.exportConfig())
+        assertTrue(service.exportAndWait())
         prefs.edit().clear().commit()
 
-        assertTrue(service.importConfig())
+        assertTrue(service.importAndWait())
 
         assertFalse(prefs.contains("first_start"))
         assertFalse(prefs.contains(Constants.PREF_APP_START_COUNTER))

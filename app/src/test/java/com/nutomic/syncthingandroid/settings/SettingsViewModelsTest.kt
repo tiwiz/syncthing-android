@@ -15,7 +15,9 @@ import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.Fixtures
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
+import com.nutomic.syncthingandroid.testutil.awaitMain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -111,18 +113,24 @@ class SettingsViewModelsTest {
                     boundConnection(),
                     app.getSharedPreferences("test", 0),
                     backgroundScope,
-                    UnconfinedTestDispatcher(testScheduler),
                 )
 
             // No backup zip in the fixture.
             viewModel.importConfig()
 
-            assertEquals(SettingsEvent.OPEN_LOG, viewModel.events.first())
+            assertEquals(SettingsEvent.OPEN_LOG, nextEvent(viewModel))
             assertEquals(
                 app.getString(com.nutomic.syncthingandroid.R.string.config_import_failed_no_path),
                 ShadowToast.getTextOfLatestToast(),
             )
         }
+
+    /** The next event; the service answers import and export on the main looper. */
+    private fun TestScope.nextEvent(viewModel: ImportExportViewModel): SettingsEvent {
+        val event = async { viewModel.events.first() }
+        awaitMain { event.isCompleted }
+        return event.getCompleted()
+    }
 
     private fun TestScope.userInterfaceViewModel() =
         UserInterfaceViewModel(
@@ -166,12 +174,11 @@ class SettingsViewModelsTest {
                     boundConnection(),
                     PreferenceManager.getDefaultSharedPreferences(app),
                     backgroundScope,
-                    UnconfinedTestDispatcher(testScheduler),
                 )
 
             viewModel.exportConfig()
 
-            assertEquals(SettingsEvent.CLOSE, viewModel.events.first())
+            assertEquals(SettingsEvent.CLOSE, nextEvent(viewModel))
             assertEquals(
                 app.getString(R.string.config_export_successful_no_path),
                 ShadowToast.getTextOfLatestToast(),

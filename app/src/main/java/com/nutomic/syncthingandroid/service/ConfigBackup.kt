@@ -226,10 +226,21 @@ internal fun writeBackupZip(targetZip: File, includePaths: List<File>, password:
 }
 
 /**
- * Opens the backup zip and checks it: encrypted when [password] is set, with the config and keys
- * inside, and readable with [password] (by extracting the public key to [cacheDir]). Null if not.
+ * Opens the backup zip and checks it: present, encrypted when [password] is set, with the config
+ * and keys inside, and readable with [password] (by extracting the public key to [cacheDir]). Null
+ * if not.
  */
 internal fun openBackupZip(zipFilePath: File, password: String, cacheDir: File): ZipFile? {
+    Log.d(TAG, "importConfig PRECHECK")
+    if (!zipFilePath.exists()) {
+        Log.e(
+            TAG,
+            "importConfig: ZIP file is missing. Please check if it is present at '" +
+                zipFilePath.absolutePath +
+                "' as specified in the settings screen.",
+        )
+        return null
+    }
     try {
         val zipFile =
             if (password.isEmpty()) {
