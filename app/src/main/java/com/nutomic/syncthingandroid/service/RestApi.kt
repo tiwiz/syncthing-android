@@ -160,8 +160,13 @@ class RestApi(
         GetRequest(context, url, path, apiKey, params, onSuccess) { onError.onError() }
     }
 
-    private fun post(path: String, params: Map<String, String>? = null, body: String? = null) {
-        PostRequest(context, url, path, apiKey, params, body, null)
+    private fun post(
+        path: String,
+        params: Map<String, String>? = null,
+        body: String? = null,
+        onSuccess: (() -> Unit)? = null,
+    ) {
+        PostRequest(context, url, path, apiKey, params, body, onSuccess?.let { { _ -> it() } })
     }
 
     private fun interface ApiRequestErrorListener {
@@ -360,13 +365,24 @@ class RestApi(
                     changed = true
                 }
             }
-            writePreferences {
+            logV("Restored the versioning cleanup intervals: $saved")
+            // Kept until Syncthing took them, or a failed post would lose them for good (#152).
+            if (changed) {
+                sendConfig { dropSavedCleanupIntervals(json) }
+            } else {
+                dropSavedCleanupIntervals(json)
+            }
+        }
+    }
+
+    /** Removes the saved intervals, unless a new forced cleanup replaced them with others. */
+    private fun dropSavedCleanupIntervals(json: String) {
+        writePreferences {
+            if (preferences.getString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, null) == json) {
                 preferences.edit(commit = true) {
                     remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS)
                 }
             }
-            logV("Restored the versioning cleanup intervals: $saved")
-            if (changed) sendConfig()
         }
     }
 
@@ -563,9 +579,10 @@ class RestApi(
 
     /**
      * Sends the current config to Syncthing. This results in a "ConfigSaved" event, which makes
-     * EventProcessor call [reloadConfig].
+     * EventProcessor call [reloadConfig]. [onSent] runs on the main thread once Syncthing accepted
+     * it.
      */
-    fun sendConfig() {
+    fun sendConfig(onSent: (() -> Unit)? = null) {
         val jsonConfig =
             synchronized(configLock) {
                 val model = gson.toJsonTree(config).asJsonObject
@@ -574,7 +591,7 @@ class RestApi(
                 servedConfig = merged
                 gson.toJson(merged)
             }
-        post(PostRequest.URI_SYSTEM_CONFIG, body = jsonConfig)
+        post(PostRequest.URI_SYSTEM_CONFIG, body = jsonConfig, onSuccess = onSent)
         url = webGuiUrl
         onConfigChangedListener.onConfigChanged()
     }
