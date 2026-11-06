@@ -304,6 +304,76 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `an export deferred while Syncthing starts fails once the service is destroyed`() {
+        val (controller, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+        val results = mutableListOf<Boolean>()
+        service.exportConfig { results += it }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        controller.destroy()
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
+        // Past the deferral of every retry: nothing may start Syncthing again.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(false), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+    }
+
+    @Test
+    fun `a stop deferred while Syncthing starts does not crash after the service is destroyed`() {
+        val (controller, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+        controller.withIntent(Intent(SyncthingService.ACTION_STOP)).startCommand(0, 2)
+
+        controller.destroy()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+
+        awaitWithClock { "exited" in binary.runs }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+    }
+
+    @Test
+    fun `destroying the service does not wait on the main thread for an export`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val results = mutableListOf<Boolean>()
+        service.exportConfig { results += it }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val millis = millisTaken { controller.destroy() }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { results.isNotEmpty() }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(true), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+    }
+
+    @Test
+    fun `an import after the service is destroyed reports a failure`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        controller.destroy()
+        awaitWithClock { fake.requests("/rest/system/shutdown", "POST").isNotEmpty() }
+        val results = mutableListOf<Boolean>()
+
+        service.importConfig { results += it }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(false), results)
+    }
+
+    @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
         PreferenceManager.getDefaultSharedPreferences(context)
@@ -323,6 +393,7 @@ class SyncthingServiceLifecycleTest {
         const val TIMEOUT_MILLIS = 10_000L
         const val STEP_MILLIS = 20L
         const val EXIT_MILLIS = 1500L
+        const val DEFER_MILLIS = 1000L
         const val NANOS_PER_MILLI = 1_000_000L
     }
 }
