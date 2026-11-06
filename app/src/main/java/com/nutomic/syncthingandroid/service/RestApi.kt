@@ -324,7 +324,8 @@ class RestApi(
     private fun applyForcedCleanupInterval(folderIds: Set<String>) {
         if (hasShutdown) return
         synchronized(configLock) {
-            for (folder in checkNotNull(checkNotNull(config).folders)) {
+            val folders = config?.folders ?: return
+            for (folder in folders) {
                 if (folder.id !in folderIds) continue
                 checkNotNull(folder.versioning).cleanupIntervalS = FORCED_CLEANUP_INTERVAL_S
             }
@@ -356,8 +357,10 @@ class RestApi(
                 emptyMap()
             }
         synchronized(configLock) {
+            // Without a config the saved intervals stay for the next attempt.
+            val folders = config?.folders ?: return
             var changed = false
-            for (folder in checkNotNull(checkNotNull(config).folders)) {
+            for (folder in folders) {
                 val interval = saved[folder.id] ?: continue
                 val versioning = checkNotNull(folder.versioning)
                 if (versioning.cleanupIntervalS == FORCED_CLEANUP_INTERVAL_S) {
