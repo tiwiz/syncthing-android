@@ -220,6 +220,62 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `a restart does not wait on the main thread for Syncthing to exit`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_RESTART)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "serve --no-browser"),
+            binary.runs.take(3),
+        )
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+    }
+
+    @Test
+    fun `resetting the deltas does not wait on the main thread for Syncthing to exit`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_RESET_DELTAS)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "serve --debug-reset-delta-idxs"),
+            binary.runs.take(3),
+        )
+        // It was running before: it keeps running after the reset.
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+    }
+
+    @Test
+    fun `resetting the deltas while Syncthing should not run stops it again afterwards`() {
+        wifi(connected = false)
+        val (controller, service) = startService()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+
+        controller.withIntent(Intent(SyncthingService.ACTION_RESET_DELTAS)).startCommand(0, 2)
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { "exited" in binary.runs }
+        assertEquals(listOf("serve --debug-reset-delta-idxs", "exited"), binary.runs)
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+    }
+
+    @Test
     fun `a start while Syncthing is still exiting waits until it has exited`() {
         val (_, service) = startService()
         val fake = startSyncthingWhenLaunched()
