@@ -26,7 +26,7 @@ Kept from the Kotlin migration:
   sends has the class's name.
 - `TooManyFunctions` on classes whose public API has one method per config operation:
   `util/ConfigXml.kt`, `util/ConfigRouter.kt`, `service/RestApi.kt` (also `LargeClass`),
-  `service/SyncthingService.kt`, and `service/Constants.kt` (one function per file location). Their
+  `service/SyncthingService.kt` (also `LargeClass` since #145), and `service/Constants.kt` (one function per file location). Their
   helpers live in other files; splitting the APIs means changing every caller.
 
 ## TODOs

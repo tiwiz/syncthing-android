@@ -25,8 +25,9 @@ import javax.inject.Inject
 
 /** Holds the native Syncthing instance and provides an API to access it. */
 // One method per intent action, lifecycle step and backup or certificate operation; the file
-// handling lives in ConfigBackup.kt and HttpsCertFiles.kt.
-@Suppress("TooManyFunctions")
+// handling lives in ConfigBackup.kt and HttpsCertFiles.kt. LargeClass since the binary lifecycle
+// stopped deferred work after onDestroy (#145): that state is only safe on the main thread here.
+@Suppress("TooManyFunctions", "LargeClass")
 @AndroidEntryPoint
 class SyncthingService : Service() {
 
@@ -121,6 +122,12 @@ class SyncthingService : Service() {
 
     /** The last job on [lifecycleExecutor]; main thread only. */
     private var lifecycleJob: CompletableFuture<*>? = null
+
+    /**
+     * Set by [onDestroy]; main thread only. Deferred lifecycle work checks it: it reports a failure
+     * instead of running on [lifecycleExecutor] (shut down) or starting Syncthing again.
+     */
+    private var destroyed = false
 
     /** Must be locked when changing [currentState]. */
     private val stateLock = Any()
@@ -357,6 +364,10 @@ class SyncthingService : Service() {
 
     /** Launches the Syncthing binary, then waits for its web GUI to come online. */
     private fun launchStartupTask(srCommand: SyncthingRunnable.Command) {
+        if (destroyed) {
+            Log.w(TAG, "launchStartupTask: The service is destroyed. Cancelling.")
+            return
+        }
         synchronized(stateLock) {
             if (currentState != State.DISABLED && currentState != State.INIT) {
                 Log.e(TAG, "launchStartupTask: Wrong state $currentState detected. Cancelling.")
@@ -478,6 +489,7 @@ class SyncthingService : Service() {
             // this service down right away.
             Log.i(TAG, "Shutting down syncthing binary due to missing storage permission.")
         }
+        destroyed = true
         shutdown(State.DISABLED)
         lifecycleExecutor.shutdown()
         super.onDestroy()
@@ -485,7 +497,8 @@ class SyncthingService : Service() {
 
     /**
      * Stops SyncthingNative and its helpers (event processor, API) synchronously and moves to
-     * [newState]; waits while the binary is STARTING.
+     * [newState]; waits while the binary is STARTING. Once the service is destroyed, a running
+     * lifecycle job (e.g. an export) is not awaited: Syncthing is stopped once it is done.
      */
     private fun shutdown(newState: State) {
         if (currentState == State.STARTING) {
@@ -494,6 +507,13 @@ class SyncthingService : Service() {
             return
         }
         val waitForExit = beginShutdown(newState)
+        val job = lifecycleJob?.takeUnless { it.isDone }
+        if (destroyed && job != null) {
+            // onDestroy must not block the main thread on an export or import (ANR). Runs on the
+            // thread that completes the job: lifecycleExecutor is shut down by then.
+            job.whenComplete { _, _ -> waitForExit() }
+            return
+        }
         try {
             lifecycleJob?.get()
         } catch (e: ExecutionException) {
@@ -509,6 +529,10 @@ class SyncthingService : Service() {
      * waits until it has exited.
      */
     private fun shutdownInBackground(newState: State) {
+        if (destroyed) {
+            // onDestroy's shutdown stops Syncthing.
+            return
+        }
         if (currentState == State.STARTING) {
             Log.w(TAG, "Deferring shutdown until State.STARTING was left")
             handler.postDelayed({ shutdownInBackground(newState) }, DEFER_MILLIS)
@@ -561,12 +585,23 @@ class SyncthingService : Service() {
 
     /**
      * Runs [work] on [lifecycleExecutor] after the earlier jobs, then [then] on the main thread.
+     * Once the service is destroyed, runs [onDestroyed] on the main thread instead: instead of
+     * [work] and [then] if it was destroyed already, instead of [then] if during [work].
      */
-    private fun inBackground(work: () -> Unit, then: () -> Unit = {}) {
+    private fun inBackground(
+        work: () -> Unit,
+        onDestroyed: () -> Unit = {},
+        then: () -> Unit = {},
+    ) {
+        if (destroyed) {
+            // lifecycleExecutor is shut down: it would throw RejectedExecutionException.
+            onDestroyed()
+            return
+        }
         lifecycleJob =
             CompletableFuture.runAsync(work, lifecycleExecutor).whenComplete { _, error ->
                 error?.let { Log.e(TAG, "A lifecycle job failed", it) }
-                handler.post(then)
+                handler.post { if (destroyed) onDestroyed() else then() }
             }
     }
 
@@ -669,6 +704,11 @@ class SyncthingService : Service() {
             // If the user set one, decrypt the zip file with a password.
             val zipEncryptionPassword =
                 preferences.getString(Constants.PREF_BACKUP_PASSWORD, "").orEmpty()
+            if (destroyed) {
+                // lifecycleExecutor is shut down: it would throw RejectedExecutionException.
+                onDone(false)
+                return@post
+            }
             CompletableFuture.supplyAsync(
                     { openBackupZip(zipFilePath, zipEncryptionPassword, cacheDir) },
                     lifecycleExecutor,
@@ -696,7 +736,11 @@ class SyncthingService : Service() {
      */
     private fun whileStopped(work: () -> Boolean, onDone: (Boolean) -> Unit) {
         var success = false
-        afterStopped({ whileStopped(work, onDone) }, { success = work() }) {
+        afterStopped(
+            { whileStopped(work, onDone) },
+            { success = work() },
+            onDestroyed = { onDone(success) },
+        ) {
             onDone(success)
             if (lastDeterminedShouldRun) {
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
@@ -735,7 +779,10 @@ class SyncthingService : Service() {
         listener: OnHttpsCertReplaceResultListener,
     ) {
         // Stop the binary so it releases the cert/key before we overwrite them.
-        afterStopped({ doReplaceHttpsCertificate(certPem, keyPem, listener) }) {
+        afterStopped(
+            { doReplaceHttpsCertificate(certPem, keyPem, listener) },
+            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+        ) {
             writeHttpsCertificate(certPem, keyPem, listener)
         }
     }
@@ -772,7 +819,10 @@ class SyncthingService : Service() {
     }
 
     private fun doResetHttpsCertificate(listener: OnHttpsCertReplaceResultListener) {
-        afterStopped({ doResetHttpsCertificate(listener) }) {
+        afterStopped(
+            { doResetHttpsCertificate(listener) },
+            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+        ) {
             val certFile = Constants.getHttpsCertFile(this)
             val keyFile = Constants.getHttpsKeyFile(this)
             val certBak = backupFile(certFile)
@@ -792,9 +842,19 @@ class SyncthingService : Service() {
     /**
      * Stops Syncthing unless it is DISABLED and runs [work] off the main thread once it has exited,
      * then [then] on the main thread. While STARTING, runs [retry] later instead, so that the work
-     * does not race the binary. Main thread only.
+     * does not race the binary. Once the service is destroyed, runs [onDestroyed] instead of
+     * starting anything (see [inBackground]). Main thread only.
      */
-    private fun afterStopped(retry: () -> Unit, work: () -> Unit = {}, then: () -> Unit) {
+    private fun afterStopped(
+        retry: () -> Unit,
+        work: () -> Unit = {},
+        onDestroyed: () -> Unit = {},
+        then: () -> Unit,
+    ) {
+        if (destroyed) {
+            onDestroyed()
+            return
+        }
         if (currentState == State.STARTING) {
             Log.w(TAG, "Deferring until State.STARTING was left")
             handler.postDelayed(retry, DEFER_MILLIS)
@@ -807,6 +867,7 @@ class SyncthingService : Service() {
                 waitForExit?.invoke()
                 work()
             },
+            onDestroyed,
             then,
         )
     }
@@ -898,6 +959,11 @@ class SyncthingService : Service() {
             // serving a certificate that differs from the file on disk; restoring the file under a
             // live instance would leave ApiRequest pinning a certificate that is not the one being
             // served, so any request in that window fails.
+            if (destroyed) {
+                // onDestroy's shutdown stops Syncthing; nothing starts it again.
+                reportAfterDestroy()
+                return
+            }
             val state = this@SyncthingService.currentState
             if (state == State.STARTING) {
                 handler.postDelayed(::finishFailure, DEFER_MILLIS)
@@ -906,12 +972,20 @@ class SyncthingService : Service() {
             val waitForExit =
                 if (state != State.DISABLED && state != State.INIT) beginShutdown(State.INIT)
                 else null
-            inBackground({ waitForExit?.invoke() }) {
+            inBackground(
+                { waitForExit?.invoke() },
+                onDestroyed = ::reportAfterDestroy,
+            ) {
                 change.restore()
                 // Bring the previous, known-good certificate back online.
                 launchStartupTask(SyncthingRunnable.Command.MAIN)
                 change.listener.onResult(failureReason, null)
             }
+        }
+
+        private fun reportAfterDestroy() {
+            change.restore()
+            change.listener.onResult(failureReason, null)
         }
 
         private fun finishSuccess() {
