@@ -20,6 +20,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -385,30 +386,42 @@ class DeviceActivityTest {
                     screen.setNewDeviceId(DISCOVERED_ID)
                     screen.toggleFolder("Camera")
                     screen.save()
-                    awaitMain { syncthing.requests("/rest/system/config", "POST").size >= 2 }
+                    awaitMain(describe = { "no config POST with $DISCOVERED_ID" }) {
+                        posts(syncthing).any(::hasDevice)
+                    }
                     drainMain()
                 }
 
-            val posts =
-                syncthing.requests("/rest/system/config", "POST").map {
-                    JsonParser.parseString(it.body!!.utf8()).asJsonObject
-                }
             assertTrue(
-                posts.any { posted ->
-                    val sharesCamera =
-                        posted
-                            .getAsJsonArray("folders")
-                            .map { it.asJsonObject }
-                            .single { it["id"].asString == "cam-photos" }
-                            .getAsJsonArray("devices")
-                            .any { it.asJsonObject["deviceID"].asString == DISCOVERED_ID }
-                    posted.getAsJsonArray("devices").any {
-                        it.asJsonObject["deviceID"].asString == DISCOVERED_ID
-                    } && sharesCamera
-                }
+                "the config POST that adds $DISCOVERED_ID must also share cam-photos with it",
+                posts(syncthing).filter(::hasDevice).all(::sharesCamera),
             )
         } finally {
             syncthing.close()
+        }
+    }
+
+    /** The config POST bodies sent to `/rest/system/config`, parsed as JSON. */
+    private fun posts(syncthing: FakeSyncthing): List<JsonObject> =
+        syncthing.requests("/rest/system/config", "POST").map {
+            JsonParser.parseString(it.body!!.utf8()).asJsonObject
+        }
+
+    /** Whether [posted] lists [DISCOVERED_ID] among its devices. */
+    private fun hasDevice(posted: JsonObject): Boolean =
+        posted.getAsJsonArray("devices").any {
+            it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+        }
+
+    /** Whether [posted] shares the `cam-photos` folder with [DISCOVERED_ID]. */
+    private fun sharesCamera(posted: JsonObject): Boolean {
+        val folder =
+            posted
+                .getAsJsonArray("folders")
+                .map { it.asJsonObject }
+                .single { it["id"].asString == "cam-photos" }
+        return folder.getAsJsonArray("devices").any {
+            it.asJsonObject["deviceID"].asString == DISCOVERED_ID
         }
     }
 
