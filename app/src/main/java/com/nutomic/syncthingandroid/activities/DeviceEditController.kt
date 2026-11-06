@@ -233,10 +233,14 @@ private constructor(
         }
     }
 
-    /** Whether this share or its encryption password is not what [folder] has for [deviceId]. */
+    /**
+     * Whether this share is not what [folder] has for [deviceId]: a folder not shared yet differs
+     * when shared (even with an empty password), an already-shared one when its password differs,
+     * and an unshared one when it is still shared.
+     */
     private fun FolderShare.differsFrom(folder: Folder, deviceId: String?): Boolean {
         val saved = folder.getDevice(deviceId)
-        return if (shared) saved?.encryptionPassword.orEmpty() != encryptionPassword
+        return if (shared) saved == null || saved.encryptionPassword != encryptionPassword
         else saved != null
     }
 
