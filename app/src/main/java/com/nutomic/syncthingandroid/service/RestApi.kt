@@ -55,6 +55,7 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import kotlin.math.floor
 
 /**
@@ -143,6 +144,9 @@ class RestApi(
     private val mainThreadHandler = Handler(Looper.getMainLooper())
     private val gson: Gson = GsonBuilder().create()
     private val executorService = Executors.newSingleThreadExecutor()
+
+    /** Blocking preference writes, in order, off the main thread (#153). */
+    private val preferencesExecutor = Executors.newSingleThreadExecutor()
 
     private val preferences
         get() = PreferenceManager.getDefaultSharedPreferences(context)
@@ -300,15 +304,36 @@ class RestApi(
             val saved = folders.associate {
                 checkNotNull(it.id) to checkNotNull(it.versioning).cleanupIntervalS
             }
-            preferences.edit(commit = true) {
-                putString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, gson.toJson(saved))
+            // Saved for good before Syncthing gets the forced interval, so a crash cannot lose it.
+            writePreferences {
+                preferences.edit(commit = true) {
+                    putString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, gson.toJson(saved))
+                }
+                mainThreadHandler.post { applyForcedCleanupInterval(saved.keys) }
             }
-            for (folder in folders) {
+            return true
+        }
+    }
+
+    /** Lowers the cleanup interval of the folders [forceVersioningCleanup] saved. */
+    private fun applyForcedCleanupInterval(folderIds: Set<String>) {
+        if (hasShutdown) return
+        synchronized(configLock) {
+            for (folder in checkNotNull(checkNotNull(config).folders)) {
+                if (folder.id !in folderIds) continue
                 checkNotNull(folder.versioning).cleanupIntervalS = FORCED_CLEANUP_INTERVAL_S
             }
             logV("Set VersioningCleanupIntervalS to $FORCED_CLEANUP_INTERVAL_S")
             sendConfig()
-            return true
+        }
+    }
+
+    /** Runs [write] on [preferencesExecutor]; dropped once [shutdown] stopped it. */
+    private fun writePreferences(write: () -> Unit) {
+        try {
+            preferencesExecutor.execute(write)
+        } catch (e: RejectedExecutionException) {
+            Log.w(TAG, "Preference write dropped after shutdown", e)
         }
     }
 
@@ -335,7 +360,11 @@ class RestApi(
                     changed = true
                 }
             }
-            preferences.edit(commit = true) { remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS) }
+            writePreferences {
+                preferences.edit(commit = true) {
+                    remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS)
+                }
+            }
             logV("Restored the versioning cleanup intervals: $saved")
             if (changed) sendConfig()
         }
@@ -554,6 +583,8 @@ class RestApi(
     fun shutdown() {
         hasShutdown = true
         executorService.shutdownNow()
+        // Lets the queued preference writes finish.
+        preferencesExecutor.shutdown()
         killProcess("find")
         post(PostRequest.URI_SYSTEM_SHUTDOWN)
     }
