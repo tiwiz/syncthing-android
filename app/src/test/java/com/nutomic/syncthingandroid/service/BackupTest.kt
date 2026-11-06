@@ -13,10 +13,12 @@ import com.nutomic.syncthingandroid.testutil.ShadowZipFileWithCorruptHeader
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.exportAndWait
 import com.nutomic.syncthingandroid.testutil.importAndWait
+import com.nutomic.syncthingandroid.testutil.registerFreeSpace
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import net.lingala.zip4j.ZipFile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -53,6 +55,7 @@ class BackupTest {
                 Constants.getHttpsKeyFile(context),
             )
             .forEach { it.writeText("fake ${it.name}") }
+        registerFreeSpace(context)
         service = StoppedSyncthingService.install()
     }
 
@@ -146,6 +149,49 @@ class BackupTest {
         assertTrue("config.xml is gone", Constants.getConfigFile(context).exists())
         assertEquals(original, Constants.getConfigFile(context).readText())
         ConfigXml(context).loadConfig()
+    }
+
+    @Test
+    fun `an import that does not fit in the free space extracts nothing and logs why`() {
+        assertTrue(service.exportAndWait())
+        val zip = RecordingZipFile(backupZip())
+        val needed = zip.fileHeaders.sumOf { it.uncompressedSize }
+        val original = Constants.getConfigFile(context).readText()
+        ShadowLog.clear()
+
+        assertFalse(
+            "the import went ahead without the space",
+            restoreBackup(context, prefs, zip, {}, availableBytes = { needed - 1 }),
+        )
+
+        assertEquals(0, zip.extractions)
+        val logged =
+            ShadowLog.getLogsForTag("SyncthingService").any { log ->
+                "free space" in log.msg && "$needed" in log.msg
+            }
+        assertTrue("no log entry gives the space reason", logged)
+        assertEquals(original, Constants.getConfigFile(context).readText())
+    }
+
+    @Test
+    fun `an import that fits in the free space extracts the zip`() {
+        assertTrue(service.exportAndWait())
+        val zip = RecordingZipFile(backupZip())
+        val needed = zip.fileHeaders.sumOf { it.uncompressedSize }
+
+        assertTrue(restoreBackup(context, prefs, zip, {}, availableBytes = { needed }))
+
+        assertEquals(1, zip.extractions)
+    }
+
+    /** Counts the calls to [extractAll], then extracts for real. */
+    private class RecordingZipFile(file: File) : ZipFile(file) {
+        var extractions = 0
+
+        override fun extractAll(destinationPath: String) {
+            extractions++
+            super.extractAll(destinationPath)
+        }
     }
 
     private fun backupZip() =

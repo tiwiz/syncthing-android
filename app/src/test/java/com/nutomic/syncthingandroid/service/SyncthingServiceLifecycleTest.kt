@@ -10,6 +10,7 @@ import com.nutomic.syncthingandroid.testutil.FakeSyncthingBinary
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.testutil.registerFreeSpace
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
 import java.time.Duration
@@ -244,6 +245,7 @@ class SyncthingServiceLifecycleTest : SyncthingServiceLifecycleHarness() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         val zip = File(Environment.getExternalStorageDirectory(), "backups/syncthing/config.zip")
         assertTrue(exportBackup(context, preferences, zip))
+        registerFreeSpace(context)
         val (_, service) = startService()
         awaitWithClock { binary.started }
         assertEquals(SyncthingService.State.STARTING, service.currentState)

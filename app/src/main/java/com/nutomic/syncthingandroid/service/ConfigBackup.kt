@@ -2,6 +2,7 @@ package com.nutomic.syncthingandroid.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.StatFs
 import android.util.Log
 import com.nutomic.syncthingandroid.appDependencies
 import com.nutomic.syncthingandroid.model.Folder
@@ -103,6 +104,7 @@ internal fun restoreBackup(
     preferences: SharedPreferences,
     zipFile: ZipFile,
     logV: (String) -> Unit,
+    availableBytes: (File) -> Long = { StatFs(it.path).availableBytes },
 ): Boolean {
     // Extracted next to the files first: the screens read config.xml meanwhile, and a zip that
     // fails halfway must leave them the old files (#148).

@@ -16,6 +16,7 @@ import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.drainMain
 import com.nutomic.syncthingandroid.testutil.exportAndWait
 import com.nutomic.syncthingandroid.testutil.importAndWait
+import com.nutomic.syncthingandroid.testutil.registerFreeSpace
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -53,6 +54,7 @@ class SyncthingServiceStoppedTest {
     fun setUp() {
         System.setProperty("os.version", "6.1.0-android")
         configFile = ConfigFixture.install(context)
+        registerFreeSpace(context)
         prefs
             .edit()
             .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
