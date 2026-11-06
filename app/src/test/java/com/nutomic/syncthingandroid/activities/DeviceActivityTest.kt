@@ -19,6 +19,8 @@ import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.gson.JsonArray
+import com.google.gson.JsonParser
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
@@ -120,6 +122,19 @@ class DeviceActivityTest {
 
             val folder = savedConfig().folders.single()
             assertFalse(folder.sharedWithDevices.orEmpty().any { it.deviceID == REMOTE_DEVICE_ID })
+        }
+    }
+
+    @Test
+    fun `sharing a folder that is not shared yet adds the device`() {
+        ConfigFixture.install(context) { unsharedCamera(it) }
+        editLaptop().use { screen ->
+            assertFalse(screen.folderShared("Camera"))
+            screen.toggleFolder("Camera")
+            screen.save()
+
+            val folder = savedConfig().folders.single()
+            assertTrue(folder.sharedWithDevices.orEmpty().any { it.deviceID == REMOTE_DEVICE_ID })
         }
     }
 
@@ -292,6 +307,33 @@ class DeviceActivityTest {
     }
 
     @Test
+    fun `sharing a folder that is not shared yet while Syncthing runs adds the device`() {
+        ConfigFixture.install(context) { unsharedCamera(it) }
+        val syncthing = FakeSyncthing(context)
+        syncthing.respond("GET", "/rest/system/config", configWithoutRemoteShare(syncthing))
+        editLaptopRunning(syncthing) { screen ->
+            assertFalse(screen.folderShared("Camera"))
+            screen.toggleFolder("Camera")
+            screen.save()
+            awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+            val posted =
+                JsonParser.parseString(
+                        syncthing.requests("/rest/system/config", "POST").last().body!!.utf8()
+                    )
+                    .asJsonObject
+                    .getAsJsonArray("folders")
+                    .map { it.asJsonObject }
+                    .single { it["id"].asString == "cam-photos" }
+            assertTrue(
+                posted.getAsJsonArray("devices").any {
+                    it.asJsonObject["deviceID"].asString == REMOTE_DEVICE_ID
+                }
+            )
+        }
+    }
+
+    @Test
     fun `a new device can take the id of a device discovered nearby`() {
         val syncthing = FakeSyncthing(context)
         try {
@@ -309,6 +351,32 @@ class DeviceActivityTest {
         } finally {
             syncthing.close()
         }
+    }
+
+    /** The fixture's `config.xml` without the remote device in the "Camera" folder's devices. */
+    private fun unsharedCamera(xml: String): String =
+        xml.replace(
+            Regex(
+                "(?s)<device id=\"$REMOTE_DEVICE_ID\" introducedBy=\"\">" +
+                    "\\s*<encryptionPassword></encryptionPassword>\\s*</device>"
+            ),
+            "",
+        )
+
+    /** [syncthing]'s config without the remote device in the "Camera" folder's devices. */
+    private fun configWithoutRemoteShare(syncthing: FakeSyncthing): String {
+        val config = JsonParser.parseString(syncthing.configJson()).asJsonObject
+        val folder =
+            config
+                .getAsJsonArray("folders")
+                .map { it.asJsonObject }
+                .single { it["id"].asString == "cam-photos" }
+        val kept = JsonArray()
+        folder.getAsJsonArray("devices").forEach {
+            if (it.asJsonObject["deviceID"].asString != REMOTE_DEVICE_ID) kept.add(it)
+        }
+        folder.add("devices", kept)
+        return config.toString()
     }
 
     private companion object {
