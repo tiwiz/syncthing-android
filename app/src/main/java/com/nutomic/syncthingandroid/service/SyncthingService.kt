@@ -716,7 +716,9 @@ class SyncthingService : Service() {
                     { openBackupZip(zipFilePath, zipEncryptionPassword, cacheDir) },
                     lifecycleExecutor,
                 )
-                .whenComplete { zipFile, _ ->
+                .whenComplete { zipFile, error ->
+                    // openBackupZip logs the failures it expects; this is anything else (#149).
+                    error?.let { Log.e(TAG, "importConfig: Failed to open zip", it) }
                     handler.post {
                         if (zipFile == null) {
                             onDone(false)
