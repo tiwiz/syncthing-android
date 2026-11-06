@@ -231,7 +231,7 @@ private constructor(
             toast(error)
             return
         }
-        val edited = current.applyTo(folder)
+        val edited = current.applyTo(if (createMode) folder else servedFolder() ?: folder)
         val folderId = checkNotNull(edited.id)
         preferences.edit {
             putBoolean(Constants.dynPrefObjectFolderRunScript(folderId), current.runScript)
@@ -269,6 +269,16 @@ private constructor(
         }
         configRouter.updateFolder(restApi, edited)
         host.close(saved = true)
+    }
+
+    /**
+     * The folder as running Syncthing has it now. The screen may have loaded [folder] from
+     * config.xml before it was bound to the REST API, and posting that would reset what config.xml
+     * reading misses (#150).
+     */
+    private fun servedFolder(): Folder? {
+        val running = host.restApi?.takeIf { it.isConfigLoaded } ?: return null
+        return configRouter.getFolders(running).firstOrNull { it.id == folder.id }
     }
 
     private fun remove() {
