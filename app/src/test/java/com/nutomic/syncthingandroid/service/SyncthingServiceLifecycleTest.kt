@@ -304,6 +304,54 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `applying a certificate while Syncthing is stopped reports success on the main thread`() {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        preferences
+            .edit()
+            .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
+            .commit()
+        val (_, service) = startService()
+        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
+        var onMainThread = false
+
+        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, _ ->
+            onMainThread = Looper.myLooper() == Looper.getMainLooper()
+            results += result
+        }
+
+        awaitWithClock { results.isNotEmpty() }
+        assertTrue("certificate result delivered off the main thread", onMainThread)
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS_PENDING_START), results)
+    }
+
+    @Test
+    fun `replacing the certificate writes the files off the main thread`() {
+        val (_, service) = startService()
+        startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        // The certificate the fake serves, so the restarted Syncthing passes verification.
+        val certPem = Constants.getHttpsCertFile(context).readBytes()
+        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
+        val writeThreads = mutableListOf<Thread>()
+        atomicWriteThreadHook = { writeThreads += it }
+        try {
+            service.replaceHttpsCertificate(certPem, "new key".toByteArray()) { result, _ ->
+                results += result
+            }
+            awaitWithClock { results.isNotEmpty() }
+        } finally {
+            atomicWriteThreadHook = null
+        }
+
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS), results)
+        assertTrue("the certificate files were not written", writeThreads.isNotEmpty())
+        assertTrue(
+            "the certificate files were written on the main thread",
+            writeThreads.all { it != Looper.getMainLooper().thread },
+        )
+    }
+
+    @Test
     fun `an export deferred while Syncthing starts fails once the service is destroyed`() {
         val (controller, service) = startService()
         awaitWithClock { binary.started }

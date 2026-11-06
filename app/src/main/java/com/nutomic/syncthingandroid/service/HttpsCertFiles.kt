@@ -53,9 +53,16 @@ internal fun deleteQuietly(file: File?) {
     }
 }
 
+/**
+ * Test-only hook called on the thread of the next atomic write, so a test can assert that
+ * certificate file writes happen off the main thread. Always null in production.
+ */
+@Volatile internal var atomicWriteThreadHook: ((Thread) -> Unit)? = null
+
 /** Writes [data] to a temporary file next to [target], then renames it over [target]. */
 @Throws(IOException::class)
 internal fun writeBytesAtomic(target: File, data: ByteArray) {
+    atomicWriteThreadHook?.invoke(Thread.currentThread())
     val tmp = File(target.parentFile, target.name + ".tmp")
     FileOutputStream(tmp).use { fos ->
         fos.write(data)
