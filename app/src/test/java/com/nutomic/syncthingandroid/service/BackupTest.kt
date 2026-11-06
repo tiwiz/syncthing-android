@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.testutil.ShadowZipFileWithCorruptHeader
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.exportAndWait
 import com.nutomic.syncthingandroid.testutil.importAndWait
@@ -18,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 
 /**
  * Exports the config and keys of a stopped [SyncthingService] to the backup zip and imports them
@@ -102,5 +104,29 @@ class BackupTest {
             prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null),
         )
         assertEquals("secret", prefs.getString(Constants.PREF_BACKUP_PASSWORD, null))
+    }
+
+    @Test
+    @Config(
+        shadows =
+            [
+                ShadowEnvironmentWithAllFilesAccess::class,
+                ShadowUtilDeviceShell::class,
+                ShadowZipFileWithCorruptHeader::class,
+            ],
+        instrumentedPackages = ["com.nutomic.syncthingandroid.util", "net.lingala.zip4j"],
+    )
+    fun `an import that cannot open the zip logs why`() {
+        assertTrue(service.exportAndWait())
+        ShadowLog.clear()
+
+        assertFalse(service.importAndWait())
+
+        val logged =
+            ShadowLog.getLogsForTag("SyncthingService").any { log ->
+                generateSequence(log.throwable) { it.cause }
+                    .any { it.message == ShadowZipFileWithCorruptHeader.MESSAGE }
+            }
+        assertTrue("no log entry carries the exception", logged)
     }
 }
