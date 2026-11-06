@@ -461,6 +461,53 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `a certificate replace whose restart never leaves STARTING rolls back once`() {
+        val (_, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val certFile = Constants.getHttpsCertFile(context)
+        val keyFile = Constants.getHttpsKeyFile(context)
+        keyFile.writeText("old key")
+        val oldCert = certFile.readBytes()
+        val results = certResults()
+
+        service.replaceHttpsCertificate("new cert".toByteArray(), "new key".toByteArray()) {
+            result,
+            error ->
+            results += result to error
+        }
+        shadowOf(Looper.getMainLooper()).idle()
+        // Syncthing exits off the main thread; the restart waits for the main looper.
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while ("exited" !in binary.runs) {
+            check(System.currentTimeMillis() < deadline) { "Timed out waiting for the exit" }
+            Thread.sleep(STEP_MILLIS)
+        }
+        // The restarted Syncthing runs, but its web GUI never comes online.
+        fake.close()
+        binary.rearm()
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(HTTPS_CERT_VERIFY_TIMEOUT_MS))
+        // What killProcess does to the real binary (shadowed on the host).
+        binary.stop()
+        val resultDeadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (results.isEmpty() && System.currentTimeMillis() < resultDeadline) {
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(STEP_MILLIS))
+            Thread.sleep(STEP_MILLIS)
+        }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+
+        assertEquals(
+            listOf(SyncthingService.HttpsCertReplaceResult.FAILED_NOT_ONLINE to null),
+            results,
+        )
+        assertTrue(oldCert.contentEquals(certFile.readBytes()))
+        assertEquals("old key", keyFile.readText())
+    }
+
+    @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
         PreferenceManager.getDefaultSharedPreferences(context)
@@ -481,6 +528,7 @@ class SyncthingServiceLifecycleTest {
         const val STEP_MILLIS = 20L
         const val EXIT_MILLIS = 1500L
         const val DEFER_MILLIS = 1000L
+        const val HTTPS_CERT_VERIFY_TIMEOUT_MS = 30_000L
         const val NANOS_PER_MILLI = 1_000_000L
     }
 }
