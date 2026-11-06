@@ -19,7 +19,6 @@ import com.nutomic.syncthingandroid.testutil.drainMain
 import java.time.Duration
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -120,7 +119,8 @@ class RestApiVersioningCleanupTest {
 
         assertEquals(listOf(2, 86400), postedCleanupIntervals())
         assertEquals(10, prefs.getInt(Constants.PREF_APP_START_COUNTER, 0))
-        assertFalse(prefs.contains(Constants.PREF_VERSIONING_CLEANUP_INTERVALS))
+        // Dropped once Syncthing answered the restore.
+        awaitMain { !prefs.contains(Constants.PREF_VERSIONING_CLEANUP_INTERVALS) }
     }
 
     @Test
@@ -143,6 +143,26 @@ class RestApiVersioningCleanupTest {
     }
 
     @Test
+    fun `a failed restore keeps the saved intervals for the next start`() {
+        serveVersioning("simple", 86400)
+        prefs.edit().putInt(Constants.PREF_APP_START_COUNTER, 9).apply()
+        loadedApi()
+        awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+
+        // Syncthing restarted inside the cleanup window and misses the restore.
+        syncthing.failNext("POST", "/rest/system/config")
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(10))
+        awaitMain { syncthing.requests("/rest/system/config", "POST").size == 2 }
+        drainMain()
+
+        assertEquals(listOf(2, 86400), postedCleanupIntervals())
+        assertEquals(
+            "{\"cam-photos\":86400}",
+            prefs.getString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, null),
+        )
+    }
+
+    @Test
     fun `a forced cleanup cut short by a shutdown is undone on the next start`() {
         serveVersioning("simple", 86400)
         prefs.edit().putInt(Constants.PREF_APP_START_COUNTER, 9).apply()
@@ -160,7 +180,8 @@ class RestApiVersioningCleanupTest {
         awaitMain { syncthing.requests("/rest/system/config", "POST").size == 2 }
 
         assertEquals(listOf(2, 86400), postedCleanupIntervals())
-        assertFalse(prefs.contains(Constants.PREF_VERSIONING_CLEANUP_INTERVALS))
+        // Dropped once Syncthing answered the restore.
+        awaitMain { !prefs.contains(Constants.PREF_VERSIONING_CLEANUP_INTERVALS) }
     }
 
     @Test
