@@ -927,7 +927,7 @@ class SyncthingService : Service() {
             if (resolved) return@Runnable
             resolved = true
             unregisterOnServiceStateChangeListener(this)
-            if (currentState == State.ACTIVE) finishSuccess() else finishFailure()
+            if (currentState == State.ACTIVE) finishSuccess() else finishFailure(forceStop = true)
         }
 
         fun start() {
@@ -957,7 +957,12 @@ class SyncthingService : Service() {
             }
         }
 
-        private fun finishFailure() {
+        /**
+         * Stops Syncthing, restores the backups, starts it again and reports [failureReason]. While
+         * STARTING it waits, unless [forceStop]: the watchdog gave up on a start that never came
+         * online, and waiting for it would never end.
+         */
+        private fun finishFailure(forceStop: Boolean = false) {
             // Stop first, then restore. In the FAILED_CERT_REJECTED case Syncthing is running and
             // serving a certificate that differs from the file on disk; restoring the file under a
             // live instance would leave ApiRequest pinning a certificate that is not the one being
@@ -967,11 +972,16 @@ class SyncthingService : Service() {
                 reportAfterDestroy()
                 return
             }
-            val state = this@SyncthingService.currentState
-            if (state == State.STARTING) {
-                handler.postDelayed(::finishFailure, DEFER_MILLIS)
-                return
+            if (this@SyncthingService.currentState == State.STARTING) {
+                if (!forceStop) {
+                    handler.postDelayed({ finishFailure() }, DEFER_MILLIS)
+                    return
+                }
+                // Like onStopAction for a crashed binary: leaving STARTING skips the deferral, the
+                // stuck instance is shut down forcefully.
+                this@SyncthingService.currentState = State.ERROR
             }
+            val state = this@SyncthingService.currentState
             val waitForExit =
                 if (state != State.DISABLED && state != State.INIT) beginShutdown(State.INIT)
                 else null

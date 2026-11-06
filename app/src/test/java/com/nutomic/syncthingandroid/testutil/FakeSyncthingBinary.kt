@@ -97,6 +97,11 @@ class FakeSyncthingBinary(context: Context) {
         stopFile.createNewFile()
     }
 
+    /** After [stop] and once the run has exited, lets the next `serve` keep running again. */
+    fun rearm() {
+        stopFile.delete()
+    }
+
     fun remove() {
         binary.delete()
     }
