@@ -15,11 +15,14 @@ import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusList
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.util.ConfigXml
+import java.io.File
 import java.net.ServerSocket
 import java.time.Duration
 import kotlin.concurrent.thread
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -80,6 +83,7 @@ class SyncthingServiceLifecycleTest {
         binary.stop()
         syncthing?.close()
         ShadowUtilDeviceShell.netstatOutput = ""
+        ShadowUtilDeviceShell.throwOnKillProcess = false
     }
 
     /**
@@ -492,6 +496,11 @@ class SyncthingServiceLifecycleTest {
         val fake = startSyncthingWhenLaunched()
         slowToExit(fake)
         awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val certFile = Constants.getHttpsCertFile(context)
+        val keyFile = Constants.getHttpsKeyFile(context)
+        keyFile.writeText("old key")
+        val oldCert = certFile.readBytes()
+        val oldKey = keyFile.readBytes()
         val results = certResults()
         service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, error
             ->
@@ -506,6 +515,63 @@ class SyncthingServiceLifecycleTest {
         assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
         assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
         assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+        // The failed change rolled the previous certificate back and left no backups behind.
+        assertArrayEquals(oldCert, certFile.readBytes())
+        assertArrayEquals(oldKey, keyFile.readBytes())
+        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
+        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
+    }
+
+    @Test
+    fun `a certificate reset waiting for Syncthing to exit fails once the service is destroyed`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val certFile = Constants.getHttpsCertFile(context)
+        val keyFile = Constants.getHttpsKeyFile(context)
+        keyFile.writeText("old key")
+        val oldCert = certFile.readBytes()
+        val oldKey = keyFile.readBytes()
+        val results = certResults()
+        service.resetHttpsCertificate { result, error -> results += result to error }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        controller.destroy()
+
+        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+        // The failed reset rolled the previous certificate back and left no backups behind.
+        assertArrayEquals(oldCert, certFile.readBytes())
+        assertArrayEquals(oldKey, keyFile.readBytes())
+        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
+        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
+    }
+
+    @Test
+    fun `a failed lifecycle job reports failure and restarts Syncthing`() {
+        val (_, service) = startService()
+        startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val results = certResults()
+        ShadowUtilDeviceShell.throwOnKillProcess = true
+        try {
+            service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) {
+                result,
+                error ->
+                results += result to error
+            }
+            awaitWithClock { results.isNotEmpty() }
+        } finally {
+            ShadowUtilDeviceShell.throwOnKillProcess = false
+        }
+
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        awaitWithClock { binary.runs.count { it == "serve --no-browser" } >= 2 }
     }
 
     @Test
