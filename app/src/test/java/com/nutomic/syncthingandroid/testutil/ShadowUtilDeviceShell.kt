@@ -30,6 +30,22 @@ class ShadowUtilDeviceShell {
         /** What the sync-conflict `find` in `Util.getSyncConflictFiles` prints. Tests reset it. */
         @Volatile var syncConflictFindOutput: String = ""
 
+        /**
+         * When set, the next `killProcess` throws instead of running, so a test can make a
+         * lifecycle job fail with an unchecked exception. One-shot: it clears itself before
+         * throwing, so the restart that follows does not hit it too. Tests reset it.
+         */
+        @Volatile var throwOnKillProcess: Boolean = false
+
+        @JvmStatic
+        @Implementation
+        fun killProcess(processName: String) {
+            if (throwOnKillProcess) {
+                throwOnKillProcess = false
+                error("killProcess($processName) failed (test)")
+            }
+        }
+
         @JvmStatic
         @Implementation
         fun runShellCommandGetOutput(cmd: String): String =

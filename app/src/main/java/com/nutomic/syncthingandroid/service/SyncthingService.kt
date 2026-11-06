@@ -756,9 +756,9 @@ class SyncthingService : Service() {
      * Syncthing so the new files take effect. If the restart fails to bring the web GUI back
      * online, the previous certificate and key are restored.
      *
-     * The bytes are expected to be validated already (see [CertificateValidator]). The whole
-     * start/stop lifecycle runs on the main thread, the only one where the binary orchestration
-     * fields are safe to touch.
+     * The bytes are expected to be validated already (see [CertificateValidator]). The files are
+     * written off the main thread; the binary orchestration that follows runs on the main thread,
+     * the only one where those fields are safe to touch.
      */
     fun replaceHttpsCertificate(
         certPem: ByteArray,
@@ -781,12 +781,31 @@ class SyncthingService : Service() {
         keyPem: ByteArray,
         listener: OnHttpsCertReplaceResultListener,
     ) {
-        // Stop the binary so it releases the cert/key before we overwrite them.
+        // Stop the binary so it releases the cert/key before we overwrite them. The files are
+        // written off the main thread; the restart and its verification run on the main thread.
+        val write = CertWrite()
         afterStopped(
             { doReplaceHttpsCertificate(certPem, keyPem, listener) },
-            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+            work = { writeHttpsCertificate(certPem, keyPem, listener, write) },
+            onDestroyed = {
+                // The files may already be replaced when the service is destroyed mid-change; put
+                // the previous certificate back so the disk matches the FAILED result.
+                write.change?.restore()
+                listener.onResult(HttpsCertReplaceResult.FAILED, null)
+            },
         ) {
-            writeHttpsCertificate(certPem, keyPem, listener)
+            val change = write.change
+            val failure = write.failure
+            if (failure != null || change == null) {
+                // The write failed (failure != null), or the lifecycle job threw before it could
+                // produce a change (change == null). Either way there is nothing to verify.
+                if (lastDeterminedShouldRun) {
+                    launchStartupTask(SyncthingRunnable.Command.MAIN)
+                }
+                listener.onResult(HttpsCertReplaceResult.FAILED, failure?.message)
+            } else {
+                applyCertChangeWithVerify(change)
+            }
         }
     }
 
@@ -794,6 +813,7 @@ class SyncthingService : Service() {
         certPem: ByteArray,
         keyPem: ByteArray,
         listener: OnHttpsCertReplaceResultListener,
+        result: CertWrite,
     ) {
         val certFile = Constants.getHttpsCertFile(this)
         val keyFile = Constants.getHttpsKeyFile(this)
@@ -804,42 +824,59 @@ class SyncthingService : Service() {
             writeBytesAtomic(keyFile, keyPem)
             restrictToOwner(keyFile)
         } catch (e: IOException) {
-            Log.e(TAG, "doReplaceHttpsCertificate: Failed to write new cert/key", e)
+            Log.e(TAG, "writeHttpsCertificate: Failed to write new cert/key", e)
             restoreFile(certBak, certFile)
             restoreFile(keyBak, keyFile)
-            if (lastDeterminedShouldRun) {
-                launchStartupTask(SyncthingRunnable.Command.MAIN)
-            }
-            listener.onResult(HttpsCertReplaceResult.FAILED, e.message)
+            result.failure = e
             return
         }
         // Captured before the restart, to tell afterwards whether Syncthing serves what we wrote
         // or replaced it with a self-signed certificate of its own.
         val expectedFingerprint = CertificateValidator.leafFingerprint(certPem)
-        applyCertChangeWithVerify(
+        result.change =
             CertChange(certFile, keyFile, certBak, keyBak, expectedFingerprint, listener)
-        )
     }
 
     private fun doResetHttpsCertificate(listener: OnHttpsCertReplaceResultListener) {
+        val write = CertWrite()
         afterStopped(
             { doResetHttpsCertificate(listener) },
-            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+            work = { removeHttpsCertificate(listener, write) },
+            onDestroyed = {
+                // The files may already be removed when the service is destroyed mid-change; put
+                // the previous certificate back so the disk matches the FAILED result.
+                write.change?.restore()
+                listener.onResult(HttpsCertReplaceResult.FAILED, null)
+            },
         ) {
-            val certFile = Constants.getHttpsCertFile(this)
-            val keyFile = Constants.getHttpsKeyFile(this)
-            val certBak = backupFile(certFile)
-            val keyBak = backupFile(keyFile)
-            // Removing the files makes Syncthing generate a fresh self-signed certificate at
-            // startup.
-            deleteQuietly(certFile)
-            deleteQuietly(keyFile)
-            // No expected fingerprint: regenerating is the whole point, so any certificate
-            // Syncthing comes up with is the right one.
-            applyCertChangeWithVerify(
-                CertChange(certFile, keyFile, certBak, keyBak, null, listener)
-            )
+            val change = write.change
+            val failure = write.failure
+            if (failure != null || change == null) {
+                // The job threw before it could produce a change; nothing to verify.
+                if (lastDeterminedShouldRun) {
+                    launchStartupTask(SyncthingRunnable.Command.MAIN)
+                }
+                listener.onResult(HttpsCertReplaceResult.FAILED, failure?.message)
+            } else {
+                applyCertChangeWithVerify(change)
+            }
         }
+    }
+
+    private fun removeHttpsCertificate(
+        listener: OnHttpsCertReplaceResultListener,
+        result: CertWrite,
+    ) {
+        val certFile = Constants.getHttpsCertFile(this)
+        val keyFile = Constants.getHttpsKeyFile(this)
+        val certBak = backupFile(certFile)
+        val keyBak = backupFile(keyFile)
+        // Removing the files makes Syncthing generate a fresh self-signed certificate at startup.
+        deleteQuietly(certFile)
+        deleteQuietly(keyFile)
+        // No expected fingerprint: regenerating is the whole point, so any certificate Syncthing
+        // comes up with is the right one.
+        result.change = CertChange(certFile, keyFile, certBak, keyBak, null, listener)
     }
 
     /**
@@ -893,6 +930,12 @@ class SyncthingService : Service() {
             deleteQuietly(certBak)
             deleteQuietly(keyBak)
         }
+    }
+
+    /** What a certificate file write produced off the main thread: the change, or its failure. */
+    private class CertWrite {
+        var change: CertChange? = null
+        var failure: IOException? = null
     }
 
     private fun applyCertChangeWithVerify(change: CertChange) {
