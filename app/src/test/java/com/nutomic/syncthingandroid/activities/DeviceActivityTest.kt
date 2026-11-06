@@ -353,6 +353,67 @@ class DeviceActivityTest {
         }
     }
 
+    @Test
+    fun `a new device shares the folders ticked before creating it`() {
+        StoppedSyncthingService.install()
+        DeviceScreen(
+                ActivityScenario.launchActivityForResult(DeviceActivity.createIntent(context)),
+                compose,
+            )
+            .use { screen ->
+                screen.setNewDeviceId(DISCOVERED_ID)
+                screen.toggleFolder("Camera")
+                screen.save()
+            }
+
+        val folder = savedConfig().folders.single()
+        assertTrue(folder.sharedWithDevices.orEmpty().any { it.deviceID == DISCOVERED_ID })
+        assertTrue(savedConfig().getDevices(false).any { it.deviceID == DISCOVERED_ID })
+    }
+
+    @Test
+    fun `a new device shares the folders ticked before creating it while Syncthing runs`() {
+        val syncthing = FakeSyncthing(context)
+        try {
+            RunningSyncthingService.install(syncthing)
+            DeviceScreen(
+                    ActivityScenario.launchActivityForResult(DeviceActivity.createIntent(context)),
+                    compose,
+                )
+                .use { screen ->
+                    drainMain()
+                    screen.setNewDeviceId(DISCOVERED_ID)
+                    screen.toggleFolder("Camera")
+                    screen.save()
+                    awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+                    drainMain()
+                }
+
+            val posted =
+                JsonParser.parseString(
+                        syncthing.requests("/rest/system/config", "POST").last().body!!.utf8()
+                    )
+                    .asJsonObject
+            assertTrue(
+                posted.getAsJsonArray("devices").any {
+                    it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+                }
+            )
+            val folder =
+                posted
+                    .getAsJsonArray("folders")
+                    .map { it.asJsonObject }
+                    .single { it["id"].asString == "cam-photos" }
+            assertTrue(
+                folder.getAsJsonArray("devices").any {
+                    it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+                }
+            )
+        } finally {
+            syncthing.close()
+        }
+    }
+
     /** The fixture's `config.xml` without the remote device in the "Camera" folder's devices. */
     private fun unsharedCamera(xml: String): String =
         xml.replace(
