@@ -614,6 +614,9 @@ class SyncthingService : Service() {
 
     /** Re-evaluates the run conditions now, e.g. after the settings changed. */
     fun evaluateRunConditions() {
+        // An import that outlived the service still calls this: a destroyed service must not
+        // write preferences, schedule jobs or change state.
+        if (destroyed) return
         val monitor = runConditionMonitor ?: return
         Log.d(TAG, "Forced re-evaluating run conditions ...")
         monitor.updateShouldRunDecision()
