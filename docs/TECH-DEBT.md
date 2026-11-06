@@ -35,3 +35,10 @@ Kept from the Kotlin migration:
   the main thread, once for the folders and once for the devices (`ConfigRouter` loads the file for
   every offline read). Reading it off the main thread, and only when the file changed, needs
   `MainViewModel.refresh()` to become asynchronous. The per-device reads are gone (#110).
+- An import extracts the whole zip to `filesDir/import-staging` while the originals (index
+  database included) still exist, so peak disk use is roughly their sum. Accepted for the atomic
+  import (#148); `restoreBackup()` checks the free space first, so a backup that does not fit fails
+  with an explicit log message instead of an ENOSPC halfway.
+- `activities/FolderEditController.kt:279-282`: `servedFolder()` deep-copies the folder list with
+  Gson on the main thread at save time. The cost is proportional to the `sendConfig` merge that
+  follows, so it is fine for now.
