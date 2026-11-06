@@ -55,6 +55,7 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import kotlin.math.floor
 
 /**
@@ -144,6 +145,9 @@ class RestApi(
     private val gson: Gson = GsonBuilder().create()
     private val executorService = Executors.newSingleThreadExecutor()
 
+    /** Blocking preference writes, in order, off the main thread (#153). */
+    private val preferencesExecutor = Executors.newSingleThreadExecutor()
+
     private val preferences
         get() = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -156,8 +160,13 @@ class RestApi(
         GetRequest(context, url, path, apiKey, params, onSuccess) { onError.onError() }
     }
 
-    private fun post(path: String, params: Map<String, String>? = null, body: String? = null) {
-        PostRequest(context, url, path, apiKey, params, body, null)
+    private fun post(
+        path: String,
+        params: Map<String, String>? = null,
+        body: String? = null,
+        onSuccess: (() -> Unit)? = null,
+    ) {
+        PostRequest(context, url, path, apiKey, params, body, onSuccess?.let { { _ -> it() } })
     }
 
     private fun interface ApiRequestErrorListener {
@@ -300,15 +309,36 @@ class RestApi(
             val saved = folders.associate {
                 checkNotNull(it.id) to checkNotNull(it.versioning).cleanupIntervalS
             }
-            preferences.edit(commit = true) {
-                putString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, gson.toJson(saved))
+            // Saved for good before Syncthing gets the forced interval, so a crash cannot lose it.
+            writePreferences {
+                preferences.edit(commit = true) {
+                    putString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, gson.toJson(saved))
+                }
+                mainThreadHandler.post { applyForcedCleanupInterval(saved.keys) }
             }
-            for (folder in folders) {
+            return true
+        }
+    }
+
+    /** Lowers the cleanup interval of the folders [forceVersioningCleanup] saved. */
+    private fun applyForcedCleanupInterval(folderIds: Set<String>) {
+        if (hasShutdown) return
+        synchronized(configLock) {
+            for (folder in checkNotNull(checkNotNull(config).folders)) {
+                if (folder.id !in folderIds) continue
                 checkNotNull(folder.versioning).cleanupIntervalS = FORCED_CLEANUP_INTERVAL_S
             }
             logV("Set VersioningCleanupIntervalS to $FORCED_CLEANUP_INTERVAL_S")
             sendConfig()
-            return true
+        }
+    }
+
+    /** Runs [write] on [preferencesExecutor]; dropped once [shutdown] stopped it. */
+    private fun writePreferences(write: () -> Unit) {
+        try {
+            preferencesExecutor.execute(write)
+        } catch (e: RejectedExecutionException) {
+            Log.w(TAG, "Preference write dropped after shutdown", e)
         }
     }
 
@@ -335,9 +365,24 @@ class RestApi(
                     changed = true
                 }
             }
-            preferences.edit(commit = true) { remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS) }
             logV("Restored the versioning cleanup intervals: $saved")
-            if (changed) sendConfig()
+            // Kept until Syncthing took them, or a failed post would lose them for good (#152).
+            if (changed) {
+                sendConfig { dropSavedCleanupIntervals(json) }
+            } else {
+                dropSavedCleanupIntervals(json)
+            }
+        }
+    }
+
+    /** Removes the saved intervals, unless a new forced cleanup replaced them with others. */
+    private fun dropSavedCleanupIntervals(json: String) {
+        writePreferences {
+            if (preferences.getString(Constants.PREF_VERSIONING_CLEANUP_INTERVALS, null) == json) {
+                preferences.edit(commit = true) {
+                    remove(Constants.PREF_VERSIONING_CLEANUP_INTERVALS)
+                }
+            }
         }
     }
 
@@ -534,9 +579,10 @@ class RestApi(
 
     /**
      * Sends the current config to Syncthing. This results in a "ConfigSaved" event, which makes
-     * EventProcessor call [reloadConfig].
+     * EventProcessor call [reloadConfig]. [onSent] runs on the main thread once Syncthing accepted
+     * it.
      */
-    fun sendConfig() {
+    fun sendConfig(onSent: (() -> Unit)? = null) {
         val jsonConfig =
             synchronized(configLock) {
                 val model = gson.toJsonTree(config).asJsonObject
@@ -545,7 +591,7 @@ class RestApi(
                 servedConfig = merged
                 gson.toJson(merged)
             }
-        post(PostRequest.URI_SYSTEM_CONFIG, body = jsonConfig)
+        post(PostRequest.URI_SYSTEM_CONFIG, body = jsonConfig, onSuccess = onSent)
         url = webGuiUrl
         onConfigChangedListener.onConfigChanged()
     }
@@ -554,6 +600,8 @@ class RestApi(
     fun shutdown() {
         hasShutdown = true
         executorService.shutdownNow()
+        // Lets the queued preference writes finish.
+        preferencesExecutor.shutdown()
         killProcess("find")
         post(PostRequest.URI_SYSTEM_SHUTDOWN)
     }

@@ -229,8 +229,9 @@ class SyncthingService : Service() {
         }
     }
 
+    /** Syncthing is ACTIVE: the start waits off the main thread until it has exited (#151). */
     private fun restart() {
-        shutdown(State.INIT)
+        shutdownInBackground(State.INIT)
         launchStartupTask(SyncthingRunnable.Command.MAIN)
     }
 
@@ -277,15 +278,14 @@ class SyncthingService : Service() {
      * the reset is done and the web UI came up.
      */
     private fun onResetDeltasAction() {
-        Log.i(TAG, "Invoking reset of delta indexes")
-        if (currentState != State.DISABLED) {
-            // Shutdown synchronously.
-            shutdown(State.DISABLED)
-        }
-        launchStartupTask(SyncthingRunnable.Command.RESET_DELTAS)
-        if (!lastDeterminedShouldRun) {
-            // Shutdown if syncthing was not running before the UI action was raised.
-            shutdown(State.DISABLED)
+        // Waits off the main thread for Syncthing to exit (#151).
+        afterStopped(::onResetDeltasAction) {
+            Log.i(TAG, "Invoking reset of delta indexes")
+            launchStartupTask(SyncthingRunnable.Command.RESET_DELTAS)
+            if (!lastDeterminedShouldRun) {
+                // Shutdown if syncthing was not running before the UI action was raised.
+                shutdownInBackground(State.DISABLED)
+            }
         }
     }
 
@@ -716,7 +716,9 @@ class SyncthingService : Service() {
                     { openBackupZip(zipFilePath, zipEncryptionPassword, cacheDir) },
                     lifecycleExecutor,
                 )
-                .whenComplete { zipFile, _ ->
+                .whenComplete { zipFile, error ->
+                    // openBackupZip logs the failures it expects; this is anything else (#149).
+                    error?.let { Log.e(TAG, "importConfig: Failed to open zip", it) }
                     handler.post {
                         if (zipFile == null) {
                             onDone(false)

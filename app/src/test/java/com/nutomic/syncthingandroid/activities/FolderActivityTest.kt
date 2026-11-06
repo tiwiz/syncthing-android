@@ -484,6 +484,37 @@ class FolderActivityTest {
     }
 
     @Test
+    fun `saving keeps what Syncthing serves when the screen opened before the binding`() {
+        // config.xml lags behind: only Syncthing has the folder's marker (#150).
+        val syncthing = FakeSyncthing(context)
+        try {
+            syncthing.respond(
+                "GET",
+                "/rest/system/config",
+                syncthing.configJson().replaceFirst("\".stfolder\"", "\".custom\""),
+            )
+            RunningSyncthingService.install(syncthing)
+            editFolder().use { screen ->
+                screen.setLabel("Photos")
+                screen.save()
+                awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+            }
+            val posted =
+                JsonParser.parseString(
+                        syncthing.requests("/rest/system/config", "POST").last().body!!.utf8()
+                    )
+                    .asJsonObject
+                    .getAsJsonArray("folders")
+                    .map { it.asJsonObject }
+                    .single { it["id"].asString == "cam-photos" }
+            assertEquals("Photos", posted["label"].asString)
+            assertEquals(".custom", posted["markerName"].asString)
+        } finally {
+            syncthing.close()
+        }
+    }
+
+    @Test
     fun `the folder's state shows while Syncthing runs`() {
         val syncthing = FakeSyncthing(context)
         try {

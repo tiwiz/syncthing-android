@@ -72,6 +72,17 @@ class SettingsNavigationTest {
     }
 
     @Test
+    @Config(
+        // Indonesian translates app_name ("Fork-Syncthing") but not app_version_title (#154).
+        qualifiers = "in-w411dp-h891dp-xxhdpi"
+    )
+    fun `the about screen shows the fork name where app_name is translated`() {
+        launch("About").use {
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertIsDisplayed()
+        }
+    }
+
+    @Test
     fun `back on the root screen closes settings`() {
         launch("Root").use { scenario ->
             lateinit var activity: SettingsActivity

@@ -32,7 +32,7 @@ SDK 37 image; the app targets 37.
 | Android logic | Robolectric | `ConfigXmlTest`, `ConfigRouterTest`, `RunConditionMonitorTest`, `DeviceTest`, `UtilTest`, `BootReceiverTest`, `AppConfigReceiverTest` |
 | REST client | Robolectric + `FakeSyncthing` (MockWebServer) | `RestApiTest`, `EventProcessorTest` |
 | Screens driven by hand | Robolectric (+ Compose test for onboarding) | `WebGuiActivityTest`, `WebViewActivityTest`, `EditScreensTest`, `FolderDialogsTest`, `QrScanTest`, `ShareActivityTest`, `FolderPickerActivityTest`, `OnboardingFlowTest`, `VersioningDialogActivityTest`, `SettingsNavigationTest`, `QuickSettingsTilesTest` |
-| Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest` |
+| Native process, service lifecycle | Robolectric + `FakeSyncthingBinary` (a `/bin/sh` script) | `SyncthingRunnableTest`, `SyncthingServiceLifecycleTest`, `SyncthingServiceCertificateTest` (shared `SyncthingServiceLifecycleHarness`) |
 | Screenshots | Robolectric + Roborazzi, native graphics | `SettingsScreenshotTest`, `OnboardingScreenshotTest`, `ActivityScreenshotTest`, `RunningScreenshotTest`, `WindowSizeScreenshotTest`, `ComponentGalleryScreenshotTest`, `OtherScreensScreenshotTest`, `VersioningScreenshotTest`, `WebGuiScreenshotTest` |
 | WebView screens on a device | AndroidJUnitRunner + Espresso-Web, HTTPS MockWebServer | `WebGuiActivityWebTest`, `WebViewActivityWebTest` |
 

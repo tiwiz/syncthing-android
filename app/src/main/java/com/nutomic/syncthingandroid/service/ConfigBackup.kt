@@ -26,6 +26,9 @@ import net.lingala.zip4j.model.enums.EncryptionMethod
 
 private const val TAG = "SyncthingService"
 
+/** Where [restoreBackup] extracts the zip before moving the files into place. */
+private const val IMPORT_STAGING_FOLDER = "import-staging"
+
 /** Preferences that are no longer used, left over from previous versions of the app. */
 private val DEPRECATED_PREFS =
     setOf(
@@ -101,7 +104,17 @@ internal fun restoreBackup(
     zipFile: ZipFile,
     logV: (String) -> Unit,
 ): Boolean {
-    var success = true
+    // Extracted next to the files first: the screens read config.xml meanwhile, and a zip that
+    // fails halfway must leave them the old files (#148).
+    val staging = File(context.filesDir, IMPORT_STAGING_FOLDER)
+    staging.deleteRecursively()
+    try {
+        zipFile.extractAll(staging.absolutePath)
+    } catch (e: IOException) {
+        Log.e(TAG, "importConfig: Failed to extract zip, " + e.message)
+        staging.deleteRecursively()
+        return false
+    }
     val databasePath = Constants.getIndexDbFolder(context)
     if (databasePath.exists()) {
         Log.d(TAG, "importConfig: Clearing index database")
@@ -111,12 +124,8 @@ internal fun restoreBackup(
             Log.e(TAG, "Failed to delete directory '${databasePath.absolutePath}'$e")
         }
     }
-    try {
-        zipFile.extractAll(context.filesDir.absolutePath)
-    } catch (e: IOException) {
-        Log.e(TAG, "importConfig: Failed to extract zip, " + e.message)
-        success = false
-    }
+    var success = moveIntoPlace(staging, context.filesDir)
+    staging.deleteRecursively()
     val checkPaths =
         listOf(
             Constants.getConfigFile(context),
@@ -143,6 +152,23 @@ internal fun restoreBackup(
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
         // A broken imported config must not fail the import.
         Log.e(TAG, "importConfig: Failed to cleanup invalid folder databases", e)
+    }
+    return success
+}
+
+/**
+ * Renames each file and folder in [staging] into [target], replacing what is there; a rename
+ * replaces a file in one step. False if one could not be moved.
+ */
+private fun moveIntoPlace(staging: File, target: File): Boolean {
+    var success = true
+    for (extracted in staging.listFiles().orEmpty()) {
+        val destination = File(target, extracted.name)
+        if (extracted.isDirectory) destination.deleteRecursively()
+        if (!extracted.renameTo(destination)) {
+            Log.e(TAG, "importConfig: Failed to move ${extracted.name} into place")
+            success = false
+        }
     }
     return success
 }

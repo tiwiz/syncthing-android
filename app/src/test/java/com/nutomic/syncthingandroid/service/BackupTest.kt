@@ -2,15 +2,21 @@ package com.nutomic.syncthingandroid.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Environment
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import com.nutomic.syncthingandroid.testutil.ShadowZipFileWithCorruptHeader
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.exportAndWait
 import com.nutomic.syncthingandroid.testutil.importAndWait
+import com.nutomic.syncthingandroid.util.ConfigXml
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,6 +24,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 
 /**
  * Exports the config and keys of a stopped [SyncthingService] to the backup zip and imports them
@@ -102,5 +109,70 @@ class BackupTest {
             prefs.getString(Constants.PREF_BACKUP_REL_PATH_TO_ZIP, null),
         )
         assertEquals("secret", prefs.getString(Constants.PREF_BACKUP_PASSWORD, null))
+    }
+
+    @Test
+    @Config(
+        shadows =
+            [
+                ShadowEnvironmentWithAllFilesAccess::class,
+                ShadowUtilDeviceShell::class,
+                ShadowZipFileWithCorruptHeader::class,
+            ],
+        instrumentedPackages = ["com.nutomic.syncthingandroid.util", "net.lingala.zip4j"],
+    )
+    fun `an import that cannot open the zip logs why`() {
+        assertTrue(service.exportAndWait())
+        ShadowLog.clear()
+
+        assertFalse(service.importAndWait())
+
+        val logged =
+            ShadowLog.getLogsForTag("SyncthingService").any { log ->
+                generateSequence(log.throwable) { it.cause }
+                    .any { it.message == ShadowZipFileWithCorruptHeader.MESSAGE }
+            }
+        assertTrue("no log entry carries the exception", logged)
+    }
+
+    @Test
+    fun `an import that fails partway leaves the config untouched`() {
+        assertTrue(service.exportAndWait())
+        corruptEntry(backupZip(), Constants.CONFIG_FILE)
+        val original = Constants.getConfigFile(context).readText()
+
+        assertFalse(service.importAndWait())
+
+        assertTrue("config.xml is gone", Constants.getConfigFile(context).exists())
+        assertEquals(original, Constants.getConfigFile(context).readText())
+        ConfigXml(context).loadConfig()
+    }
+
+    private fun backupZip() =
+        File(Environment.getExternalStorageDirectory(), "backups/syncthing/config.zip")
+
+    /** Overwrites the middle of [name]'s compressed data in [zip]; its headers stay intact. */
+    private fun corruptEntry(zip: File, name: String) {
+        val bytes = zip.readBytes()
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        var offset = 0
+        while (true) {
+            check(buffer.getInt(offset) == LOCAL_HEADER) { "$name not found in $zip" }
+            val compressedSize = buffer.getInt(offset + 18)
+            val nameLength = buffer.getShort(offset + 26).toInt()
+            val extraLength = buffer.getShort(offset + 28).toInt()
+            val entryName = String(bytes, offset + 30, nameLength)
+            val data = offset + 30 + nameLength + extraLength
+            if (entryName == name) {
+                for (i in compressedSize / 4 until compressedSize * 3 / 4) bytes[data + i] = -1
+                zip.writeBytes(bytes)
+                return
+            }
+            offset = data + compressedSize
+        }
+    }
+
+    private companion object {
+        const val LOCAL_HEADER = 0x04034b50
     }
 }

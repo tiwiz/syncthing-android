@@ -1,14 +1,10 @@
 package com.nutomic.syncthingandroid.service
 
-import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.os.Environment
 import android.os.Looper
 import androidx.preference.PreferenceManager
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.FakeSyncthingBinary
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
@@ -16,24 +12,15 @@ import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
-import java.net.ServerSocket
 import java.time.Duration
-import kotlin.concurrent.thread
-import org.junit.After
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowNetworkInfo
 
 /**
  * Starts and stops a real [SyncthingService] the way the system does, with [FakeSyncthingBinary] as
@@ -51,71 +38,7 @@ import org.robolectric.shadows.ShadowNetworkInfo
         ],
     instrumentedPackages = ["com.nutomic.syncthingandroid.util"],
 )
-class SyncthingServiceLifecycleTest {
-
-    private val context: Context = ApplicationProvider.getApplicationContext()
-    private lateinit var binary: FakeSyncthingBinary
-    private var syncthing: FakeSyncthing? = null
-    private val port = ServerSocket(0).use { it.localPort }
-
-    @Before
-    fun setUp() {
-        System.setProperty("os.version", "6.1.0-android")
-        ConfigFixture.install(context) {
-            it.replace("<address>127.0.0.1:8384</address>", "<address>127.0.0.1:$port</address>")
-        }
-        // Default run conditions: run on Wi-Fi.
-        shadowOf(context.getSystemService(ConnectivityManager::class.java))
-            .setActiveNetworkInfo(
-                ShadowNetworkInfo.newInstance(
-                    NetworkInfo.DetailedState.CONNECTED,
-                    ConnectivityManager.TYPE_WIFI,
-                    0,
-                    true,
-                    NetworkInfo.State.CONNECTED,
-                )
-            )
-        binary = FakeSyncthingBinary(context).apply { serveUntilStopped = true }
-    }
-
-    @After
-    fun tearDown() {
-        binary.stop()
-        syncthing?.close()
-        ShadowUtilDeviceShell.netstatOutput = ""
-        ShadowUtilDeviceShell.throwOnKillProcess = false
-    }
-
-    /**
-     * Like [awaitMain], but lets the main looper's clock run, so the service's delayed retries
-     * (polling the GUI every 150 ms) happen.
-     */
-    private fun awaitWithClock(condition: () -> Boolean) {
-        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
-        while (!condition()) {
-            check(System.currentTimeMillis() < deadline) { "Timed out waiting on the service" }
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(STEP_MILLIS))
-            Thread.sleep(STEP_MILLIS)
-        }
-    }
-
-    /** Waits for the binary, then brings up the fake API on the GUI port, as Syncthing would. */
-    private fun startSyncthingWhenLaunched(): FakeSyncthing {
-        awaitWithClock { binary.started }
-        return FakeSyncthing(context, port, resetVolley = false).also {
-            it.onShutdown = binary::stop
-            syncthing = it
-        }
-    }
-
-    private fun startService(): Pair<ServiceController<SyncthingService>, SyncthingService> {
-        binary.install()
-        // The service starts polling the GUI right away; FakeSyncthing must not reset the queue.
-        FakeSyncthing.resetVolleyQueue()
-        val controller = Robolectric.buildService(SyncthingService::class.java, Intent()).create()
-        controller.startCommand(0, 1)
-        return controller to controller.get()
-    }
+class SyncthingServiceLifecycleTest : SyncthingServiceLifecycleHarness() {
 
     @Test
     fun `starting runs the binary and becomes active once the API answers`() {
@@ -170,37 +93,6 @@ class SyncthingServiceLifecycleTest {
         assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
     }
 
-    /** Syncthing that takes [EXIT_MILLIS] to exit after the REST shutdown. */
-    private fun slowToExit(fake: FakeSyncthing) {
-        fake.onShutdown = {
-            thread {
-                Thread.sleep(EXIT_MILLIS)
-                binary.stop()
-            }
-        }
-    }
-
-    private fun millisTaken(action: () -> Unit): Long {
-        val begin = System.nanoTime()
-        action()
-        return (System.nanoTime() - begin) / NANOS_PER_MILLI
-    }
-
-    private fun wifi(connected: Boolean) {
-        val info =
-            ShadowNetworkInfo.newInstance(
-                    NetworkInfo.DetailedState.CONNECTED,
-                    ConnectivityManager.TYPE_WIFI,
-                    0,
-                    true,
-                    NetworkInfo.State.CONNECTED,
-                )
-                .takeIf { connected }
-        shadowOf(context.getSystemService(ConnectivityManager::class.java))
-            .setActiveNetworkInfo(info)
-        context.sendBroadcast(Intent(ConnectivityManager.CONNECTIVITY_ACTION))
-    }
-
     @Test
     fun `a stop intent does not wait on the main thread for Syncthing to exit`() {
         val (controller, service) = startService()
@@ -217,6 +109,62 @@ class SyncthingServiceLifecycleTest {
         assertNull(service.api)
         awaitWithClock { "exited" in binary.runs }
         assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    @Test
+    fun `a restart does not wait on the main thread for Syncthing to exit`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_RESTART)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "serve --no-browser"),
+            binary.runs.take(3),
+        )
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+    }
+
+    @Test
+    fun `resetting the deltas does not wait on the main thread for Syncthing to exit`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+
+        val millis = millisTaken {
+            controller.withIntent(Intent(SyncthingService.ACTION_RESET_DELTAS)).startCommand(0, 2)
+        }
+
+        assertTrue("took $millis ms", millis < EXIT_MILLIS)
+        awaitWithClock { binary.runs.size >= 3 }
+        assertEquals(
+            listOf("serve --no-browser", "exited", "serve --debug-reset-delta-idxs"),
+            binary.runs.take(3),
+        )
+        // It was running before: it keeps running after the reset.
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+    }
+
+    @Test
+    fun `resetting the deltas while Syncthing should not run stops it again afterwards`() {
+        wifi(connected = false)
+        val (controller, service) = startService()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+
+        controller.withIntent(Intent(SyncthingService.ACTION_RESET_DELTAS)).startCommand(0, 2)
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { "exited" in binary.runs }
+        assertEquals(listOf("serve --debug-reset-delta-idxs", "exited"), binary.runs)
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
     }
 
     @Test
@@ -284,75 +232,35 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
-    fun `replacing the certificate does not wait on the main thread for Syncthing to exit`() {
-        val (_, service) = startService()
-        val fake = startSyncthingWhenLaunched()
-        slowToExit(fake)
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        // The certificate the fake serves, so the restarted Syncthing passes verification.
-        val certPem = Constants.getHttpsCertFile(context).readBytes()
-        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
-
-        val millis = millisTaken {
-            service.replaceHttpsCertificate(certPem, "new key".toByteArray()) { result, _ ->
-                results += result
-            }
-            shadowOf(Looper.getMainLooper()).idle()
-        }
-
-        assertTrue("took $millis ms", millis < EXIT_MILLIS)
-        awaitWithClock { results.isNotEmpty() }
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS), results)
-        assertEquals("new key", Constants.getHttpsKeyFile(context).readText())
-        assertEquals(listOf("serve --no-browser", "exited"), binary.runs.take(2))
-    }
-
-    @Test
-    fun `applying a certificate while Syncthing is stopped reports success on the main thread`() {
+    fun `an import while Syncthing starts waits until it has exited, then starts it again`() {
+        // A backup of this config. Without an HTTPS certificate in it, the import keeps the one
+        // the fake serves.
+        listOf(
+                Constants.getPrivateKeyFile(context),
+                Constants.getPublicKeyFile(context),
+                Constants.getHttpsKeyFile(context),
+            )
+            .forEach { it.writeText("fake ${it.name}") }
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        preferences
-            .edit()
-            .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, Constants.BTNSTATE_FORCE_STOP)
-            .commit()
+        val zip = File(Environment.getExternalStorageDirectory(), "backups/syncthing/config.zip")
+        assertTrue(exportBackup(context, preferences, zip))
         val (_, service) = startService()
-        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
-        var onMainThread = false
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
 
-        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, _ ->
-            onMainThread = Looper.myLooper() == Looper.getMainLooper()
-            results += result
+        var runsWhenImported: List<String>? = null
+        service.importConfig { imported ->
+            assertTrue(imported)
+            runsWhenImported = binary.runs
         }
-
-        awaitWithClock { results.isNotEmpty() }
-        assertTrue("certificate result delivered off the main thread", onMainThread)
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS_PENDING_START), results)
-    }
-
-    @Test
-    fun `replacing the certificate writes the files off the main thread`() {
-        val (_, service) = startService()
         startSyncthingWhenLaunched()
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        // The certificate the fake serves, so the restarted Syncthing passes verification.
-        val certPem = Constants.getHttpsCertFile(context).readBytes()
-        val results = mutableListOf<SyncthingService.HttpsCertReplaceResult>()
-        val writeThreads = mutableListOf<Thread>()
-        atomicWriteThreadHook = { writeThreads += it }
-        try {
-            service.replaceHttpsCertificate(certPem, "new key".toByteArray()) { result, _ ->
-                results += result
-            }
-            awaitWithClock { results.isNotEmpty() }
-        } finally {
-            atomicWriteThreadHook = null
-        }
 
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS), results)
-        assertTrue("the certificate files were not written", writeThreads.isNotEmpty())
-        assertTrue(
-            "the certificate files were written on the main thread",
-            writeThreads.all { it != Looper.getMainLooper().thread },
-        )
+        awaitWithClock { runsWhenImported != null }
+        val imported = checkNotNull(runsWhenImported)
+        assertEquals(listOf("serve --no-browser", "exited"), imported.take(2))
+        // The import may reset the database (its folders are not on this device), never serve.
+        assertEquals(1, imported.count { it == "serve --no-browser" })
+        awaitWithClock { binary.runs.count { it == "serve --no-browser" } == 2 }
     }
 
     @Test
@@ -447,180 +355,6 @@ class SyncthingServiceLifecycleTest {
         assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
     }
 
-    private fun certResults(): MutableList<Pair<SyncthingService.HttpsCertReplaceResult, String?>> =
-        mutableListOf()
-
-    @Test
-    fun `a certificate replace deferred while Syncthing starts fails once the service is destroyed`() {
-        val (controller, service) = startService()
-        awaitWithClock { binary.started }
-        assertEquals(SyncthingService.State.STARTING, service.currentState)
-        val results = certResults()
-        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, error
-            ->
-            results += result to error
-        }
-        shadowOf(Looper.getMainLooper()).idle()
-
-        controller.destroy()
-        startSyncthingWhenLaunched()
-
-        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
-        // Past the deferral of every retry: nothing may start Syncthing again.
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
-        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
-    }
-
-    @Test
-    fun `a certificate reset deferred while Syncthing starts fails once the service is destroyed`() {
-        val (controller, service) = startService()
-        awaitWithClock { binary.started }
-        assertEquals(SyncthingService.State.STARTING, service.currentState)
-        val results = certResults()
-        service.resetHttpsCertificate { result, error -> results += result to error }
-        shadowOf(Looper.getMainLooper()).idle()
-
-        controller.destroy()
-        startSyncthingWhenLaunched()
-
-        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
-        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
-    }
-
-    @Test
-    fun `a certificate replace waiting for Syncthing to exit fails once the service is destroyed`() {
-        val (controller, service) = startService()
-        val fake = startSyncthingWhenLaunched()
-        slowToExit(fake)
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        val certFile = Constants.getHttpsCertFile(context)
-        val keyFile = Constants.getHttpsKeyFile(context)
-        keyFile.writeText("old key")
-        val oldCert = certFile.readBytes()
-        val oldKey = keyFile.readBytes()
-        val results = certResults()
-        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, error
-            ->
-            results += result to error
-        }
-        shadowOf(Looper.getMainLooper()).idle()
-
-        controller.destroy()
-
-        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
-        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
-        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
-        // The failed change rolled the previous certificate back and left no backups behind.
-        assertArrayEquals(oldCert, certFile.readBytes())
-        assertArrayEquals(oldKey, keyFile.readBytes())
-        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
-        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
-    }
-
-    @Test
-    fun `a certificate reset waiting for Syncthing to exit fails once the service is destroyed`() {
-        val (controller, service) = startService()
-        val fake = startSyncthingWhenLaunched()
-        slowToExit(fake)
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        val certFile = Constants.getHttpsCertFile(context)
-        val keyFile = Constants.getHttpsKeyFile(context)
-        keyFile.writeText("old key")
-        val oldCert = certFile.readBytes()
-        val oldKey = keyFile.readBytes()
-        val results = certResults()
-        service.resetHttpsCertificate { result, error -> results += result to error }
-        shadowOf(Looper.getMainLooper()).idle()
-
-        controller.destroy()
-
-        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
-        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
-        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
-        // The failed reset rolled the previous certificate back and left no backups behind.
-        assertArrayEquals(oldCert, certFile.readBytes())
-        assertArrayEquals(oldKey, keyFile.readBytes())
-        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
-        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
-    }
-
-    @Test
-    fun `a failed lifecycle job reports failure and restarts Syncthing`() {
-        val (_, service) = startService()
-        startSyncthingWhenLaunched()
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        val results = certResults()
-        ShadowUtilDeviceShell.throwOnKillProcess = true
-        try {
-            service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) {
-                result,
-                error ->
-                results += result to error
-            }
-            awaitWithClock { results.isNotEmpty() }
-        } finally {
-            ShadowUtilDeviceShell.throwOnKillProcess = false
-        }
-
-        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        awaitWithClock { binary.runs.count { it == "serve --no-browser" } >= 2 }
-    }
-
-    @Test
-    fun `a certificate replace whose restart never leaves STARTING rolls back once`() {
-        val (_, service) = startService()
-        val fake = startSyncthingWhenLaunched()
-        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
-        val certFile = Constants.getHttpsCertFile(context)
-        val keyFile = Constants.getHttpsKeyFile(context)
-        keyFile.writeText("old key")
-        val oldCert = certFile.readBytes()
-        val results = certResults()
-
-        service.replaceHttpsCertificate("new cert".toByteArray(), "new key".toByteArray()) {
-            result,
-            error ->
-            results += result to error
-        }
-        shadowOf(Looper.getMainLooper()).idle()
-        // Syncthing exits off the main thread; the restart waits for the main looper.
-        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
-        while ("exited" !in binary.runs) {
-            check(System.currentTimeMillis() < deadline) { "Timed out waiting for the exit" }
-            Thread.sleep(STEP_MILLIS)
-        }
-        // The restarted Syncthing runs, but its web GUI never comes online.
-        fake.close()
-        binary.rearm()
-        awaitWithClock { binary.runs.size >= 3 }
-        assertEquals(SyncthingService.State.STARTING, service.currentState)
-
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(HTTPS_CERT_VERIFY_TIMEOUT_MS))
-        // What killProcess does to the real binary (shadowed on the host).
-        binary.stop()
-        val resultDeadline = System.currentTimeMillis() + TIMEOUT_MILLIS
-        while (results.isEmpty() && System.currentTimeMillis() < resultDeadline) {
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(STEP_MILLIS))
-            Thread.sleep(STEP_MILLIS)
-        }
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
-
-        assertEquals(
-            listOf(SyncthingService.HttpsCertReplaceResult.FAILED_NOT_ONLINE to null),
-            results,
-        )
-        assertTrue(oldCert.contentEquals(certFile.readBytes()))
-        assertEquals("old key", keyFile.readText())
-    }
-
     @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
@@ -635,14 +369,5 @@ class SyncthingServiceLifecycleTest {
 
         val config = ConfigXml(context).apply { loadConfig() }
         assertTrue(config.folders.single().paused)
-    }
-
-    private companion object {
-        const val TIMEOUT_MILLIS = 10_000L
-        const val STEP_MILLIS = 20L
-        const val EXIT_MILLIS = 1500L
-        const val DEFER_MILLIS = 1000L
-        const val HTTPS_CERT_VERIFY_TIMEOUT_MS = 30_000L
-        const val NANOS_PER_MILLI = 1_000_000L
     }
 }
