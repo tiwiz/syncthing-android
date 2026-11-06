@@ -787,16 +787,24 @@ class SyncthingService : Service() {
         afterStopped(
             { doReplaceHttpsCertificate(certPem, keyPem, listener) },
             work = { writeHttpsCertificate(certPem, keyPem, listener, write) },
-            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+            onDestroyed = {
+                // The files may already be replaced when the service is destroyed mid-change; put
+                // the previous certificate back so the disk matches the FAILED result.
+                write.change?.restore()
+                listener.onResult(HttpsCertReplaceResult.FAILED, null)
+            },
         ) {
+            val change = write.change
             val failure = write.failure
-            if (failure != null) {
+            if (failure != null || change == null) {
+                // The write failed (failure != null), or the lifecycle job threw before it could
+                // produce a change (change == null). Either way there is nothing to verify.
                 if (lastDeterminedShouldRun) {
                     launchStartupTask(SyncthingRunnable.Command.MAIN)
                 }
-                listener.onResult(HttpsCertReplaceResult.FAILED, failure.message)
+                listener.onResult(HttpsCertReplaceResult.FAILED, failure?.message)
             } else {
-                applyCertChangeWithVerify(checkNotNull(write.change))
+                applyCertChangeWithVerify(change)
             }
         }
     }
@@ -816,7 +824,7 @@ class SyncthingService : Service() {
             writeBytesAtomic(keyFile, keyPem)
             restrictToOwner(keyFile)
         } catch (e: IOException) {
-            Log.e(TAG, "doReplaceHttpsCertificate: Failed to write new cert/key", e)
+            Log.e(TAG, "writeHttpsCertificate: Failed to write new cert/key", e)
             restoreFile(certBak, certFile)
             restoreFile(keyBak, keyFile)
             result.failure = e
@@ -834,9 +842,24 @@ class SyncthingService : Service() {
         afterStopped(
             { doResetHttpsCertificate(listener) },
             work = { removeHttpsCertificate(listener, write) },
-            onDestroyed = { listener.onResult(HttpsCertReplaceResult.FAILED, null) },
+            onDestroyed = {
+                // The files may already be removed when the service is destroyed mid-change; put
+                // the previous certificate back so the disk matches the FAILED result.
+                write.change?.restore()
+                listener.onResult(HttpsCertReplaceResult.FAILED, null)
+            },
         ) {
-            applyCertChangeWithVerify(checkNotNull(write.change))
+            val change = write.change
+            val failure = write.failure
+            if (failure != null || change == null) {
+                // The job threw before it could produce a change; nothing to verify.
+                if (lastDeterminedShouldRun) {
+                    launchStartupTask(SyncthingRunnable.Command.MAIN)
+                }
+                listener.onResult(HttpsCertReplaceResult.FAILED, failure?.message)
+            } else {
+                applyCertChangeWithVerify(change)
+            }
         }
     }
 
