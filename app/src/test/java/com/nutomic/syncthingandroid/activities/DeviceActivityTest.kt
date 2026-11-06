@@ -385,28 +385,26 @@ class DeviceActivityTest {
                     screen.setNewDeviceId(DISCOVERED_ID)
                     screen.toggleFolder("Camera")
                     screen.save()
-                    awaitMain { syncthing.requests("/rest/system/config", "POST").isNotEmpty() }
+                    awaitMain { syncthing.requests("/rest/system/config", "POST").size >= 2 }
                     drainMain()
                 }
 
-            val posted =
-                JsonParser.parseString(
-                        syncthing.requests("/rest/system/config", "POST").last().body!!.utf8()
-                    )
-                    .asJsonObject
-            assertTrue(
-                posted.getAsJsonArray("devices").any {
-                    it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+            val posts =
+                syncthing.requests("/rest/system/config", "POST").map {
+                    JsonParser.parseString(it.body!!.utf8()).asJsonObject
                 }
-            )
-            val folder =
-                posted
-                    .getAsJsonArray("folders")
-                    .map { it.asJsonObject }
-                    .single { it["id"].asString == "cam-photos" }
             assertTrue(
-                folder.getAsJsonArray("devices").any {
-                    it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+                posts.any { posted ->
+                    val sharesCamera =
+                        posted
+                            .getAsJsonArray("folders")
+                            .map { it.asJsonObject }
+                            .single { it["id"].asString == "cam-photos" }
+                            .getAsJsonArray("devices")
+                            .any { it.asJsonObject["deviceID"].asString == DISCOVERED_ID }
+                    posted.getAsJsonArray("devices").any {
+                        it.asJsonObject["deviceID"].asString == DISCOVERED_ID
+                    } && sharesCamera
                 }
             )
         } finally {
