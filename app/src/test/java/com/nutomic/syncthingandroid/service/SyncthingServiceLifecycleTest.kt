@@ -14,6 +14,7 @@ import com.nutomic.syncthingandroid.testutil.FakeSyncthingBinary
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
+import android.os.Environment
 import com.nutomic.syncthingandroid.util.ConfigXml
 import java.io.File
 import java.net.ServerSocket
@@ -28,6 +29,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import okhttp3.tls.HeldCertificate
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
@@ -337,6 +339,121 @@ class SyncthingServiceLifecycleTest {
         assertEquals(listOf("serve --no-browser", "exited"), runsWhenExported)
         awaitWithClock { binary.runs.size >= 3 }
         assertEquals("serve --no-browser", binary.runs[2])
+    }
+
+    @Test
+    fun `an import while Syncthing starts waits until it has exited, then starts it again`() {
+        // A backup of this config. Without an HTTPS certificate in it, the import keeps the one
+        // the fake serves.
+        listOf(
+                Constants.getPrivateKeyFile(context),
+                Constants.getPublicKeyFile(context),
+                Constants.getHttpsKeyFile(context),
+            )
+            .forEach { it.writeText("fake ${it.name}") }
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val zip = File(Environment.getExternalStorageDirectory(), "backups/syncthing/config.zip")
+        assertTrue(exportBackup(context, preferences, zip))
+        val (_, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+
+        var runsWhenImported: List<String>? = null
+        service.importConfig { imported ->
+            assertTrue(imported)
+            runsWhenImported = binary.runs
+        }
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { runsWhenImported != null }
+        val imported = checkNotNull(runsWhenImported)
+        assertEquals(listOf("serve --no-browser", "exited"), imported.take(2))
+        // The import may reset the database (its folders are not on this device), never serve.
+        assertEquals(1, imported.count { it == "serve --no-browser" })
+        awaitWithClock { binary.runs.count { it == "serve --no-browser" } == 2 }
+    }
+
+    /**
+     * Waits off the main looper, so nothing queued there runs meanwhile, until [condition] holds
+     * for what the lifecycle job wrote.
+     */
+    private fun awaitBackground(condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (!condition()) {
+            check(System.currentTimeMillis() < deadline) { "Timed out waiting off the main looper" }
+            Thread.sleep(STEP_MILLIS)
+        }
+    }
+
+    @Test
+    fun `resetting the certificate while running restarts with a generated one`() {
+        val (_, service) = startService()
+        startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val certFile = Constants.getHttpsCertFile(context)
+        val keyFile = Constants.getHttpsKeyFile(context)
+        keyFile.writeText("old key")
+        // What the restarted Syncthing generates: the certificate the fake serves.
+        val generated = certFile.readBytes()
+        val results = certResults()
+
+        service.resetHttpsCertificate { result, error -> results += result to error }
+        shadowOf(Looper.getMainLooper()).idle()
+        awaitBackground { !certFile.exists() && !keyFile.exists() }
+        certFile.writeBytes(generated)
+        binary.rearm()
+        awaitWithClock { results.isNotEmpty() }
+
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.SUCCESS to null), results)
+        assertEquals(listOf("serve --no-browser", "exited", "serve --no-browser"), binary.runs)
+        assertEquals(SyncthingService.State.ACTIVE, service.currentState)
+        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
+        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
+    }
+
+    @Test
+    fun `a certificate Syncthing replaces with a generated one is rolled back`() {
+        val (_, service) = startService()
+        startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val certFile = Constants.getHttpsCertFile(context)
+        val keyFile = Constants.getHttpsKeyFile(context)
+        keyFile.writeText("old key")
+        val oldCert = certFile.readBytes()
+        val supplied =
+            HeldCertificate.Builder().commonName("supplied").build().certificatePem().toByteArray()
+        val results = certResults()
+
+        service.replaceHttpsCertificate(supplied, "new key".toByteArray()) { result, error ->
+            results += result to error
+        }
+        shadowOf(Looper.getMainLooper()).idle()
+        awaitBackground { certFile.readBytes().contentEquals(supplied) }
+        // Syncthing could not load the pair: it generates its own and serves that.
+        certFile.writeBytes(oldCert)
+        binary.rearm()
+        awaitWithClock { results.isNotEmpty() }
+
+        assertEquals(
+            listOf(SyncthingService.HttpsCertReplaceResult.FAILED_CERT_REJECTED to null),
+            results,
+        )
+        assertArrayEquals(oldCert, certFile.readBytes())
+        assertEquals("old key", keyFile.readText())
+        assertFalse(File(certFile.parentFile, certFile.name + ".bak").exists())
+        assertFalse(File(keyFile.parentFile, keyFile.name + ".bak").exists())
+        // Stopped to restore the backups, then brought back up.
+        assertEquals(
+            listOf(
+                "serve --no-browser",
+                "exited",
+                "serve --no-browser",
+                "exited",
+                "serve --no-browser",
+            ),
+            binary.runs.take(5),
+        )
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
     }
 
     @Test
