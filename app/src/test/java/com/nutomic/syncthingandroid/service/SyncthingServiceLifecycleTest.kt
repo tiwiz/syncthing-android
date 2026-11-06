@@ -374,6 +374,93 @@ class SyncthingServiceLifecycleTest {
     }
 
     @Test
+    fun `evaluating the run conditions after the service is destroyed does nothing`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        controller.destroy()
+        awaitWithClock { "exited" in binary.runs }
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        preferences.edit().remove(Constants.PREF_LAST_RUN_TIME).commit()
+        // A changed decision, so that a live monitor would act on it.
+        wifi(connected = false)
+
+        // What ImportExportViewModel does once an import that outlived the service is done.
+        service.evaluateRunConditions()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+
+        assertTrue(!preferences.contains(Constants.PREF_LAST_RUN_TIME))
+        assertEquals(SyncthingService.State.DISABLED, service.currentState)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    private fun certResults(): MutableList<Pair<SyncthingService.HttpsCertReplaceResult, String?>> =
+        mutableListOf()
+
+    @Test
+    fun `a certificate replace deferred while Syncthing starts fails once the service is destroyed`() {
+        val (controller, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+        val results = certResults()
+        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, error
+            ->
+            results += result to error
+        }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        controller.destroy()
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
+        // Past the deferral of every retry: nothing may start Syncthing again.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+    }
+
+    @Test
+    fun `a certificate reset deferred while Syncthing starts fails once the service is destroyed`() {
+        val (controller, service) = startService()
+        awaitWithClock { binary.started }
+        assertEquals(SyncthingService.State.STARTING, service.currentState)
+        val results = certResults()
+        service.resetHttpsCertificate { result, error -> results += result to error }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        controller.destroy()
+        startSyncthingWhenLaunched()
+
+        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+    }
+
+    @Test
+    fun `a certificate replace waiting for Syncthing to exit fails once the service is destroyed`() {
+        val (controller, service) = startService()
+        val fake = startSyncthingWhenLaunched()
+        slowToExit(fake)
+        awaitWithClock { service.currentState == SyncthingService.State.ACTIVE }
+        val results = certResults()
+        service.replaceHttpsCertificate("cert".toByteArray(), "key".toByteArray()) { result, error
+            ->
+            results += result to error
+        }
+        shadowOf(Looper.getMainLooper()).idle()
+
+        controller.destroy()
+
+        awaitWithClock { results.isNotEmpty() && "exited" in binary.runs }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(3 * DEFER_MILLIS))
+        assertEquals(listOf(SyncthingService.HttpsCertReplaceResult.FAILED to null), results)
+        assertEquals(listOf("serve --no-browser", "exited"), binary.runs)
+        assertEquals(1, fake.requests("/rest/system/shutdown", "POST").size)
+    }
+
+    @Test
     fun `a folder whose own run conditions fail is paused in the config before the start`() {
         val prefix = Constants.PREF_OBJECT_PREFIX_FOLDER + "cam-photos"
         PreferenceManager.getDefaultSharedPreferences(context)
