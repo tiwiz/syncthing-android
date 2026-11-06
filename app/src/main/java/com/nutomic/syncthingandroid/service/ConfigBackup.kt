@@ -110,6 +110,13 @@ internal fun restoreBackup(
     // fails halfway must leave them the old files (#148).
     val staging = File(context.filesDir, IMPORT_STAGING_FOLDER)
     staging.deleteRecursively()
+    // The staging copy sits next to the originals until the move, so the whole zip must fit.
+    val shortage = spaceShortage(zipFile, context.filesDir, availableBytes)
+    if (shortage != null) {
+        logV(shortage)
+        Log.e(TAG, shortage)
+        return false
+    }
     try {
         zipFile.extractAll(staging.absolutePath)
     } catch (e: IOException) {
@@ -156,6 +163,25 @@ internal fun restoreBackup(
         Log.e(TAG, "importConfig: Failed to cleanup invalid folder databases", e)
     }
     return success
+}
+
+/**
+ * Why [zipFile] cannot be extracted into [target], or null if its entries fit in the free space.
+ */
+private fun spaceShortage(zipFile: ZipFile, target: File, availableBytes: (File) -> Long): String? {
+    val needed =
+        try {
+            zipFile.fileHeaders.sumOf { it.uncompressedSize.coerceAtLeast(0) }
+        } catch (e: ZipException) {
+            return "importConfig: Failed to read the zip entries, " + e.message
+        }
+    val available = availableBytes(target)
+    return if (needed > available) {
+        "importConfig: Not enough free space to extract the zip, " +
+            "needs $needed bytes, $available available"
+    } else {
+        null
+    }
 }
 
 /**
