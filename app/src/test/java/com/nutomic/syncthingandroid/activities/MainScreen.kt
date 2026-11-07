@@ -9,11 +9,13 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -136,7 +138,7 @@ internal class MainScreen(
     /** Runs [action] and returns the screen it started, if any. */
     fun run(action: Action): Intent? {
         if (action.inAddMenu) {
-            compose.onNodeWithContentDescription("Add").performClick()
+            addButton().performClick()
             idle()
             compose.onNode(hasText(action.description) and hasClickAction()).performClick()
         } else {
@@ -241,6 +243,47 @@ internal class MainScreen(
         compose.onNode(
             hasText(item.label) and hasClickAction() and hasAnyAncestor(hasTestTag("mainMenu"))
         )
+
+    fun hasOverflowButton(): Boolean =
+        compose.onAllNodesWithContentDescription("More options").fetchSemanticsNodes().isNotEmpty()
+
+    private fun railNode(item: MenuItem) =
+        compose.onNode(hasText(item.label) and hasAnyAncestor(hasTestTag("railMenu")))
+
+    /** The overflow entries the expanded rail lists, in order; empty without them. */
+    fun railEntries(): List<MenuItem> =
+        MenuItem.entries.filter {
+            compose
+                .onAllNodes(hasText(it.label) and hasAnyAncestor(hasTestTag("railMenu")))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+    fun railEntryEnabled(item: MenuItem): Boolean =
+        SemanticsProperties.Disabled !in railNode(item).fetchSemanticsNode().config
+
+    /** Chooses [item] in the expanded rail and returns the screen it started, if any. */
+    fun chooseInRail(item: MenuItem): Intent? {
+        railNode(item).performClick()
+        idle()
+        return nextStarted()
+    }
+
+    /** Whether the add button is the rail's header rather than a floating button. */
+    fun addInRail(): Boolean =
+        compose.onAllNodesWithTag("railAdd").fetchSemanticsNodes().any { it.layoutInfo.isPlaced } &&
+            compose.onAllNodesWithContentDescription("Add").fetchSemanticsNodes().count {
+                it.layoutInfo.isPlaced
+            } == 1
+
+    /**
+     * The add button the user sees. The rail also composes its header once more to measure it; that
+     * copy is never placed.
+     */
+    private fun addButton(): SemanticsNodeInteraction {
+        val all = compose.onAllNodesWithContentDescription("Add")
+        return all[all.fetchSemanticsNodes().indexOfFirst { it.layoutInfo.isPlaced }]
+    }
 
     fun menuItemEnabled(item: MenuItem): Boolean =
         SemanticsProperties.Disabled !in menuNode(item).fetchSemanticsNode().config
