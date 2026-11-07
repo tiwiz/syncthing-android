@@ -1,7 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -60,7 +58,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextAlign
@@ -274,7 +271,7 @@ private fun MainScaffold(
             TopAppBar(
                 title = { Text(stringResource(R.string.fork_app_name)) },
                 actions = {
-                    StatusLight(state.serviceState)
+                    ServiceChip(state.serviceState)
                     TabActions(tab, actions)
                     IconButton(onClick = actions::onSettings) {
                         Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
@@ -348,25 +345,6 @@ private fun TabActions(tab: MainTab, actions: MainActions) {
             MainTab.STATUS -> Unit
         }
     }
-}
-
-/** A dot: green while Syncthing runs, orange while it starts, grey otherwise. */
-@Composable
-private fun StatusLight(state: SyncthingService.State) {
-    val (color, tag) =
-        when (state) {
-            SyncthingService.State.ACTIVE -> colorResource(R.color.text_green) to "light:ACTIVE"
-            SyncthingService.State.STARTING ->
-                colorResource(R.color.text_orange) to "light:STARTING"
-            else -> MaterialTheme.colorScheme.outline to "light:DISABLED"
-        }
-    Box(
-        modifier =
-            Modifier.padding(horizontal = 8.dp)
-                .size(LIGHT_SIZE.dp)
-                .background(color, CircleShape)
-                .testTag(tag)
-    )
 }
 
 /** Adds a folder or a device: a FAB that opens into a menu. */
@@ -551,7 +529,6 @@ private fun UsageReportingDialog(report: String, actions: MainActions) {
     )
 }
 
-private const val LIGHT_SIZE = 12
 private const val PERCENT = 100
 internal const val CARD_CORNER = 32
 
