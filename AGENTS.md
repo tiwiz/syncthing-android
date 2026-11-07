@@ -315,6 +315,8 @@ Next steps (to be confirmed with the owner):
    notification; picture checked by its bounds only (the OOM cannot be reproduced on the host JVM);
    consent ids with `Math.floorMod`; file names read with `asString`.
    **Resume here:** the two private security advisories, with the owner.
+   2026-11-07: H5's last piece, the detail pane's selection moved from `DetailPanes` (deleted) to
+   `MainViewModel`'s `SavedStateHandle` (branch `refactor/detail-pane-selection`).
 
 ## HANDOFF
 

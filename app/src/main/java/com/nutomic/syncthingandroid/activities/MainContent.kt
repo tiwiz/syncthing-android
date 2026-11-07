@@ -309,7 +309,7 @@ private fun MainScaffold(
                             selectedFolderId =
                                 (panes.shownDetail as? Detail.FolderDetail)
                                     ?.key
-                                    ?.removePrefix(DetailPanes.FOLDER),
+                                    ?.removePrefix(DetailSelection.FOLDER),
                         )
                     }
                 MainTab.DEVICES ->
@@ -324,7 +324,7 @@ private fun MainScaffold(
                             selectedDeviceId =
                                 (panes.shownDetail as? Detail.DeviceDetail)
                                     ?.key
-                                    ?.removePrefix(DetailPanes.DEVICE),
+                                    ?.removePrefix(DetailSelection.DEVICE),
                         )
                     }
                 MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)

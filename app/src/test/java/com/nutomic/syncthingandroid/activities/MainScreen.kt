@@ -22,6 +22,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.IntSize
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import java.time.Duration
@@ -359,6 +361,23 @@ internal class MainScreen(
         var finishing = false
         scenario.onActivity { finishing = it.isFinishing }
         return finishing
+    }
+
+    /**
+     * The ViewModel of the folder or device open in the detail pane, from the activity's store, or
+     * null with nothing open. Tells whether a recreation kept the pane's ViewModel.
+     */
+    fun detailViewModel(): ViewModel? {
+        var viewModel: ViewModel? = null
+        scenario.onActivity { activity ->
+            val provider = ViewModelProvider(activity)
+            val selection = provider[MainViewModel::class].detail.value ?: return@onActivity
+            val type =
+                if (selection.key.startsWith(DetailSelection.FOLDER)) FolderEditViewModel::class
+                else DeviceEditViewModel::class
+            viewModel = provider[selection.viewModelKey, type]
+        }
+        return viewModel
     }
 
     /** Recreates the screen, as a rotation or a fold does. */

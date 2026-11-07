@@ -128,9 +128,12 @@ One PR each, with the gate green. Behaviour tests (drivers) stay unchanged.
   them, act as their host (requests become `EditEvent`s) and save them through
   `SavedStateHandle.setSavedStateProvider`. `EditEffects` runs the events with
   `rememberLauncherForActivityResult`, in the activities and in the detail pane alike;
-  `FolderActivity`/`DeviceActivity` no longer implement the hosts nor save state. `DetailPanes`
-  keeps the selection (saved instance state) and gets each opening's ViewModels from the
-  activity's store, keyed `<key>#<n>`. Recreation tests: folder, device, detail pane.
+  `FolderActivity`/`DeviceActivity` no longer implement the hosts nor save state. The pane's
+  selection (key and opening count) lives in `MainViewModel`'s `SavedStateHandle`
+  (`openDetail`/`closeDetail`, `DetailSelection`); `MainActivity` gets each opening's ViewModels
+  from its own store, keyed `<key>#<n>` (`DetailPane.kt`), and `DetailPanes` is gone. Recreation
+  tests: folder, device, detail pane (same ViewModel after `recreate()`);
+  `MainViewModelDetailTest` round-trips the handle.
 - **H6** `refactor(onboarding): OnboardingViewModel` (B): the JSON `uiState` in the `Bundle`
   becomes ViewModel and `SavedStateHandle` state; recreation test.
 

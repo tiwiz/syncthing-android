@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.edit
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -43,8 +44,9 @@ internal enum class MainEvent {
 }
 
 /**
- * The main screen's state: the folder and device lists, the status tab and the usage reporting
- * question. Lives across configuration changes; Syncthing comes from [SyncthingConnection].
+ * The main screen's state: the folder and device lists, the status tab, the usage reporting
+ * question and what the detail pane shows. Lives across configuration changes; the detail pane's
+ * selection also survives process death. Syncthing comes from [SyncthingConnection].
  */
 @HiltViewModel
 internal class MainViewModel
@@ -53,6 +55,7 @@ constructor(
     @ApplicationContext private val context: Context,
     private val preferences: SharedPreferences,
     connection: SyncthingConnection,
+    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val configRouter = ConfigRouter(context)
@@ -77,6 +80,16 @@ constructor(
 
     private val eventChannel = Channel<MainEvent>(Channel.BUFFERED)
     val events: Flow<MainEvent> = eventChannel.receiveAsFlow()
+
+    private val detailState =
+        MutableStateFlow(
+            savedState.get<String>(STATE_DETAIL_KEY)?.let {
+                DetailSelection(it, savedState[STATE_DETAIL_OPENED] ?: 0)
+            }
+        )
+
+    /** The folder or device open in the detail pane, or null with none. */
+    val detail: StateFlow<DetailSelection?> = detailState.asStateFlow()
 
     private var snapshot = ServiceSnapshot.UNBOUND
 
@@ -248,6 +261,23 @@ constructor(
         }
     }
 
+    /** Opens the folder or device [key] in the detail pane, with ViewModels of its own. */
+    fun openDetail(key: String) {
+        val opened = (savedState[STATE_DETAIL_OPENED] ?: 0) + 1
+        savedState[STATE_DETAIL_OPENED] = opened
+        savedState[STATE_DETAIL_KEY] = key
+        detailState.value = DetailSelection(key, opened)
+    }
+
+    /**
+     * Closes the detail pane. The opening count stays, so a later opening never gets the
+     * ViewModels, and the discarded edits, of an earlier one.
+     */
+    fun closeDetail() {
+        savedState.remove<String>(STATE_DETAIL_KEY)
+        detailState.value = null
+    }
+
     /** [index] is one of the Constants.BTNSTATE_* values. */
     fun onForceStartStop(index: Int) {
         preferences.edit { putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, index) }
@@ -258,6 +288,9 @@ constructor(
 
     private companion object {
         const val TAG = "MainViewModel"
+
+        const val STATE_DETAIL_KEY = "detailKey"
+        const val STATE_DETAIL_OPENED = "detailOpened"
 
         /** How long after the first start the usage reporting question waits. */
         val USAGE_REPORTING_DIALOG_DELAY = TimeUnit.DAYS.toMillis(3)
