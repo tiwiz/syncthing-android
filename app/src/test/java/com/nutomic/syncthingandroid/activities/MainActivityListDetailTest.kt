@@ -15,6 +15,7 @@ import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -182,6 +183,39 @@ class MainActivityListDetailTest {
 
             assertEquals("Edit Folder", screen.detailTitle())
             assertEquals("Photos", screen.detailFolderLabel())
+        }
+    }
+
+    @Test
+    fun `the pane keeps its folder and ViewModel across recreation`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            val viewModel = checkNotNull(screen.detailViewModel())
+
+            screen.recreate()
+
+            assertEquals("Edit Folder", screen.detailTitle())
+            assertTrue(screen.folderSelected("Camera"))
+            assertSame(viewModel, screen.detailViewModel())
+        }
+    }
+
+    @Test
+    fun `opening a row over unsaved changes asks first, then opens it afresh`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            val label = screen.detailFolderLabel()
+            screen.setDetailFolderLabel("Photos")
+
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            assertTrue(screen.discardAsked())
+            assertEquals("Photos", screen.detailFolderLabel())
+
+            screen.confirmDiscard()
+            assertEquals("Edit Folder", screen.detailTitle())
+            assertEquals(label, screen.detailFolderLabel())
         }
     }
 

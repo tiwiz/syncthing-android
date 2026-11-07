@@ -42,7 +42,8 @@ Every screen with state has one: change something, `ActivityScenario.recreate()`
 still there and that the screen did not redo its work (read the log again, ask Syncthing again,
 open the camera again). Work that finishes after the recreation must reach the new activity
 (`SettingsRecreationTest`, `PhotoShootActivityTest`). ViewModels with a `SavedStateHandle` also get
-a round-trip test of the handle (`OnboardingViewModelTest`, `SettingsViewModelsTest`).
+a round-trip test of the handle (`OnboardingViewModelTest`, `SettingsViewModelsTest`,
+`MainViewModelDetailTest`).
 `ServiceBindingTest` checks that screens bind Syncthing only through `SyncthingConnection`.
 
 ### Focus and touch mode

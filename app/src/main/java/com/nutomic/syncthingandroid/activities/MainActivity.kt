@@ -12,7 +12,9 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,8 +57,23 @@ class MainActivity : ThemedAppCompatActivity() {
     /** Whether the overflow menu is open; hoisted so the menu key can toggle it. */
     private var menuOpen by mutableStateOf(false)
 
-    /** Folders and devices next to their list on large windows. */
-    private val panes = DetailPanes(this) { viewModel.refresh() }
+    /** Whether the window has room for the detail pane; reported by the screen. */
+    private var twoPanes by mutableStateOf(false)
+
+    /** A detail to open once the current one, with unsaved changes, is discarded. */
+    private var pendingDetail: String? = null
+
+    private val paneCallbacks =
+        PaneCallbacks(
+            onClose = { saved ->
+                closeDetail()
+                if (saved) viewModel.refresh()
+            },
+            onLeave = ::closeDetail,
+            onShowDeviceId = { name, deviceId ->
+                DeviceIdDialogFragment.show(supportFragmentManager, name, deviceId, false)
+            },
+        )
 
     private val backPressedCallback =
         object : OnBackPressedCallback(true) {
@@ -73,16 +90,19 @@ class MainActivity : ThemedAppCompatActivity() {
         if (enableVerboseLog) {
             testPathEllipsis()
         }
-        panes.restoreState(savedInstanceState)
         setContent {
             ApplicationTheme {
+                val selection by viewModel.detail.collectAsStateWithLifecycle()
+                val detail = remember(selection) { selection?.let { detailOf(it, paneCallbacks) } }
+                // How far a back gesture closing the pane has gone, 0 to 1.
+                var backProgress by remember { mutableFloatStateOf(0f) }
                 // The detail pane shrinks with the back gesture; letting go closes it.
-                PredictiveBackHandler(enabled = panes.detail != null && panes.twoPanes) { events ->
+                PredictiveBackHandler(enabled = detail != null && twoPanes) { events ->
                     try {
-                        events.collect { panes.backProgress = it.progress }
-                        panes.back()
+                        events.collect { backProgress = it.progress }
+                        currentDetail()?.back()
                     } finally {
-                        panes.backProgress = 0f
+                        backProgress = 0f
                     }
                 }
                 BackHandler(enabled = menuOpen) { menuOpen = false }
@@ -93,9 +113,9 @@ class MainActivity : ThemedAppCompatActivity() {
                     onMenuOpenChange = { menuOpen = it },
                     menuActions = menuActions,
                     actions = actions,
-                    detail = panes.detail,
-                    detailBackProgress = { panes.backProgress },
-                    onTwoPanesChange = { panes.twoPanes = it },
+                    detail = detail,
+                    detailBackProgress = { backProgress },
+                    onTwoPanesChange = { twoPanes = it },
                 )
             }
         }
@@ -140,9 +160,32 @@ class MainActivity : ThemedAppCompatActivity() {
         super.onResume()
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        panes.saveState(outState)
+    /** The detail open in the pane, from [MainViewModel]'s selection. */
+    private fun currentDetail(): Detail? =
+        viewModel.detail.value?.let { detailOf(it, paneCallbacks) }
+
+    /**
+     * Shows the folder or device [key] in the pane; false when the window has no room for it. With
+     * unsaved changes in the pane, asks to discard them first.
+     */
+    private fun openDetail(key: String): Boolean {
+        if (!twoPanes) return false
+        val current = currentDetail()
+        if (current != null && current.hasChanges()) {
+            pendingDetail = key
+            current.askDiscard()
+        } else {
+            viewModel.openDetail(key)
+        }
+        return true
+    }
+
+    private fun closeDetail() {
+        viewModel.closeDetail()
+        pendingDetail?.let {
+            pendingDetail = null
+            openDetail(it)
+        }
     }
 
     /** Stops Syncthing and leaves the app. */
@@ -215,7 +258,7 @@ class MainActivity : ThemedAppCompatActivity() {
             }
 
             override fun onOpenFolder(folderId: String) {
-                if (panes.open(DetailPanes.FOLDER + folderId)) return
+                if (openDetail(DetailSelection.FOLDER + folderId)) return
                 startActivity(
                     Intent(this@MainActivity, FolderActivity::class.java)
                         .putExtra(FolderActivity.EXTRA_IS_CREATE, false)
@@ -233,7 +276,7 @@ class MainActivity : ThemedAppCompatActivity() {
                 sendFolderAction(SyncthingService.ACTION_REVERT_LOCAL_CHANGES, folderId)
 
             override fun onOpenDevice(deviceId: String) {
-                if (panes.open(DetailPanes.DEVICE + deviceId)) return
+                if (openDetail(DetailSelection.DEVICE + deviceId)) return
                 startActivity(
                     Intent(this@MainActivity, DeviceActivity::class.java)
                         .putExtra(DeviceActivity.EXTRA_IS_CREATE, false)
