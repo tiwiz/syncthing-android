@@ -181,7 +181,7 @@ internal class MainScreen(
 
     fun light(): Light =
         Light.entries.single {
-            compose.onAllNodesWithTag("light:${it.name}").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("serviceChip:${it.name}").fetchSemanticsNodes().isNotEmpty()
         }
 
     /** The overall sync progress shown in the top bar, or null when hidden. */
