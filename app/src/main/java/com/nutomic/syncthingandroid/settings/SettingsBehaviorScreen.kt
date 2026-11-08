@@ -31,6 +31,7 @@ fun SettingsBehaviorScreen(
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
+        closesPane = true,
         modifier = modifier,
         title = stringResource(R.string.category_behaviour),
     ) {
