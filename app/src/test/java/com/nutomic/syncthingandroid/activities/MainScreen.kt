@@ -365,6 +365,25 @@ internal class MainScreen(
             .fetchSemanticsNodes()
             .any { it.layoutInfo.isPlaced }
 
+    /** What the empty detail pane says, or null when it shows a folder or device. */
+    fun detailPlaceholder(): String? =
+        compose
+            .onAllNodesWithTag("detailPlaceholder", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
+
+    fun rowWidth(tag: String): Float =
+        compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.width
+
+    /** The status tab's width in dp. */
+    fun statusWidthDp(): Float {
+        val node = compose.onNodeWithTag("statusColumn").fetchSemanticsNode()
+        return node.boundsInRoot.width / node.layoutInfo.density.density
+    }
+
     fun listTitleHeight(): Float =
         compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
 
