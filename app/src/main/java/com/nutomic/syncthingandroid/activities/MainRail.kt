@@ -16,6 +16,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -77,9 +78,25 @@ private fun RailDivider() {
 /** The rail items' room from its start edge; the add button and dividers line up with them. */
 private const val RAIL_EDGE = 20
 
+/** The rail's header: the app's name in the expanded rail, then the add button. */
+@Composable
+internal fun RailHeader(expanded: Boolean, actions: MainActions) {
+    Column(modifier = Modifier.testTag("railHeader")) {
+        if (expanded) {
+            Text(
+                stringResource(R.string.fork_app_name),
+                style = MaterialTheme.typography.titleMediumEmphasized,
+                modifier =
+                    Modifier.padding(start = RAIL_EDGE.dp, end = RAIL_EDGE.dp, bottom = 16.dp),
+            )
+        }
+        RailAddButton(expanded, actions)
+    }
+}
+
 /** Adds a folder or a device from the top of the rail: a flat button that opens a menu. */
 @Composable
-internal fun RailAddButton(expanded: Boolean, actions: MainActions) {
+private fun RailAddButton(expanded: Boolean, actions: MainActions) {
     var open by rememberSaveable { mutableStateOf(false) }
     val add = stringResource(R.string.add)
     Box(modifier = Modifier.padding(start = RAIL_EDGE.dp).testTag("railAdd")) {

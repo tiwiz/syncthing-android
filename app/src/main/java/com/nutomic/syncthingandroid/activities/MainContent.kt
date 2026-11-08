@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -223,7 +225,7 @@ internal fun MainContent(
             }
             if (railExpanded) RailMenu(state, menu, type)
         },
-        primaryActionContent = { if (rail) RailAddButton(expanded = railExpanded, actions) },
+        primaryActionContent = { if (rail) RailHeader(expanded = railExpanded, actions) },
     ) {
         MainScaffold(
             state = state,
@@ -232,6 +234,7 @@ internal fun MainContent(
             menu = menu.takeUnless { railExpanded },
             actions = actions,
             addButton = !rail,
+            titleInBar = rail && !shortWindow(),
         )
     }
     state.usageReport?.let { UsageReportingDialog(it, actions) }
@@ -277,11 +280,26 @@ private fun MainScaffold(
     actions: MainActions,
     /** A floating add button; false when the rail has it. */
     addButton: Boolean,
+    /** The tab's name is the top bar's title instead of a headline above the list. */
+    titleInBar: Boolean,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.fork_app_name)) },
+                title = {
+                    if (titleInBar) {
+                        Text(
+                            stringResource(tab.title),
+                            style = MaterialTheme.typography.headlineMediumEmphasized,
+                            modifier = Modifier.testTag("topBarTitle"),
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.fork_app_name),
+                            modifier = Modifier.testTag("topBarTitle"),
+                        )
+                    }
+                },
                 actions = {
                     ServiceChip(state.serviceState)
                     TabActions(tab, actions)
@@ -317,6 +335,7 @@ private fun MainScaffold(
                             state.folders,
                             state.totalProgress,
                             actions,
+                            showTitle = !titleInBar,
                             selectedFolderId =
                                 (panes.shownDetail as? Detail.FolderDetail)
                                     ?.key
@@ -332,13 +351,15 @@ private fun MainScaffold(
                         DeviceList(
                             state.devices,
                             actions,
+                            showTitle = !titleInBar,
                             selectedDeviceId =
                                 (panes.shownDetail as? Detail.DeviceDetail)
                                     ?.key
                                     ?.removePrefix(DetailSelection.DEVICE),
                         )
                     }
-                MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
+                MainTab.STATUS ->
+                    StatusTab(state.status, state.forceStartStop, actions, showTitle = !titleInBar)
             }
         }
     }
@@ -425,6 +446,12 @@ private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
     }
 }
 
+/** The room under the top bar when the top bar names the tab and the list has no headline. */
+@Composable
+internal fun NoTitleGap() {
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
 /** A list's title, with room above it under the top bar; smaller in a short window. */
 @Composable
 internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
@@ -446,6 +473,7 @@ private fun FolderList(
     folders: List<FolderItem>,
     totalProgress: Int?,
     actions: MainActions,
+    showTitle: Boolean,
     selectedFolderId: String?,
 ) {
     if (folders.isEmpty()) {
@@ -457,7 +485,7 @@ private fun FolderList(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
     ) {
-        item { ListTitle(MainTab.FOLDERS) }
+        item { if (showTitle) ListTitle(MainTab.FOLDERS) else NoTitleGap() }
         totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
         itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
             FolderRow(
@@ -475,6 +503,7 @@ private fun FolderList(
 private fun DeviceList(
     devices: List<DeviceItem>,
     actions: MainActions,
+    showTitle: Boolean,
     selectedDeviceId: String?,
 ) {
     if (devices.isEmpty()) {
@@ -486,7 +515,7 @@ private fun DeviceList(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
     ) {
-        item { ListTitle(MainTab.DEVICES) }
+        item { if (showTitle) ListTitle(MainTab.DEVICES) else NoTitleGap() }
         itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
             DeviceRow(
                 item = item,
