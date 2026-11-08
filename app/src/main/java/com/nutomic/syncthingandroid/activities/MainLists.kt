@@ -42,6 +42,7 @@ internal fun TabList(
     shown: Detail?,
     actions: MainActions,
     showTitle: Boolean,
+    showRunMode: Boolean = true,
 ) {
     when (tab) {
         MainTab.FOLDERS ->
@@ -61,7 +62,8 @@ internal fun TabList(
                 selectedDeviceId =
                     (shown as? Detail.DeviceDetail)?.key?.removePrefix(DetailSelection.DEVICE),
             )
-        MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions, showTitle)
+        MainTab.STATUS ->
+            StatusTab(state.status, state.forceStartStop, actions, showTitle, showRunMode)
     }
 }
 
@@ -201,6 +203,7 @@ private fun EmptyList(text: Int) {
 internal fun UsageReportingDialog(report: String, actions: MainActions) {
     AppAlertDialog(
         onDismissRequest = {},
+        dismissible = false,
         title = { Text(stringResource(R.string.usage_reporting_dialog_title)) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

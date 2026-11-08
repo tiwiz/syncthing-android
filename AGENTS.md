@@ -341,7 +341,8 @@ Next steps (to be confirmed with the owner):
    dialog is invisible, because it attaches to the main window `Subspace` hides: use `AppAlertDialog`
    (`ui/Spatial.kt`) in anything a panel can open. `SpatialDialog` measures with unbounded height,
    so a `verticalScroll` inside it needs a height limit or the app crashes. `DeviceIdDialogFragment`
-   still has this problem; dropdown menus in orbiters are unchecked.
+   and the View dialog in `FileOpener.suggestFileManagerApp` still have this problem; dropdown menus
+   in orbiters are unchecked. All spatial dialogs share one active flag, so two open at once interfere.
 
 ## HANDOFF
 

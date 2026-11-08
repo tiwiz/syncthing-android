@@ -6,7 +6,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -40,10 +40,12 @@ import androidx.xr.compose.platform.SpaceRequestResult
 import androidx.xr.compose.platform.requestFullSpace
 import androidx.xr.compose.platform.requestHomeSpace
 import androidx.xr.compose.spatial.SpatialDialog
+import androidx.xr.compose.spatial.SpatialDialogProperties
 import com.nutomic.syncthingandroid.R
 import kotlinx.coroutines.launch
 
 private const val TAG = "Spatial"
+private const val DIALOG_MIN_WIDTH = 280
 private const val DIALOG_MAX_WIDTH = 560
 private const val DIALOG_TEXT_MAX_HEIGHT = 480
 
@@ -112,9 +114,18 @@ fun AppAlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
+    /** False for a question the user must answer: back and taps outside do not close it. */
+    dismissible: Boolean = true,
 ) {
     if (isSpatialUi) {
-        SpatialDialog(onDismissRequest = onDismissRequest) {
+        SpatialDialog(
+            onDismissRequest = onDismissRequest,
+            properties =
+                SpatialDialogProperties(
+                    dismissOnBackPress = dismissible,
+                    dismissOnClickOutside = dismissible,
+                ),
+        ) {
             SpatialDialogBody(confirmButton, modifier, dismissButton, title, text)
         }
     } else {
@@ -141,7 +152,7 @@ internal fun SpatialDialogBody(
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = modifier.widthIn(max = DIALOG_MAX_WIDTH.dp),
+        modifier = modifier.widthIn(min = DIALOG_MIN_WIDTH.dp, max = DIALOG_MAX_WIDTH.dp),
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
@@ -157,9 +168,9 @@ internal fun SpatialDialogBody(
                     ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
                 }
             }
-            Row(
+            FlowRow(
                 modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 dismissButton?.invoke()
                 confirmButton()

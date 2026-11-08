@@ -54,6 +54,8 @@ internal fun StatusTab(
     forceStartStop: Int,
     actions: MainActions,
     showTitle: Boolean = true,
+    /** False in Full Space, where an orbiter always has the run mode. */
+    showRunMode: Boolean = true,
 ) {
     Column(
         modifier =
@@ -66,14 +68,16 @@ internal fun StatusTab(
     ) {
         if (showTitle) ListTitle(MainTab.STATUS) else NoTitleGap()
         status?.let { StatusHero(it) }
-        SectionHeader(stringResource(R.string.run_mode_title))
-        RunModeButtons(forceStartStop, actions)
-        Text(
-            stringResource(R.string.run_mode_help),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+        if (showRunMode) {
+            SectionHeader(stringResource(R.string.run_mode_title))
+            RunModeButtons(forceStartStop, actions)
+            Text(
+                stringResource(R.string.run_mode_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
         if (!status?.reasons.isNullOrEmpty()) {
             SectionHeader(stringResource(R.string.run_conditions_title))
             status.reasons.forEachIndexed { index, reason ->
