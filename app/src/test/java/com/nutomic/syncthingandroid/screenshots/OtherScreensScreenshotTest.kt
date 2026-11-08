@@ -5,22 +5,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.nutomic.syncthingandroid.activities.DeviceIdRequest
 import com.nutomic.syncthingandroid.activities.FolderPickerActivity
 import com.nutomic.syncthingandroid.activities.FolderTypeDialogActivity
 import com.nutomic.syncthingandroid.activities.LogActivity
 import com.nutomic.syncthingandroid.activities.MainActivity
+import com.nutomic.syncthingandroid.activities.MainViewModel
 import com.nutomic.syncthingandroid.activities.PhotoShootActivity
 import com.nutomic.syncthingandroid.activities.PullOrderDialogActivity
 import com.nutomic.syncthingandroid.activities.QRScannerActivity
 import com.nutomic.syncthingandroid.activities.ShareActivity
 import com.nutomic.syncthingandroid.activities.SyncConditionsActivity
-import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
 import com.nutomic.syncthingandroid.recentchanges.RecentChangesActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
@@ -112,11 +113,9 @@ class OtherScreensScreenshotTest(private val screen: Screen, private val dark: B
         DEVICE_ID_DIALOG(
             MainActivity::class.java,
             onLaunched = {
-                DeviceIdDialogFragment.show(
-                    (it as FragmentActivity).supportFragmentManager,
-                    "laptop",
-                    REMOTE_DEVICE_ID,
-                )
+                ViewModelProvider(it as MainActivity)[MainViewModel::class.java]
+                    .deviceIdDialog
+                    .show(DeviceIdRequest("laptop", REMOTE_DEVICE_ID, false))
             },
             wholeScreen = true,
         ),

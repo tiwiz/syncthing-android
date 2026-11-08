@@ -18,6 +18,7 @@ import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.settings.SettingsActivity
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
+import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
@@ -293,6 +294,21 @@ class MainActivityTest {
                     settings.component?.className,
                 )
             }
+        }
+    }
+
+    @Test
+    fun `the menu shows this device's ID, also after a configuration change`() {
+        stopped().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.recreate()
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.closeDeviceId()
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
         }
     }
 

@@ -21,7 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
 import com.nutomic.syncthingandroid.onboarding.OnboardingActivity
 import com.nutomic.syncthingandroid.recentchanges.RecentChangesActivity
 import com.nutomic.syncthingandroid.service.AppPrefs
@@ -71,7 +70,7 @@ class MainActivity : ThemedAppCompatActivity() {
             },
             onLeave = ::closeDetail,
             onShowDeviceId = { name, deviceId ->
-                DeviceIdDialogFragment.show(supportFragmentManager, name, deviceId, false)
+                viewModel.deviceIdDialog.show(DeviceIdRequest(name, deviceId, false))
             },
         )
 
@@ -116,6 +115,7 @@ class MainActivity : ThemedAppCompatActivity() {
                     detail = detail,
                     detailBackProgress = { backProgress },
                     onTwoPanesChange = { twoPanes = it },
+                    deviceIdDialog = viewModel.deviceIdDialog,
                 )
             }
         }
@@ -208,7 +208,7 @@ class MainActivity : ThemedAppCompatActivity() {
                 .firstOrNull { it.deviceID == deviceId }
                 ?.displayName
                 .orEmpty()
-        DeviceIdDialogFragment.show(supportFragmentManager, name.trim(), deviceId, true)
+        viewModel.deviceIdDialog.show(DeviceIdRequest(name.trim(), deviceId, true))
     }
 
     /** The menu key toggles the overflow menu. */

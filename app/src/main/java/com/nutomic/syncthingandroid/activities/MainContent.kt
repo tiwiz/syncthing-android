@@ -179,6 +179,8 @@ internal fun MainContent(
     detail: Detail? = null,
     detailBackProgress: () -> Float = { 0f },
     onTwoPanesChange: (Boolean) -> Unit = {},
+    /** The device ID dialog over the screen, or null for a screen that cannot show it. */
+    deviceIdDialog: DeviceIdDialogState? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
     val directive = paneDirective()
@@ -221,6 +223,7 @@ internal fun MainContent(
                 )
                 // In a panel: Subspace hides the main window, and a dialog anchored to it with it.
                 state.usageReport?.let { UsageReportingDialog(it, actions) }
+                deviceIdDialog?.let { DeviceIdDialogHost(it) }
             },
             detail =
                 if (tab == MainTab.STATUS) {
@@ -262,6 +265,7 @@ internal fun MainContent(
             )
         }
         state.usageReport?.let { UsageReportingDialog(it, actions) }
+        deviceIdDialog?.let { DeviceIdDialogHost(it) }
     }
 }
 

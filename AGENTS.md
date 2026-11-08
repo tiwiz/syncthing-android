@@ -130,7 +130,6 @@ app/                         Android application (only Gradle module with code)
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
     activities/    Compose screens: Main (+ overflow menu, detail pane on large windows), Folder, Device, pickers, dialogs, Share,
                    PhotoShoot, QR scanner, Log, web page, their ViewModels; `ThemedAppCompatActivity` base class
-    fragments/     DeviceIdDialogFragment (Compose)
     views/         FolderRowState, DeviceRowState (main screen list rows)
     onboarding/    Compose launcher flow (permissions, key generation)
     settings/      Compose settings, Navigation 3, SharedPreferenceFlow

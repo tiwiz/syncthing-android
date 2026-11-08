@@ -1,8 +1,9 @@
-package com.nutomic.syncthingandroid.fragments
+package com.nutomic.syncthingandroid.activities
 
 import android.app.Application
 import android.content.ClipboardManager
 import android.content.Intent
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -10,9 +11,11 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -25,20 +28,22 @@ import org.robolectric.annotation.Config
 /** The device ID dialog: copying and sharing the ID, and how it names the device. */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = "en-rUS")
-class DeviceIdDialogFragmentTest {
+class DeviceIdDialogTest {
 
     @get:Rule val compose = createEmptyComposeRule()
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    private fun show(isCurrentDevice: Boolean = false): AppCompatActivity {
-        val activity =
-            Robolectric.buildActivity(AppCompatActivity::class.java).setup().get().apply {
-                setTheme(R.style.Theme_Syncthing)
+    private fun show(isCurrentDevice: Boolean = false, onDismiss: () -> Unit = {}) {
+        Robolectric.buildActivity(AppCompatActivity::class.java).setup().get().apply {
+            setTheme(R.style.Theme_Syncthing)
+            setContent {
+                ApplicationTheme {
+                    DeviceIdDialog(DeviceIdRequest(NAME, ID, isCurrentDevice), onDismiss)
+                }
             }
-        DeviceIdDialogFragment.show(activity.supportFragmentManager, NAME, ID, isCurrentDevice)
+        }
         compose.waitForIdle()
-        return activity
     }
 
     private fun button(text: String) = compose.onNode(hasText(text) and hasClickAction())
@@ -80,11 +85,25 @@ class DeviceIdDialogFragmentTest {
     @Test
     @Config(qualifiers = "en-rUS-land")
     fun `in landscape the dialog closes with its own button`() {
-        val activity = show()
+        var dismissed = false
+        show(onDismiss = { dismissed = true })
         compose.onNodeWithContentDescription("Close device id").performClick()
-        compose.waitForIdle()
 
-        assertNull(activity.supportFragmentManager.findFragmentByTag("DeviceIdDialog"))
+        assertEquals(true, dismissed)
+    }
+
+    @Test
+    fun `the request survives in the saved state until it is dismissed`() {
+        val saved = SavedStateHandle()
+        val request = DeviceIdRequest(NAME, ID, isCurrentDevice = true)
+        DeviceIdDialogState(saved).show(request)
+
+        val restored = DeviceIdDialogState(saved)
+        assertEquals(request, restored.request.value)
+
+        restored.dismiss()
+        assertNull(restored.request.value)
+        assertNull(DeviceIdDialogState(saved).request.value)
     }
 
     private companion object {

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -89,6 +90,15 @@ class DeviceActivityTest {
             ),
             compose,
         )
+    }
+
+    @Test
+    fun `the share button shows the device's ID`() {
+        editLaptop().use { screen ->
+            screen.showDeviceId()
+
+            compose.onNodeWithText("Copy").assertExists()
+        }
     }
 
     @Test
@@ -525,6 +535,11 @@ internal class DeviceScreen(
 
     fun pickDiscovered(deviceId: String) {
         compose.onNodeWithText(deviceId, substring = true).performScrollTo().performClick()
+    }
+
+    fun showDeviceId() {
+        compose.onNodeWithContentDescription("Share Device ID").performClick()
+        compose.waitForIdle()
     }
 
     fun setNewDeviceId(deviceId: String) {

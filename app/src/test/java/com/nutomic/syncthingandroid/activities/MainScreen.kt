@@ -509,6 +509,16 @@ internal class MainScreen(
         return viewModel
     }
 
+    /** Whether the device ID dialog shows [deviceId]. */
+    fun deviceIdShown(deviceId: String): Boolean =
+        compose.onAllNodes(hasText(deviceId)).fetchSemanticsNodes().isNotEmpty()
+
+    /** Closes the device ID dialog with its button. */
+    fun closeDeviceId() {
+        compose.onNode(hasText("Finish") and hasClickAction()).performClick()
+        compose.waitForIdle()
+    }
+
     /** Recreates the screen, as a rotation or a fold does. */
     fun recreate() {
         scenario.recreate()
