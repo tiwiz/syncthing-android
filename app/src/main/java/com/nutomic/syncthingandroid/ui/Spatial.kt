@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloseFullscreen
@@ -22,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.window.core.layout.WindowSizeClass
 import androidx.xr.compose.platform.LocalSpatialCapabilities
 import androidx.xr.compose.platform.LocalSpatialConfiguration
+import androidx.xr.compose.platform.SpaceRequestResult
 import androidx.xr.compose.platform.requestFullSpace
 import androidx.xr.compose.platform.requestHomeSpace
 import com.nutomic.syncthingandroid.R
@@ -46,14 +48,18 @@ fun SpaceModeAction(modifier: Modifier = Modifier) {
             scope.launch {
                 val result =
                     if (fullSpace) activity.requestHomeSpace() else activity.requestFullSpace()
-                Log.d(TAG, "Space request: $result")
+                when (result) {
+                    is SpaceRequestResult.Success -> Unit
+                    is SpaceRequestResult.Error -> Log.e(TAG, "Space request failed", result.cause)
+                    else -> Log.w(TAG, "Space request refused: $result")
+                }
             }
         },
         modifier = modifier,
     )
 }
 
-/** Offers the space the app is not in: icon and word, only the icon in a narrow window. */
+/** Offers the space the app is not in: icon and word, only the icon below expanded width. */
 @Composable
 internal fun SpaceModeButton(
     fullSpace: Boolean,
@@ -66,10 +72,10 @@ internal fun SpaceModeButton(
     val wide =
         currentWindowAdaptiveInfoV2()
             .windowSizeClass
-            .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+            .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
     if (wide) {
         FilledTonalButton(onClick = onToggle, modifier = modifier) {
-            Icon(icon, null)
+            Icon(icon, null, modifier = Modifier.size(ButtonDefaults.IconSize))
             Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
             Text(label)
         }

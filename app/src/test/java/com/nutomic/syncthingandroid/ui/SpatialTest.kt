@@ -64,6 +64,15 @@ class SpatialTest {
     }
 
     @Test
+    @Config(qualifiers = "en-rUS-w700dp-h800dp-port")
+    fun `a medium window also gets only the icon, the top bar has no room for the word`() {
+        show { SpaceModeButton(fullSpace = false, onToggle = {}) }
+
+        compose.onAllNodesWithText("Full Space").assertCountEquals(0)
+        compose.onNodeWithContentDescription("Full Space").assertExists()
+    }
+
+    @Test
     fun `a device without Android XR has no space button`() {
         show { SpaceModeAction() }
 

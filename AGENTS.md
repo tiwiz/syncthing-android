@@ -322,6 +322,20 @@ Next steps (to be confirmed with the owner):
    **Resume here:** the two private security advisories, with the owner.
    2026-11-07: H5's last piece, the detail pane's selection moved from `DetailPanes` (deleted) to
    `MainViewModel`'s `SavedStateHandle` (branch `refactor/detail-pane-selection`).
+9. 2026-11-08, Android XR, on the long-lived branch `xr` (every PR targets it; one final PR to `main`
+   waits for the owner). Plan: https://claude.ai/artifact/2QtTFauKyWAmRpxwFy4Gim, design canvas:
+   https://claude.ai/artifact/FeynMSvXf3EWdPN2zv5BJs. Done: tablet fixes X1-X6 (#163-#170); XR Compose
+   and the Full Space button (#171). Next: XR4-XR7 (hand-written orbiters and spatial panels), XR8-XR9
+   (56 dp targets, no gestures that clash with pinch), milestone on the emulator.
+   Decided: only `androidx.xr.compose`. XR Material 3 1.0.0-alpha17 crashes against Material 3
+   1.5.0-beta01 (`NoSuchMethodError`, its override APIs are gone since alpha26 and beta01), and its
+   `Spatial*` composables are in no published version. `androidx.xr.arcore` and `com.google.ar:core`
+   are excluded in `app/build.gradle.kts`; SceneCore and `com.google.ar:impress` stay, XR Compose is
+   built on them. The gate cannot see a break from that exclusion: SceneCore still calls ARCore in
+   `MovableComponent`, so dragging a panel must be checked on the emulator.
+   Not verified yet: dragging a panel, the live label change, the return to Home Space, and whether
+   the foreground-service ANR on the 4-thread host comes from the slow host or from the XR session
+   being created on the main thread in the first composition. Only the main screen has the switch.
 
 ## HANDOFF
 
@@ -347,5 +361,10 @@ Next steps (to be confirmed with the owner):
   when the port is taken (`webui_tcp_port_unavailable`).
 - The sync-complete broadcast only reaches packages hard-coded in `RestApi.sendBroadcastToApps`.
 - Import/export zips include `SharedPreferences`; key renames break old backups.
+- XR emulator: start it with the tool's background mode, not `&` (it dies between turns). Tap
+  coordinates are window pixels, 2 per dp, with content starting at y=48. To pass onboarding without
+  keys: `adb shell appops set <package> MANAGE_EXTERNAL_STORAGE allow`.
+- `gh pr edit` fails here with a Projects (classic) GraphQL error; change a PR body with
+  `gh api -X PATCH repos/tiwiz/syncthing-android/pulls/<n> -F body=@file`.
 - `connectedDebugAndroidTest` installs and then uninstalls the debug app with its data: with a phone
   plugged in, always set `ANDROID_SERIAL` to the emulator. Disable animations on the emulator.
