@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +42,9 @@ private const val TILE_CORNER = 20
 private const val HERO_BADGE_SIZE = 72
 
 /** The run modes, in the order of the Constants.BTNSTATE_* values. */
+/** The status tab stays a readable column on large windows. */
+private const val STATUS_MAX_WIDTH = 720
+
 private val RUN_MODES =
     listOf(R.string.run_mode_automatic, R.string.run_mode_run, R.string.run_mode_stop)
 
@@ -53,7 +57,9 @@ internal fun StatusTab(
 ) {
     Column(
         modifier =
-            Modifier.fillMaxSize()
+            Modifier.widthIn(max = STATUS_MAX_WIDTH.dp)
+                .fillMaxSize()
+                .testTag("statusColumn")
                 .verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),

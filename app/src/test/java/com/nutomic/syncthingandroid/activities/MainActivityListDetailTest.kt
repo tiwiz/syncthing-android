@@ -63,6 +63,31 @@ class MainActivityListDetailTest {
     }
 
     @Test
+    fun `with nothing open the detail pane asks for a choice and the list keeps its width`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            assertEquals("Choose a folder", screen.detailPlaceholder())
+            assertTrue(screen.rowWidth("folder:Camera") < screen.rootSize().width / 2f)
+
+            screen.showTab(MainScreen.Tab.DEVICES)
+            assertEquals("Choose a device", screen.detailPlaceholder())
+            assertTrue(screen.rowWidth("device:laptop") < screen.rootSize().width / 2f)
+
+            screen.open(MainScreen.Tab.DEVICES, "laptop")
+            assertNull(screen.detailPlaceholder())
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w1280dp-h800dp-land")
+    fun `the status tab stays a readable column on a large window`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.STATUS)
+            assertTrue(screen.statusWidthDp() <= MAX_STATUS_WIDTH_DP)
+        }
+    }
+
+    @Test
     fun `a folder opens in the detail pane, not a screen of its own`() {
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)
@@ -233,5 +258,9 @@ class MainActivityListDetailTest {
             screen.confirmDiscard()
             assertNull(screen.detailTitle())
         }
+    }
+
+    private companion object {
+        const val MAX_STATUS_WIDTH_DP = 720f
     }
 }

@@ -330,6 +330,9 @@ private fun MainScaffold(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
                         backProgress = panes.backProgress,
+                        placeholder = {
+                            DetailPlaceholder(Icons.Outlined.Folder, R.string.fork_choose_folder)
+                        },
                     ) {
                         FolderList(
                             state.folders,
@@ -347,6 +350,9 @@ private fun MainScaffold(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
                         backProgress = panes.backProgress,
+                        placeholder = {
+                            DetailPlaceholder(Icons.Outlined.Devices, R.string.fork_choose_device)
+                        },
                     ) {
                         DeviceList(
                             state.devices,
