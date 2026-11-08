@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,6 +70,7 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SpaceModeAction
 import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.isSpatialUi
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -203,42 +205,73 @@ internal fun MainContent(
     SideEffect(directive.twoPanes) { onTwoPanesChange(directive.twoPanes) }
     val type = navigationType()
     val rail = type.isRail()
-    val railExpanded = type == NavigationSuiteType.WideNavigationRailExpanded
+    val spatial = isSpatialUi
+    val railExpanded = spatial || type == NavigationSuiteType.WideNavigationRailExpanded
     // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
     // (menu key, or a window grown while it was open) would hide nothing and swallow back.
     SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
     val menu = MenuState(menuOpen, onMenuOpenChange, menuActions)
-    NavigationSuiteScaffold(
-        navigationSuiteType = type,
-        modifier = modifier,
-        navigationItems = {
-            for (destination in MainTab.entries) {
-                val selected = destination == tab
-                NavigationSuiteItem(
-                    selected = selected,
-                    onClick = { tab = destination },
-                    icon = {
-                        Icon(if (selected) destination.selectedIcon else destination.icon, null)
-                    },
-                    label = { Text(stringResource(destination.title)) },
-                    navigationSuiteType = type,
+    val panes = Panes(directive, detail, detailBackProgress)
+    val running = state.serviceState == SyncthingService.State.ACTIVE
+    if (spatial) {
+        SpatialMain(
+            modifier = modifier,
+            rail = {
+                SpatialRail(
+                    tab = tab,
+                    onTabChange = { tab = it },
+                    running = running,
+                    showWebGui = state.showWebGui,
+                    runningAsService = state.runningAsService,
+                    menuActions = menuActions,
+                    actions = actions,
                 )
-            }
-            if (railExpanded) RailMenu(state, menu, type)
-        },
-        primaryActionContent = { if (rail) RailHeader(expanded = railExpanded, actions) },
-    ) {
-        MainScaffold(
-            state = state,
-            tab = tab,
-            panes = Panes(directive, detail, detailBackProgress),
-            menu = menu.takeUnless { railExpanded },
-            actions = actions,
-            addButton = !rail,
-            titleInBar = rail && !shortWindow(),
-        )
+            },
+            topBar = { SpatialTopBar(tab, state.serviceState, actions) },
+        ) {
+            MainScaffold(
+                state = state,
+                tab = tab,
+                panes = panes,
+                menu = null,
+                actions = actions,
+                addButton = false,
+                titleInBar = true,
+                showTopBar = false,
+            )
+            // In the panel: Subspace hides the main window, and a dialog anchored to it with it.
+            state.usageReport?.let { UsageReportingDialog(it, actions) }
+        }
+    } else {
+        NavigationSuiteScaffold(
+            navigationSuiteType = type,
+            modifier = modifier,
+            navigationItems = {
+                TabItems(tab, onTabChange = { tab = it }, type)
+                if (railExpanded) {
+                    RailMenu(
+                        running = running,
+                        showWebGui = state.showWebGui,
+                        runningAsService = state.runningAsService,
+                        actions = menu.actions,
+                        type = type,
+                    )
+                }
+            },
+            primaryActionContent = { if (rail) RailHeader(expanded = railExpanded, actions) },
+        ) {
+            MainScaffold(
+                state = state,
+                tab = tab,
+                panes = panes,
+                menu = menu.takeUnless { railExpanded },
+                actions = actions,
+                addButton = !rail,
+                titleInBar = rail && !shortWindow(),
+            )
+        }
+        state.usageReport?.let { UsageReportingDialog(it, actions) }
     }
-    state.usageReport?.let { UsageReportingDialog(it, actions) }
 }
 
 /** The list and detail panes of the current window. */
@@ -283,9 +316,12 @@ private fun MainScaffold(
     addButton: Boolean,
     /** The tab's name is the top bar's title instead of a headline above the list. */
     titleInBar: Boolean,
+    /** False in Full Space, where an orbiter has the top bar's content. */
+    showTopBar: Boolean = true,
 ) {
     Scaffold(
         topBar = {
+            if (!showTopBar) return@Scaffold
             TopAppBar(
                 title = {
                     if (titleInBar) {
@@ -302,12 +338,7 @@ private fun MainScaffold(
                     }
                 },
                 actions = {
-                    SpaceModeAction()
-                    ServiceChip(state.serviceState)
-                    TabActions(tab, actions)
-                    IconButton(onClick = actions::onSettings) {
-                        Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
-                    }
+                    TopBarActions(tab, state.serviceState, actions)
                     if (menu != null) {
                         MainMenu(
                             open = menu.open,
@@ -387,6 +418,36 @@ private fun TabActions(tab: MainTab, actions: MainActions) {
             MainTab.DEVICES,
             MainTab.STATUS -> Unit
         }
+    }
+}
+
+/** The space switch, the service state and the actions, in the top bar or its orbiter. */
+@Composable
+internal fun RowScope.TopBarActions(
+    tab: MainTab,
+    serviceState: SyncthingService.State,
+    actions: MainActions,
+) {
+    SpaceModeAction()
+    ServiceChip(serviceState)
+    TabActions(tab, actions)
+    IconButton(onClick = actions::onSettings) {
+        Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
+    }
+}
+
+/** One navigation item per destination, for the bar or a rail. */
+@Composable
+internal fun TabItems(tab: MainTab, onTabChange: (MainTab) -> Unit, type: NavigationSuiteType) {
+    for (destination in MainTab.entries) {
+        val selected = destination == tab
+        NavigationSuiteItem(
+            selected = selected,
+            onClick = { onTabChange(destination) },
+            icon = { Icon(if (selected) destination.selectedIcon else destination.icon, null) },
+            label = { Text(stringResource(destination.title)) },
+            navigationSuiteType = type,
+        )
     }
 }
 
