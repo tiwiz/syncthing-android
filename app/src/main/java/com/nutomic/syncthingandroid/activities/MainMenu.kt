@@ -29,10 +29,68 @@ import androidx.compose.ui.res.stringResource
 import com.nutomic.syncthingandroid.R
 
 /**
- * The top bar's overflow menu, with what used to be in the navigation drawer. Recent changes, the
- * web GUI and restart need Syncthing [running]; the web GUI is left out on TVs ([showWebGui]). With
- * the app [runningAsService], exit asks first. [open] is hoisted so the menu key can toggle it.
+ * What used to be in the navigation drawer, for the overflow menu or the expanded rail ([content]).
+ * Recent changes, the web GUI and restart need Syncthing [running]; the web GUI is left out on TVs
+ * ([showWebGui]). With the app [runningAsService], exit asks first. [onChoose] runs before an
+ * entry's action, so a menu can close.
  */
+@Composable
+internal fun MenuEntries(
+    running: Boolean,
+    showWebGui: Boolean,
+    runningAsService: Boolean,
+    actions: MenuActions,
+    onChoose: () -> Unit,
+    content: @Composable (List<MenuEntryItem>) -> Unit,
+) {
+    var confirmRestart by rememberSaveable { mutableStateOf(false) }
+    var confirmExit by rememberSaveable { mutableStateOf(false) }
+    fun entry(
+        icon: ImageVector,
+        label: Int,
+        enabled: Boolean = true,
+        apart: Boolean = false,
+        action: () -> Unit,
+    ) =
+        MenuEntryItem(icon, label, enabled, apart) {
+            onChoose()
+            action()
+        }
+    val entries = buildList {
+        add(entry(Icons.Outlined.QrCode2, R.string.show_device_id) { actions.onShowDeviceId() })
+        add(
+            entry(Icons.Outlined.Restore, R.string.recent_changes_title, enabled = running) {
+                actions.onRecentChanges()
+            }
+        )
+        if (showWebGui) {
+            add(
+                entry(Icons.AutoMirrored.Outlined.ViewQuilt, R.string.web_gui_title, running) {
+                    actions.onWebGui()
+                }
+            )
+        }
+        add(entry(Icons.Outlined.ImportExport, R.string.category_backup) { actions.onBackup() })
+        add(entry(Icons.Outlined.Autorenew, R.string.restart, running) { confirmRestart = true })
+        add(
+            entry(Icons.AutoMirrored.Outlined.ExitToApp, R.string.exit, apart = true) {
+                if (runningAsService) confirmExit = true else actions.onExit()
+            }
+        )
+    }
+    content(entries)
+    if (confirmRestart) {
+        ConfirmRestartDialog(onDismiss = { confirmRestart = false }) {
+            confirmRestart = false
+            actions.onRestart()
+        }
+    }
+    if (confirmExit) {
+        ConfirmExitDialog(onDismiss = { confirmExit = false }, onConfirm = actions::onExit)
+    }
+}
+
+/** The top bar's overflow menu. [open] is hoisted so the menu key can toggle it. */
 @Composable
 internal fun MainMenu(
     open: Boolean,
@@ -43,60 +101,28 @@ internal fun MainMenu(
     actions: MenuActions,
     modifier: Modifier = Modifier,
 ) {
-    var confirmRestart by rememberSaveable { mutableStateOf(false) }
-    var confirmExit by rememberSaveable { mutableStateOf(false) }
-    val close = { onOpenChange(false) }
-
-    Box(modifier = modifier) {
-        IconButton(onClick = { onOpenChange(!open) }) {
-            Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_options))
-        }
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = close,
-            modifier = Modifier.testTag("mainMenu"),
-        ) {
-            MenuEntry(Icons.Outlined.QrCode2, R.string.show_device_id) {
-                close()
-                actions.onShowDeviceId()
+    MenuEntries(
+        running,
+        showWebGui,
+        runningAsService,
+        actions,
+        onChoose = { onOpenChange(false) },
+    ) { entries ->
+        Box(modifier = modifier) {
+            IconButton(onClick = { onOpenChange(!open) }) {
+                Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_options))
             }
-            MenuEntry(Icons.Outlined.Restore, R.string.recent_changes_title, enabled = running) {
-                close()
-                actions.onRecentChanges()
-            }
-            if (showWebGui) {
-                MenuEntry(
-                    Icons.AutoMirrored.Outlined.ViewQuilt,
-                    R.string.web_gui_title,
-                    enabled = running,
-                ) {
-                    close()
-                    actions.onWebGui()
+            DropdownMenu(
+                expanded = open,
+                onDismissRequest = { onOpenChange(false) },
+                modifier = Modifier.testTag("mainMenu"),
+            ) {
+                for (entry in entries) {
+                    if (entry.apart) HorizontalDivider()
+                    MenuEntry(entry.icon, entry.label, entry.enabled, entry.onClick)
                 }
             }
-            MenuEntry(Icons.Outlined.ImportExport, R.string.category_backup) {
-                close()
-                actions.onBackup()
-            }
-            MenuEntry(Icons.Outlined.Autorenew, R.string.restart, enabled = running) {
-                close()
-                confirmRestart = true
-            }
-            HorizontalDivider()
-            MenuEntry(Icons.AutoMirrored.Outlined.ExitToApp, R.string.exit) {
-                close()
-                if (runningAsService) confirmExit = true else actions.onExit()
-            }
         }
-    }
-    if (confirmRestart) {
-        ConfirmRestartDialog(onDismiss = { confirmRestart = false }) {
-            confirmRestart = false
-            actions.onRestart()
-        }
-    }
-    if (confirmExit) {
-        ConfirmExitDialog(onDismiss = { confirmExit = false }, onConfirm = actions::onExit)
     }
 }
 

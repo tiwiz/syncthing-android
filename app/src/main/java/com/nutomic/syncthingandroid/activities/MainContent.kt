@@ -199,6 +199,12 @@ internal fun MainContent(
     val directive = paneDirective()
     SideEffect(directive.twoPanes) { onTwoPanesChange(directive.twoPanes) }
     val type = navigationType()
+    val rail = type.isRail()
+    val railExpanded = type == NavigationSuiteType.WideNavigationRailExpanded
+    // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
+    // (menu key, or a window grown while it was open) would hide nothing and swallow back.
+    SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
+    val menu = MenuState(menuOpen, onMenuOpenChange, menuActions)
     NavigationSuiteScaffold(
         navigationSuiteType = type,
         modifier = modifier,
@@ -215,14 +221,17 @@ internal fun MainContent(
                     navigationSuiteType = type,
                 )
             }
+            if (railExpanded) RailMenu(state, menu, type)
         },
+        primaryActionContent = { if (rail) RailAddButton(expanded = railExpanded, actions) },
     ) {
         MainScaffold(
             state = state,
             tab = tab,
             panes = Panes(directive, detail, detailBackProgress),
-            menu = MenuState(menuOpen, onMenuOpenChange, menuActions),
+            menu = menu.takeUnless { railExpanded },
             actions = actions,
+            addButton = !rail,
         )
     }
     state.usageReport?.let { UsageReportingDialog(it, actions) }
@@ -251,7 +260,7 @@ private class Panes(
 }
 
 /** The overflow menu's state, hoisted to the activity. */
-private class MenuState(
+internal class MenuState(
     val open: Boolean,
     val onOpenChange: (Boolean) -> Unit,
     val actions: MenuActions,
@@ -263,8 +272,11 @@ private fun MainScaffold(
     state: MainUiState,
     tab: MainTab,
     panes: Panes,
-    menu: MenuState,
+    /** The overflow menu; null when the expanded rail lists its entries. */
+    menu: MenuState?,
     actions: MainActions,
+    /** A floating add button; false when the rail has it. */
+    addButton: Boolean,
 ) {
     Scaffold(
         topBar = {
@@ -276,19 +288,21 @@ private fun MainScaffold(
                     IconButton(onClick = actions::onSettings) {
                         Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
                     }
-                    MainMenu(
-                        open = menu.open,
-                        onOpenChange = menu.onOpenChange,
-                        running = state.serviceState == SyncthingService.State.ACTIVE,
-                        showWebGui = state.showWebGui,
-                        runningAsService = state.runningAsService,
-                        actions = menu.actions,
-                    )
+                    if (menu != null) {
+                        MainMenu(
+                            open = menu.open,
+                            onOpenChange = menu.onOpenChange,
+                            running = state.serviceState == SyncthingService.State.ACTIVE,
+                            showWebGui = state.showWebGui,
+                            runningAsService = state.runningAsService,
+                            actions = menu.actions,
+                        )
+                    }
                 },
             )
         },
         floatingActionButton = {
-            if (tab != MainTab.STATUS && !panes.detailShown) AddMenu(actions)
+            if (addButton && tab != MainTab.STATUS && !panes.detailShown) AddMenu(actions)
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
