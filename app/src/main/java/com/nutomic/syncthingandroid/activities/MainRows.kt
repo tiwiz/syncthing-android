@@ -11,14 +11,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -67,7 +68,7 @@ internal fun FolderRow(
         count = count,
         selected = selected,
         onClick = { actions.onOpenFolder(item.folderId) },
-        contentPadding = PaddingValues(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
         modifier = modifier.testTag("folder:${row.label}"),
     ) {
         StateBadge(row.tone, modifier = Modifier.padding(top = 4.dp))
@@ -104,7 +105,12 @@ internal fun FolderRow(
                 }
             }
         }
-        IconButton(onClick = { actions.onOpenFolderInFiles(item.path) }) {
+        // Its own target, not a mark on the row: a tonal 56 dp button 8 dp from the row's edge,
+        // comfortable for a finger, a mouse or a hand ray (docs/plans, XR step X6).
+        FilledTonalIconButton(
+            onClick = { actions.onOpenFolderInFiles(item.path) },
+            modifier = Modifier.size(FILES_BUTTON_SIZE.dp),
+        ) {
             Icon(folderIcon(row.type), stringResource(R.string.open_file_manager))
         }
     }
@@ -256,3 +262,4 @@ private fun folderIcon(type: String): ImageVector =
 private const val OVERRIDE = "override"
 private const val REVERT = "revert"
 private const val PERCENT = 100f
+private const val FILES_BUTTON_SIZE = 56

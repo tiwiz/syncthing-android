@@ -400,6 +400,34 @@ internal class MainScreen(
         idle()
     }
 
+    private fun filesButton(folder: String) =
+        compose.onNode(
+            hasContentDescription("Open file manager") and
+                hasAnyAncestor(hasTestTag("folder:$folder"))
+        )
+
+    /** The width and height of the folder's file manager button, in dp. */
+    fun filesButtonSizeDp(folder: String): Pair<Float, Float> {
+        val node = filesButton(folder).fetchSemanticsNode()
+        val density = node.layoutInfo.density.density
+        return node.size.width / density to node.size.height / density
+    }
+
+    /** The room between the folder's file manager button and the row's end edge, in dp. */
+    fun filesButtonGapDp(folder: String): Float {
+        val button = filesButton(folder).fetchSemanticsNode()
+        val row = compose.onNodeWithTag("folder:$folder").fetchSemanticsNode()
+        return (row.boundsInRoot.right - button.boundsInRoot.right) /
+            button.layoutInfo.density.density
+    }
+
+    /** Taps the folder's file manager button and returns the screen it started, if any. */
+    fun openInFiles(folder: String): Intent? {
+        filesButton(folder).performClick()
+        idle()
+        return nextStarted()
+    }
+
     fun listTitleHeight(): Float =
         compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
 

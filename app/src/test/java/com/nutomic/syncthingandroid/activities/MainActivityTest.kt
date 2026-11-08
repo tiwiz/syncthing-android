@@ -30,6 +30,7 @@ import com.nutomic.syncthingandroid.webgui.WebGuiActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -230,6 +231,20 @@ class MainActivityTest {
             screen.confirmExit()
 
             assertTrue(screen.finishing())
+        }
+    }
+
+    @Test
+    fun `a folder's file manager button is a large target of its own`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            val (width, height) = screen.filesButtonSizeDp("Camera")
+            assertTrue("$width x $height", width >= MIN_TARGET_DP && height >= MIN_TARGET_DP)
+            assertTrue(screen.filesButtonGapDp("Camera") >= MIN_GAP_DP)
+
+            val started = screen.openInFiles("Camera")
+
+            assertNotEquals(FolderActivity::class.java.name, started?.component?.className)
         }
     }
 
@@ -462,5 +477,11 @@ class MainActivityTest {
                     .startsWith("https://")
             )
         }
+    }
+
+    private companion object {
+        /** Android XR's comfortable target for a hand ray, and its spacing to the row's edge. */
+        const val MIN_TARGET_DP = 56f
+        const val MIN_GAP_DP = 8f
     }
 }
