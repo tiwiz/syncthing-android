@@ -25,6 +25,7 @@ import androidx.compose.material3.adaptive.layout.calculateThreePaneScaffoldValu
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -92,24 +93,7 @@ internal fun ListWithDetail(
                 AnimatedPane { placeholder() }
                 return@ListDetailPaneScaffold
             }
-            AnimatedPane {
-                Box(
-                    modifier =
-                        Modifier.graphicsLayer {
-                                // Shrinks towards the list while a back gesture closes the pane.
-                                val scale = 1f - BACK_SHRINK * backProgress()
-                                scaleX = scale
-                                scaleY = scale
-                                transformOrigin = BACK_SHRINK_ORIGIN
-                            }
-                            .testTag("detailPane")
-                            // The scaffold focuses the pane it opens; the pane keeps that focus
-                            // itself, or its first field would take it and bring up the keyboard.
-                            .focusTarget()
-                ) {
-                    DetailContent(detail)
-                }
-            }
+            AnimatedPane { DetailPane(detail, backProgress) }
         },
         paneExpansionDragHandle = { state ->
             val interactionSource = remember { MutableInteractionSource() }
@@ -124,6 +108,28 @@ internal fun ListWithDetail(
             )
         },
     )
+}
+
+/** A folder or device in its pane: it shrinks towards the list while back closes it. */
+@Composable
+internal fun DetailPane(detail: Detail, backProgress: () -> Float, modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .graphicsLayer {
+                    val scale = 1f - BACK_SHRINK * backProgress()
+                    scaleX = scale
+                    scaleY = scale
+                    transformOrigin = BACK_SHRINK_ORIGIN
+                }
+                .testTag("detailPane")
+                // The scaffold focuses the pane it opens; the pane keeps that focus itself, or its
+                // first field would take it and bring up the keyboard.
+                .focusTarget()
+    ) {
+        // Each folder or device is a new screen: effects and saved state must not carry over.
+        key(detail.key) { DetailContent(detail) }
+    }
 }
 
 /** The detail pane while nothing is open: an icon and what to choose in the list. */
