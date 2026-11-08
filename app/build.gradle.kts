@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material3.adaptive.layout)
     implementation(libs.compose.material3.navigation.suite)
+    implementation(libs.xr.compose)
+    implementation(libs.xr.scenecore)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.ui)
     implementation(libs.constraintlayout)

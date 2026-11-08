@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
+import com.nutomic.syncthingandroid.ui.SpaceModeAction
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
@@ -301,6 +302,7 @@ private fun MainScaffold(
                     }
                 },
                 actions = {
+                    SpaceModeAction()
                     ServiceChip(state.serviceState)
                     TabActions(tab, actions)
                     IconButton(onClick = actions::onSettings) {

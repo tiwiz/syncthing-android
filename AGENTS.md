@@ -93,6 +93,11 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
 emulator -avd pixel_phone -no-window -no-audio &
 ANDROID_SERIAL=emulator-5554 IS_COPILOT=true ./gradlew :app:connectedDebugAndroidTest
 
+# Android XR emulator (AVD `xr`, image system-images;android-34;google-xr;x86_64). Needs a real GPU and a
+# window: software rendering gives black screenshots. Give the XR shell about 5 minutes after boot.
+ANDROID_SDK_ROOT=/opt/android-sdk emulator -avd xr -no-audio -no-snapshot -gpu host -port 5570
+adb -s emulator-5570 emu screenrecord screenshot "$PWD"   # adb screencap does not see the XR scene
+
 # Full build with the native binary
 git submodule update --init --recursive         # Syncthing sources
 # install Go = go_version in gradle/libs.versions.toml (currently 1.27.1)
