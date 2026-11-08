@@ -81,6 +81,16 @@ class MainActivityTitleTest {
     }
 
     @Test
+    @Config(qualifiers = "en-rUS-w1280dp-h400dp-land")
+    fun `a wide and short window names the app only once`() {
+        stopped().use { screen ->
+            val appNames =
+                listOf(screen.topBarTitle() == "Expressive Syncthing", screen.appNameInRail())
+            assertEquals(1, appNames.count { it })
+        }
+    }
+
+    @Test
     @Config(qualifiers = "en-rUS-w411dp-h891dp-port")
     fun `a phone keeps the app name on top and the headline above the list`() {
         stopped().use { screen ->
