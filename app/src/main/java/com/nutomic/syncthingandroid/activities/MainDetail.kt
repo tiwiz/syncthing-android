@@ -25,6 +25,7 @@ import androidx.compose.material3.adaptive.layout.calculateThreePaneScaffoldValu
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -126,7 +127,8 @@ internal fun DetailPane(detail: Detail, backProgress: () -> Float, modifier: Mod
                 // first field would take it and bring up the keyboard.
                 .focusTarget()
     ) {
-        DetailContent(detail)
+        // Each folder or device is a new screen: effects and saved state must not carry over.
+        key(detail.key) { DetailContent(detail) }
     }
 }
 

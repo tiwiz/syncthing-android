@@ -11,15 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Devices
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
@@ -32,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
@@ -81,7 +77,7 @@ internal fun TabPlaceholder(tab: MainTab) {
 
 /** The overall progress of the devices in sync, above the folders. */
 @Composable
-internal fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
+private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(CARD_CORNER.dp),
@@ -131,7 +127,7 @@ internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun FolderList(
+private fun FolderList(
     folders: List<FolderItem>,
     totalProgress: Int?,
     actions: MainActions,
@@ -162,7 +158,7 @@ internal fun FolderList(
 }
 
 @Composable
-internal fun DeviceList(
+private fun DeviceList(
     devices: List<DeviceItem>,
     actions: MainActions,
     showTitle: Boolean,
@@ -191,7 +187,7 @@ internal fun DeviceList(
 }
 
 @Composable
-internal fun EmptyList(text: Int) {
+private fun EmptyList(text: Int) {
     Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Text(
             stringResource(text),

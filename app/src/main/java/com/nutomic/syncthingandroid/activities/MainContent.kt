@@ -342,17 +342,27 @@ private fun MainScaffold(
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (tab == MainTab.STATUS) {
-                TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
-            } else {
-                ListWithDetail(
-                    directive = panes.directive,
-                    detail = panes.detailOf(tab),
-                    backProgress = panes.backProgress,
-                    placeholder = { TabPlaceholder(tab) },
-                ) {
+            when (tab) {
+                MainTab.FOLDERS ->
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        backProgress = panes.backProgress,
+                        placeholder = { TabPlaceholder(tab) },
+                    ) {
+                        TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
+                    }
+                MainTab.DEVICES ->
+                    ListWithDetail(
+                        directive = panes.directive,
+                        detail = panes.detailOf(tab),
+                        backProgress = panes.backProgress,
+                        placeholder = { TabPlaceholder(tab) },
+                    ) {
+                        TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
+                    }
+                MainTab.STATUS ->
                     TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
-                }
             }
         }
     }

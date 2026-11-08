@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -77,19 +78,23 @@ internal fun SpatialMain(
             ) {
                 topBar()
             }
-            SpatialPanel(
-                panelModifier(if (detail == null) ALONE_WIDTH else LIST_WIDTH, MIN_LIST_WIDTH)
-            ) {
-                PanelSurface(modifier, list)
-                Orbiter(
-                    position =
-                        OrbiterPosition.CenterStart(
-                            horizontalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
-                            offset = DpVolumeOffset(x = -ORBITER_GAP.dp),
-                        ),
-                    shape = SpatialRoundedCornerShape(CornerSize(RAIL_CORNER.dp)),
+            // A user's resize would outlive the layout it was made for: each layout starts afresh.
+            key(detail == null) {
+                SpatialPanel(
+                    if (detail == null) panelModifier(ALONE_WIDTH, ALONE_WIDTH)
+                    else panelModifier(LIST_WIDTH, MIN_LIST_WIDTH)
                 ) {
-                    rail()
+                    PanelSurface(modifier, list)
+                    Orbiter(
+                        position =
+                            OrbiterPosition.CenterStart(
+                                horizontalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
+                                offset = DpVolumeOffset(x = -ORBITER_GAP.dp),
+                            ),
+                        shape = SpatialRoundedCornerShape(CornerSize(RAIL_CORNER.dp)),
+                    ) {
+                        rail()
+                    }
                 }
             }
             if (detail != null) {
