@@ -209,6 +209,7 @@ internal fun MainContent(
                 )
             },
             topBar = { SpatialTopBar(tab, state.serviceState, actions) },
+            statusBar = { SpatialStatusBar(state.forceStartStop, actions) },
             list = {
                 TabList(state, tab, panes.shownDetail, actions, showTitle = false)
                 // In a panel: Subspace hides the main window, and a dialog anchored to it with it.

@@ -133,9 +133,13 @@ internal fun StatusHero(status: StatusInfo, modifier: Modifier = Modifier) {
 
 /** Follow the run conditions, force Syncthing to run or to stop: a connected button group. */
 @Composable
-private fun RunModeButtons(forceStartStop: Int, actions: MainActions) {
+internal fun RunModeButtons(
+    forceStartStop: Int,
+    actions: MainActions,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
         RUN_MODES.forEachIndexed { index, label ->

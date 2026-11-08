@@ -2,7 +2,14 @@ package com.nutomic.syncthingandroid.ui
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -70,6 +77,65 @@ class SpatialTest {
 
         compose.onAllNodesWithText("Full Space").assertCountEquals(0)
         compose.onNodeWithContentDescription("Full Space").assertExists()
+    }
+
+    @Test
+    fun `the Full Space dialog shows its words and both buttons`() {
+        var confirmed = 0
+        var dismissed = 0
+        show {
+            SpatialDialogBody(
+                confirmButton = { TextButton(onClick = { confirmed++ }) { Text("Yes") } },
+                dismissButton = { TextButton(onClick = { dismissed++ }) { Text("No") } },
+                title = { Text("Restart?") },
+                text = { Text("Syncthing restarts.") },
+            )
+        }
+
+        compose.onNodeWithText("Restart?").assertExists()
+        compose.onNodeWithText("Syncthing restarts.").assertExists()
+        compose.onNodeWithText("Yes").performClick()
+        compose.onNodeWithText("No").performClick()
+
+        assertEquals(1, confirmed)
+        assertEquals(1, dismissed)
+    }
+
+    @Test
+    fun `a scrolling text survives the unbounded height a spatial dialog measures with`() {
+        show {
+            Box(modifier = Modifier.wrapContentHeight(unbounded = true)) {
+                SpatialDialogBody(
+                    confirmButton = { TextButton(onClick = {}) { Text("Yes") } },
+                    text = {
+                        Text(
+                            "Report",
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                        )
+                    },
+                )
+            }
+        }
+
+        compose.onNodeWithText("Report").assertExists()
+        compose.onNodeWithText("Yes").assertExists()
+    }
+
+    @Test
+    fun `outside Full Space the dialog is the usual one`() {
+        var confirmed = 0
+        show {
+            AppAlertDialog(
+                onDismissRequest = {},
+                confirmButton = { TextButton(onClick = { confirmed++ }) { Text("Yes") } },
+                title = { Text("Restart?") },
+            )
+        }
+
+        compose.onNodeWithText("Restart?").assertExists()
+        compose.onNodeWithText("Yes").performClick()
+
+        assertEquals(1, confirmed)
     }
 
     @Test

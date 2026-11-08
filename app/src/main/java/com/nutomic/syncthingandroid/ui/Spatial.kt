@@ -3,33 +3,49 @@ package com.nutomic.syncthingandroid.ui
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloseFullscreen
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import androidx.xr.compose.platform.LocalSpatialCapabilities
 import androidx.xr.compose.platform.LocalSpatialConfiguration
 import androidx.xr.compose.platform.SpaceRequestResult
 import androidx.xr.compose.platform.requestFullSpace
 import androidx.xr.compose.platform.requestHomeSpace
+import androidx.xr.compose.spatial.SpatialDialog
 import com.nutomic.syncthingandroid.R
 import kotlinx.coroutines.launch
 
 private const val TAG = "Spatial"
+private const val DIALOG_MAX_WIDTH = 560
+private const val DIALOG_TEXT_MAX_HEIGHT = 480
 
 /** Whether the app is in Full Space, where its UI can be spatial. False on every other device. */
 val isSpatialUi: Boolean
@@ -81,5 +97,73 @@ internal fun SpaceModeButton(
         }
     } else {
         FilledTonalIconButton(onClick = onToggle, modifier = modifier) { Icon(icon, label) }
+    }
+}
+
+/**
+ * The app's alert dialog. In Full Space a plain dialog would attach to the main window, which
+ * Subspace hides, and never show: there it is a spatial dialog.
+ */
+@Composable
+fun AppAlertDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+) {
+    if (isSpatialUi) {
+        SpatialDialog(onDismissRequest = onDismissRequest) {
+            SpatialDialogBody(confirmButton, modifier, dismissButton, title, text)
+        }
+    } else {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            confirmButton = confirmButton,
+            modifier = modifier,
+            dismissButton = dismissButton,
+            title = title,
+            text = text,
+        )
+    }
+}
+
+/** What a spatial dialog shows, laid out like an alert dialog. */
+@Composable
+internal fun SpatialDialogBody(
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.widthIn(max = DIALOG_MAX_WIDTH.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (title != null) {
+                ProvideTextStyle(MaterialTheme.typography.headlineSmall) { title() }
+            }
+            if (text != null) {
+                // A spatial dialog measures with no height limit, which a scrolling text cannot
+                // take.
+                Box(modifier = Modifier.heightIn(max = DIALOG_TEXT_MAX_HEIGHT.dp)) {
+                    ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
+                }
+            }
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                dismissButton?.invoke()
+                confirmButton()
+            }
+        }
     }
 }

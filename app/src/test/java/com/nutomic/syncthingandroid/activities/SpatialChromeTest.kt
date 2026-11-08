@@ -66,6 +66,30 @@ class SpatialChromeTest {
         }
     }
 
+    private fun showStatusBar(forceStartStop: Int) {
+        Robolectric.buildActivity(ComponentActivity::class.java).setup().get().setContent {
+            ApplicationTheme { SpatialStatusBar(forceStartStop, actions = recording()) }
+        }
+    }
+
+    @Test
+    fun `the status bar changes the run mode`() {
+        showStatusBar(forceStartStop = 0)
+
+        compose.onNodeWithText("Run").performClick()
+
+        assertEquals(listOf("onForceStartStop"), calls)
+    }
+
+    @Test
+    fun `the status bar does nothing for the run mode already chosen`() {
+        showStatusBar(forceStartStop = 0)
+
+        compose.onNodeWithText("Automatic").performClick()
+
+        assertEquals(emptyList<String>(), calls)
+    }
+
     @Test
     fun `the rail changes tab`() {
         var chosen: MainTab? = null

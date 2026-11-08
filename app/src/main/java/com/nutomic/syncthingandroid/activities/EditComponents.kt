@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalToggleButton
 import androidx.compose.material3.Icon
@@ -37,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.ui.groupedItemShape
@@ -308,7 +308,7 @@ internal fun ConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(stringResource(message)) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(confirm)) } },

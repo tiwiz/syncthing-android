@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.SectionHeader
 import com.nutomic.syncthingandroid.util.Compression
 
@@ -502,7 +502,7 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
             val titles = stringArrayResource(R.array.compress_entries)
             val values = stringArrayResource(R.array.compress_values)
             val selected = compressionIndex(values, form.compression)
-            AlertDialog(
+            AppAlertDialog(
                 onDismissRequest = dismiss,
                 title = { Text(stringResource(R.string.compression)) },
                 text = {

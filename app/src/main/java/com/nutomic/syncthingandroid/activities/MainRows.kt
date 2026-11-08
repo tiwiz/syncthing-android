@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
 import com.nutomic.syncthingandroid.ui.morphingItemShape
@@ -116,7 +116,7 @@ internal fun FolderRow(
     }
     confirm?.let { what ->
         val override = what == OVERRIDE
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { confirm = null },
             title = {
                 Text(
