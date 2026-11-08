@@ -88,6 +88,18 @@ class MainActivityListDetailTest {
     }
 
     @Test
+    fun `a pane next to its list closes with a close button, not a back arrow`() {
+        stopped().use { screen ->
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            assertEquals(listOf("Close"), screen.detailNavigation())
+
+            screen.closeDetail()
+
+            assertNull(screen.detailTitle())
+        }
+    }
+
+    @Test
     fun `a folder opens in the detail pane, not a screen of its own`() {
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)

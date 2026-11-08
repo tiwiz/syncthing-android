@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
@@ -105,6 +106,8 @@ internal fun DeviceEditScreen(
     dialog: DeviceDialog,
     actions: DeviceScreenActions,
     modifier: Modifier = Modifier,
+    /** Shown in a pane next to its list: a close button instead of a back arrow. */
+    inPane: Boolean = false,
 ) {
     Scaffold(
         modifier = modifier,
@@ -120,7 +123,11 @@ internal fun DeviceEditScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = actions::onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        if (inPane) {
+                            Icon(Icons.Filled.Close, stringResource(R.string.fork_close))
+                        } else {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        }
                     }
                 },
                 actions = {

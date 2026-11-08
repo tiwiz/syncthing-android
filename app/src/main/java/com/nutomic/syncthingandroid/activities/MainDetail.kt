@@ -182,6 +182,7 @@ private fun DetailContent(detail: Detail) {
                     info = controller.info,
                     dialog = controller.dialog,
                     actions = controller.actions,
+                    inPane = true,
                 )
             }
         }
@@ -205,6 +206,7 @@ private fun DetailContent(detail: Detail) {
                     info = controller.info,
                     dialog = controller.dialog,
                     actions = controller.actions,
+                    inPane = true,
                 )
             }
         }

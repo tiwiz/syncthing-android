@@ -41,10 +41,10 @@ import com.nutomic.syncthingandroid.ui.groupedItemShape
 private const val TILE_CORNER = 20
 private const val HERO_BADGE_SIZE = 72
 
-/** The run modes, in the order of the Constants.BTNSTATE_* values. */
 /** The status tab stays a readable column on large windows. */
 private const val STATUS_MAX_WIDTH = 720
 
+/** The run modes, in the order of the Constants.BTNSTATE_* values. */
 private val RUN_MODES =
     listOf(R.string.run_mode_automatic, R.string.run_mode_run, R.string.run_mode_stop)
 
