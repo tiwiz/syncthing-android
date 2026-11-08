@@ -3,6 +3,8 @@ package com.nutomic.syncthingandroid.activities
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.CreateNewFolder
@@ -50,7 +52,7 @@ internal fun RailMenu(state: MainUiState, menu: MenuState, type: NavigationSuite
         actions = menu.actions,
         onChoose = {},
     ) { entries ->
-        Column(modifier = Modifier.testTag("railMenu")) {
+        Column(modifier = Modifier.testTag("railMenu").verticalScroll(rememberScrollState())) {
             RailDivider()
             for (entry in entries) {
                 if (entry.apart) RailDivider()
@@ -87,6 +89,7 @@ internal fun RailAddButton(expanded: Boolean, actions: MainActions) {
                 icon = { Icon(Icons.Filled.Add, null) },
                 text = { Text(add) },
                 elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
+                // The button clears its text's semantics: without this TalkBack hears no name.
                 modifier = Modifier.semantics { contentDescription = add },
             )
         } else {

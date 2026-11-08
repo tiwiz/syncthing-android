@@ -201,6 +201,9 @@ internal fun MainContent(
     val type = navigationType()
     val rail = type.isRail()
     val railExpanded = type == NavigationSuiteType.WideNavigationRailExpanded
+    // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
+    // (menu key, or a window grown while it was open) would hide nothing and swallow back.
+    SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
     val menu = MenuState(menuOpen, onMenuOpenChange, menuActions)
     NavigationSuiteScaffold(
         navigationSuiteType = type,

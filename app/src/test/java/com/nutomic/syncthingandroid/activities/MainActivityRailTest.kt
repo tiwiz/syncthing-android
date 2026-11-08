@@ -13,6 +13,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -75,6 +76,19 @@ class MainActivityRailTest {
             screen.chooseInRail(MainScreen.MenuItem.EXIT)
 
             assertTrue(screen.finishing())
+        }
+    }
+
+    @Test
+    fun `the menu key does not leave an invisible menu that swallows back`() {
+        stopped().use { screen ->
+            screen.open(MainScreen.Tab.FOLDERS, "Camera")
+            assertEquals("Edit Folder", screen.detailTitle())
+
+            screen.pressMenuKey()
+            screen.back()
+
+            assertNull(screen.detailTitle())
         }
     }
 

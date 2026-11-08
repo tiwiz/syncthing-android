@@ -12,6 +12,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -272,16 +273,19 @@ internal class MainScreen(
     /** Whether the add button is the rail's header rather than a floating button. */
     fun addInRail(): Boolean =
         compose.onAllNodesWithTag("railAdd").fetchSemanticsNodes().any { it.layoutInfo.isPlaced } &&
-            compose.onAllNodesWithContentDescription("Add").fetchSemanticsNodes().count {
+            compose.onAllNodes(isAddButton).fetchSemanticsNodes().count {
                 it.layoutInfo.isPlaced
             } == 1
+
+    /** The add button: an icon named "Add", or the expanded rail's button that says it. */
+    private val isAddButton = (hasContentDescription("Add") or hasText("Add")) and hasClickAction()
 
     /**
      * The add button the user sees. The rail also composes its header once more to measure it; that
      * copy is never placed.
      */
     private fun addButton(): SemanticsNodeInteraction {
-        val all = compose.onAllNodesWithContentDescription("Add")
+        val all = compose.onAllNodes(isAddButton)
         return all[all.fetchSemanticsNodes().indexOfFirst { it.layoutInfo.isPlaced }]
     }
 
