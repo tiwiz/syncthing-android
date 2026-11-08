@@ -148,6 +148,7 @@ fun SettingsSyncthingOptionsScreen(
 
         SettingsScaffold(
             onNavigateBack = { navigator.navigateBack() },
+            closesPane = true,
             modifier = modifier,
             title = stringResource(R.string.category_syncthing_options),
             description = stringResource(R.string.category_syncthing_options_summary),

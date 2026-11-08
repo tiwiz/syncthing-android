@@ -40,6 +40,7 @@ fun SettingsAboutScreen(
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
+        closesPane = true,
         modifier = modifier,
         title = stringResource(R.string.category_about),
     ) {

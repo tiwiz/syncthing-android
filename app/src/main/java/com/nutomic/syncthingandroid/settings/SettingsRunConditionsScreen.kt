@@ -125,6 +125,7 @@ fun SettingsRunConditionsScreen(
 
     SettingsScaffold(
         onNavigateBack = { navigator.navigateBack() },
+        closesPane = true,
         modifier = modifier,
         title = stringResource(R.string.run_conditions_title),
         description = stringResource(R.string.run_conditions_summary),
