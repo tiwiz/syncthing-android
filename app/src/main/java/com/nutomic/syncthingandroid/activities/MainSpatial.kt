@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +25,8 @@ import androidx.xr.compose.spatial.Orbiter
 import androidx.xr.compose.spatial.OrbiterPosition
 import androidx.xr.compose.spatial.Subspace
 import androidx.xr.compose.subspace.SpatialPanel
+import androidx.xr.compose.subspace.SpatialRow
+import androidx.xr.compose.subspace.layout.SpatialArrangement
 import androidx.xr.compose.subspace.layout.SpatialRoundedCornerShape
 import androidx.xr.compose.subspace.layout.SubspaceModifier
 import androidx.xr.compose.subspace.layout.height
@@ -34,35 +37,36 @@ import androidx.xr.compose.unit.DpVolumeOffset
 import androidx.xr.compose.unit.DpVolumeSize
 import com.nutomic.syncthingandroid.service.SyncthingService
 
-private const val PANEL_WIDTH = 1024
+private const val LIST_WIDTH = 440
+private const val DETAIL_WIDTH = 600
+private const val ALONE_WIDTH = 720
+private const val PANEL_GAP = 16
+private const val PANEL_TOP = 16
 private const val PANEL_HEIGHT = 720
 
-/** The rail and the bar still fit an orbiter around a panel of this size. */
-private const val MIN_WIDTH = 720
+/** The rail still fits an orbiter around a panel of this height. */
 private const val MIN_HEIGHT = 640
+private const val MIN_LIST_WIDTH = 320
+private const val MIN_DETAIL_WIDTH = 400
 private const val ORBITER_GAP = 24
 private const val RAIL_WIDTH = 240
 private const val RAIL_CORNER = 28
 
 /**
- * The main screen in Full Space: [content] in a panel the user can move and resize, with the
- * navigation and the top bar in orbiters around it.
+ * The main screen in Full Space: [list] and [detail] in panels the user can move and resize, with
+ * the navigation in an orbiter on the list's panel and the top bar's content above both. Without a
+ * [detail], as on the status tab, the list's panel is wider.
  */
 @Composable
 internal fun SpatialMain(
     rail: @Composable () -> Unit,
     topBar: @Composable () -> Unit,
+    list: @Composable () -> Unit,
+    detail: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
 ) {
     Subspace {
-        SpatialPanel(
-            SubspaceModifier.width(PANEL_WIDTH.dp)
-                .height(PANEL_HEIGHT.dp)
-                .resizable(minimumSize = DpVolumeSize(MIN_WIDTH.dp, MIN_HEIGHT.dp, 0.dp))
-                .movable()
-        ) {
-            Box(modifier = modifier) { content() }
+        SpatialRow(horizontalArrangement = SpatialArrangement.spacedBy(PANEL_GAP.dp)) {
             Orbiter(
                 position =
                     OrbiterPosition.TopCenter(
@@ -73,17 +77,41 @@ internal fun SpatialMain(
             ) {
                 topBar()
             }
-            Orbiter(
-                position =
-                    OrbiterPosition.CenterStart(
-                        horizontalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
-                        offset = DpVolumeOffset(x = -ORBITER_GAP.dp),
-                    ),
-                shape = SpatialRoundedCornerShape(CornerSize(RAIL_CORNER.dp)),
+            SpatialPanel(
+                panelModifier(if (detail == null) ALONE_WIDTH else LIST_WIDTH, MIN_LIST_WIDTH)
             ) {
-                rail()
+                PanelSurface(modifier, list)
+                Orbiter(
+                    position =
+                        OrbiterPosition.CenterStart(
+                            horizontalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
+                            offset = DpVolumeOffset(x = -ORBITER_GAP.dp),
+                        ),
+                    shape = SpatialRoundedCornerShape(CornerSize(RAIL_CORNER.dp)),
+                ) {
+                    rail()
+                }
+            }
+            if (detail != null) {
+                SpatialPanel(panelModifier(DETAIL_WIDTH, MIN_DETAIL_WIDTH)) {
+                    PanelSurface(content = detail)
+                }
             }
         }
+    }
+}
+
+private fun panelModifier(width: Int, minWidth: Int): SubspaceModifier =
+    SubspaceModifier.width(width.dp)
+        .height(PANEL_HEIGHT.dp)
+        .resizable(minimumSize = DpVolumeSize(minWidth.dp, MIN_HEIGHT.dp, 0.dp))
+        .movable()
+
+/** A panel draws nothing of its own, so the content gets the screen's background here. */
+@Composable
+private fun PanelSurface(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxSize()) {
+        Box(modifier = Modifier.padding(top = PANEL_TOP.dp)) { content() }
     }
 }
 
