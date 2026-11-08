@@ -69,6 +69,7 @@ import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.ui.SpaceModeAction
 import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.isSpatialUi
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -203,11 +204,41 @@ internal fun MainContent(
     SideEffect(directive.twoPanes) { onTwoPanesChange(directive.twoPanes) }
     val type = navigationType()
     val rail = type.isRail()
-    val railExpanded = type == NavigationSuiteType.WideNavigationRailExpanded
+    val spatial = isSpatialUi
+    val railExpanded = spatial || type == NavigationSuiteType.WideNavigationRailExpanded
     // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
     // (menu key, or a window grown while it was open) would hide nothing and swallow back.
     SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
     val menu = MenuState(menuOpen, onMenuOpenChange, menuActions)
+    if (spatial) {
+        SpatialMain(
+            rail = {
+                SpatialRail(
+                    tab = tab,
+                    onTabChange = { tab = it },
+                    running = state.serviceState == SyncthingService.State.ACTIVE,
+                    showWebGui = state.showWebGui,
+                    runningAsService = state.runningAsService,
+                    menuActions = menuActions,
+                    actions = actions,
+                )
+            },
+            topBar = { SpatialTopBar(tab, state.serviceState, actions) },
+        ) {
+            MainScaffold(
+                state = state,
+                tab = tab,
+                panes = Panes(directive, detail, detailBackProgress),
+                menu = null,
+                actions = actions,
+                addButton = false,
+                titleInBar = true,
+                showTopBar = false,
+            )
+        }
+        state.usageReport?.let { UsageReportingDialog(it, actions) }
+        return
+    }
     NavigationSuiteScaffold(
         navigationSuiteType = type,
         modifier = modifier,
@@ -224,7 +255,15 @@ internal fun MainContent(
                     navigationSuiteType = type,
                 )
             }
-            if (railExpanded) RailMenu(state, menu, type)
+            if (railExpanded) {
+                RailMenu(
+                    running = state.serviceState == SyncthingService.State.ACTIVE,
+                    showWebGui = state.showWebGui,
+                    runningAsService = state.runningAsService,
+                    actions = menu.actions,
+                    type = type,
+                )
+            }
         },
         primaryActionContent = { if (rail) RailHeader(expanded = railExpanded, actions) },
     ) {
@@ -283,9 +322,12 @@ private fun MainScaffold(
     addButton: Boolean,
     /** The tab's name is the top bar's title instead of a headline above the list. */
     titleInBar: Boolean,
+    /** False in Full Space, where an orbiter has the top bar's content. */
+    showTopBar: Boolean = true,
 ) {
     Scaffold(
         topBar = {
+            if (!showTopBar) return@Scaffold
             TopAppBar(
                 title = {
                     if (titleInBar) {
@@ -374,7 +416,7 @@ private fun MainScaffold(
 }
 
 @Composable
-private fun TabActions(tab: MainTab, actions: MainActions) {
+internal fun TabActions(tab: MainTab, actions: MainActions) {
     Row {
         when (tab) {
             MainTab.FOLDERS ->

@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.service.SyncthingService
 
 /*
  * The navigation rail's extras on tablets and foldables: the add button at its top and, in the
@@ -45,12 +44,18 @@ internal fun NavigationSuiteType.isRail(): Boolean =
 
 /** The overflow entries, listed under the destinations of the expanded rail. */
 @Composable
-internal fun RailMenu(state: MainUiState, menu: MenuState, type: NavigationSuiteType) {
+internal fun RailMenu(
+    running: Boolean,
+    showWebGui: Boolean,
+    runningAsService: Boolean,
+    actions: MenuActions,
+    type: NavigationSuiteType,
+) {
     MenuEntries(
-        running = state.serviceState == SyncthingService.State.ACTIVE,
-        showWebGui = state.showWebGui,
-        runningAsService = state.runningAsService,
-        actions = menu.actions,
+        running = running,
+        showWebGui = showWebGui,
+        runningAsService = runningAsService,
+        actions = actions,
         onChoose = {},
     ) { entries ->
         Column(modifier = Modifier.testTag("railMenu").verticalScroll(rememberScrollState())) {
