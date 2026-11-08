@@ -1,21 +1,18 @@
 package com.nutomic.syncthingandroid.activities
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,18 +24,22 @@ import androidx.xr.compose.spatial.Orbiter
 import androidx.xr.compose.spatial.OrbiterPosition
 import androidx.xr.compose.spatial.Subspace
 import androidx.xr.compose.subspace.SpatialPanel
+import androidx.xr.compose.subspace.layout.SpatialRoundedCornerShape
 import androidx.xr.compose.subspace.layout.SubspaceModifier
 import androidx.xr.compose.subspace.layout.height
 import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.resizable
 import androidx.xr.compose.subspace.layout.width
 import androidx.xr.compose.unit.DpVolumeOffset
-import com.nutomic.syncthingandroid.R
+import androidx.xr.compose.unit.DpVolumeSize
 import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.ui.SpaceModeAction
 
 private const val PANEL_WIDTH = 1024
 private const val PANEL_HEIGHT = 720
+
+/** The rail and the bar still fit an orbiter around a panel of this size. */
+private const val MIN_WIDTH = 720
+private const val MIN_HEIGHT = 640
 private const val ORBITER_GAP = 24
 private const val RAIL_WIDTH = 240
 private const val RAIL_CORNER = 28
@@ -51,19 +52,24 @@ private const val RAIL_CORNER = 28
 internal fun SpatialMain(
     rail: @Composable () -> Unit,
     topBar: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     Subspace {
         SpatialPanel(
-            SubspaceModifier.width(PANEL_WIDTH.dp).height(PANEL_HEIGHT.dp).resizable().movable()
+            SubspaceModifier.width(PANEL_WIDTH.dp)
+                .height(PANEL_HEIGHT.dp)
+                .resizable(minimumSize = DpVolumeSize(MIN_WIDTH.dp, MIN_HEIGHT.dp, 0.dp))
+                .movable()
         ) {
-            content()
+            Box(modifier = modifier) { content() }
             Orbiter(
                 position =
                     OrbiterPosition.TopCenter(
                         verticalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
                         offset = DpVolumeOffset(y = ORBITER_GAP.dp),
-                    )
+                    ),
+                shape = SpatialRoundedCornerShape(CircleShape.topStart),
             ) {
                 topBar()
             }
@@ -72,7 +78,8 @@ internal fun SpatialMain(
                     OrbiterPosition.CenterStart(
                         horizontalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
                         offset = DpVolumeOffset(x = -ORBITER_GAP.dp),
-                    )
+                    ),
+                shape = SpatialRoundedCornerShape(CornerSize(RAIL_CORNER.dp)),
             ) {
                 rail()
             }
@@ -104,18 +111,7 @@ internal fun SpatialRail(
         ) {
             RailHeader(expanded = true, actions)
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
-            for (destination in MainTab.entries) {
-                val selected = destination == tab
-                NavigationSuiteItem(
-                    selected = selected,
-                    onClick = { onTabChange(destination) },
-                    icon = {
-                        Icon(if (selected) destination.selectedIcon else destination.icon, null)
-                    },
-                    label = { Text(stringResource(destination.title)) },
-                    navigationSuiteType = type,
-                )
-            }
+            TabItems(tab, onTabChange, type)
             RailMenu(running, showWebGui, runningAsService, menuActions, type)
         }
     }
@@ -144,12 +140,7 @@ internal fun SpatialTopBar(
                 style = MaterialTheme.typography.headlineSmallEmphasized,
                 modifier = Modifier.padding(end = 16.dp).testTag("topBarTitle"),
             )
-            SpaceModeAction()
-            ServiceChip(serviceState)
-            TabActions(tab, actions)
-            IconButton(onClick = actions::onSettings) {
-                Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
-            }
+            TopBarActions(tab, serviceState, actions)
         }
     }
 }
