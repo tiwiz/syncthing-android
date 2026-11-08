@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +47,18 @@ class SpatialTest {
         show { SpaceModeButton(fullSpace = true, onToggle = { toggles++ }) }
 
         compose.onNodeWithText("Home Space").performClick()
+
+        assertEquals(1, toggles)
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w400dp-h800dp-port")
+    fun `in a narrow window the button is an icon that still has a name`() {
+        var toggles = 0
+        show { SpaceModeButton(fullSpace = false, onToggle = { toggles++ }) }
+
+        compose.onAllNodesWithText("Full Space").assertCountEquals(0)
+        compose.onNodeWithContentDescription("Full Space").performClick()
 
         assertEquals(1, toggles)
     }

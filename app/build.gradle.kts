@@ -12,6 +12,12 @@ plugins {
     alias(libs.plugins.ktfmt)
 }
 
+// Compose for XR pulls in ARCore through SceneCore. This app uses no AR, and no build should ship it.
+configurations.configureEach {
+    exclude(group = "androidx.xr.arcore")
+    exclude(group = "com.google.ar", module = "core")
+}
+
 dependencies {
     implementation(libs.aboutlibraries.compose.m3)
     implementation(libs.aboutlibraries.core)
@@ -26,7 +32,6 @@ dependencies {
     implementation(libs.compose.material3.adaptive.layout)
     implementation(libs.compose.material3.navigation.suite)
     implementation(libs.xr.compose)
-    implementation(libs.xr.scenecore)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.ui)
     implementation(libs.constraintlayout)
