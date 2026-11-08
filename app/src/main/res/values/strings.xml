@@ -260,6 +260,8 @@
     <!-- The empty detail pane next to a list on large windows; fork-only, so English only. -->
     <string name="fork_choose_folder">Choose a folder</string>
     <string name="fork_choose_device">Choose a device</string>
+    <!-- Closes the detail pane next to a list; fork-only, so English only. -->
+    <string name="fork_close">Close</string>
     <string name="syncthing_starting">Syncthing is starting.</string>
     <string name="syncthing_running">Syncthing is running.</string>
     <string name="syncthing_not_running">Syncthing is not running.</string>

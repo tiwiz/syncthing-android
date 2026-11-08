@@ -384,6 +384,22 @@ internal class MainScreen(
         return node.boundsInRoot.width / node.layoutInfo.density.density
     }
 
+    private val inDetailPane = hasAnyAncestor(hasTestTag("detailPane"))
+
+    /** The detail pane's navigation buttons ("Back", "Close"), by what they say. */
+    fun detailNavigation(): List<String> =
+        listOf("Back", "Close").filter {
+            compose
+                .onAllNodes(hasContentDescription(it) and inDetailPane)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+    fun closeDetail() {
+        compose.onNode(hasContentDescription("Close") and inDetailPane).performClick()
+        idle()
+    }
+
     fun listTitleHeight(): Float =
         compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
 
