@@ -45,7 +45,12 @@ private val RUN_MODES =
     listOf(R.string.run_mode_automatic, R.string.run_mode_run, R.string.run_mode_stop)
 
 @Composable
-internal fun StatusTab(status: StatusInfo?, forceStartStop: Int, actions: MainActions) {
+internal fun StatusTab(
+    status: StatusInfo?,
+    forceStartStop: Int,
+    actions: MainActions,
+    showTitle: Boolean = true,
+) {
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -53,7 +58,7 @@ internal fun StatusTab(status: StatusInfo?, forceStartStop: Int, actions: MainAc
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
     ) {
-        ListTitle(MainTab.STATUS)
+        if (showTitle) ListTitle(MainTab.STATUS) else NoTitleGap()
         status?.let { StatusHero(it) }
         SectionHeader(stringResource(R.string.run_mode_title))
         RunModeButtons(forceStartStop, actions)

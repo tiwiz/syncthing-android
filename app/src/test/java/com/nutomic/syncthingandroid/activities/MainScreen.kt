@@ -346,6 +346,25 @@ internal class MainScreen(
     fun rootSize(): IntSize = compose.onRoot().fetchSemanticsNode().size
 
     /** How tall the title above the list of the current tab is, in pixels. */
+    fun topBarTitle(): String =
+        compose
+            .onNodeWithTag("topBarTitle", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .joinToString()
+
+    fun hasListTitle(): Boolean =
+        compose.onAllNodesWithTag("listTitle").fetchSemanticsNodes().isNotEmpty()
+
+    /** Whether the app's name heads the rail, above the add button. */
+    fun appNameInRail(): Boolean =
+        compose
+            .onAllNodes(
+                hasText("Expressive Syncthing") and hasAnyAncestor(hasTestTag("railHeader"))
+            )
+            .fetchSemanticsNodes()
+            .any { it.layoutInfo.isPlaced }
+
     fun listTitleHeight(): Float =
         compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
 
