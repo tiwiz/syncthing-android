@@ -50,5 +50,6 @@ Kept from the Kotlin migration:
   fix would be for the test's poll to check `certFile.exists()` first.
 - `activities/MainContent.kt` and `activities/MainDetail.kt` still call the deprecated
   `currentWindowAdaptiveInfo()`; `ServiceChip` and the settings use `currentWindowAdaptiveInfoV2()`.
-  V2 moves the large and extra-large width classes, which affects the expanded rail and the pane
-  layout, so this needs its own PR with a screenshot review.
+  V2 also reports the large and extra-large width classes. `MainContent` already asks for them
+  (`supportLargeAndXLargeWidth = true`), but the pane directive in `MainDetail` does not, so the
+  pane layout may change: this needs its own PR with a screenshot review.
