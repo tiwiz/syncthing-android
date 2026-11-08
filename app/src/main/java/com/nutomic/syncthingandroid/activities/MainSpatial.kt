@@ -52,6 +52,7 @@ private const val MIN_DETAIL_WIDTH = 400
 private const val ORBITER_GAP = 24
 private const val RAIL_WIDTH = 240
 private const val RAIL_CORNER = 28
+private const val STATUS_BAR_WIDTH = 440
 
 /**
  * The main screen in Full Space: [list] and [detail] in panels the user can move and resize, with
@@ -64,6 +65,7 @@ internal fun SpatialMain(
     topBar: @Composable () -> Unit,
     list: @Composable () -> Unit,
     detail: (@Composable () -> Unit)?,
+    statusBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Subspace {
@@ -77,6 +79,16 @@ internal fun SpatialMain(
                 shape = SpatialRoundedCornerShape(CircleShape.topStart),
             ) {
                 topBar()
+            }
+            Orbiter(
+                position =
+                    OrbiterPosition.BottomCenter(
+                        verticalEdgeAlignment = OrbiterPosition.EdgeAlignment.Outside,
+                        offset = DpVolumeOffset(y = -ORBITER_GAP.dp),
+                    ),
+                shape = SpatialRoundedCornerShape(CircleShape.topStart),
+            ) {
+                statusBar()
             }
             // A user's resize would outlive the layout it was made for: each layout starts afresh.
             key(detail == null) {
@@ -147,6 +159,26 @@ internal fun SpatialRail(
             TabItems(tab, onTabChange, type)
             RailMenu(running, showWebGui, runningAsService, menuActions, type)
         }
+    }
+}
+
+/** The run mode, always at hand: on a phone or tablet it is on the status tab. */
+@Composable
+internal fun SpatialStatusBar(
+    forceStartStop: Int,
+    actions: MainActions,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier,
+    ) {
+        RunModeButtons(
+            forceStartStop,
+            actions,
+            modifier = Modifier.width(STATUS_BAR_WIDTH.dp).padding(8.dp),
+        )
     }
 }
 

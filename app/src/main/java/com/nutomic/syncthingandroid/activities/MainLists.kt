@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.SyncProgress
 
 /** What [tab] lists; [shown] is the detail open next to it, marked in the list. */
@@ -42,6 +42,7 @@ internal fun TabList(
     shown: Detail?,
     actions: MainActions,
     showTitle: Boolean,
+    showRunMode: Boolean = true,
 ) {
     when (tab) {
         MainTab.FOLDERS ->
@@ -61,7 +62,8 @@ internal fun TabList(
                 selectedDeviceId =
                     (shown as? Detail.DeviceDetail)?.key?.removePrefix(DetailSelection.DEVICE),
             )
-        MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions, showTitle)
+        MainTab.STATUS ->
+            StatusTab(state.status, state.forceStartStop, actions, showTitle, showRunMode)
     }
 }
 
@@ -199,8 +201,9 @@ private fun EmptyList(text: Int) {
 
 @Composable
 internal fun UsageReportingDialog(report: String, actions: MainActions) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = {},
+        dismissible = false,
         title = { Text(stringResource(R.string.usage_reporting_dialog_title)) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

@@ -9,7 +9,6 @@ import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 
 /**
  * What used to be in the navigation drawer, for the overflow menu or the expanded rail ([content]).
@@ -143,7 +143,7 @@ private fun MenuEntry(
 
 @Composable
 private fun ConfirmRestartDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_confirm_restart)) },
         confirmButton = {
@@ -157,7 +157,7 @@ private fun ConfirmRestartDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 
 @Composable
 private fun ConfirmExitDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_exit_while_running_as_service_title)) },
         text = { Text(stringResource(R.string.dialog_exit_while_running_as_service_message)) },

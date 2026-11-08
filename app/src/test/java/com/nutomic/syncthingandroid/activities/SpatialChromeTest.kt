@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -64,6 +65,50 @@ class SpatialChromeTest {
                 )
             }
         }
+    }
+
+    private fun showStatusBar(forceStartStop: Int) {
+        Robolectric.buildActivity(ComponentActivity::class.java).setup().get().setContent {
+            ApplicationTheme { SpatialStatusBar(forceStartStop, actions = recording()) }
+        }
+    }
+
+    @Test
+    fun `the status bar changes the run mode`() {
+        showStatusBar(forceStartStop = 0)
+
+        compose.onNodeWithText("Run").performClick()
+
+        assertEquals(listOf("onForceStartStop"), calls)
+    }
+
+    @Test
+    fun `the status bar does nothing for the run mode already chosen`() {
+        showStatusBar(forceStartStop = 0)
+
+        compose.onNodeWithText("Automatic").performClick()
+
+        assertEquals(emptyList<String>(), calls)
+    }
+
+    @Test
+    fun `the status tab leaves the run mode to the orbiter in Full Space`() {
+        Robolectric.buildActivity(ComponentActivity::class.java).setup().get().setContent {
+            ApplicationTheme {
+                StatusTab(status = null, 0, actions = recording(), showRunMode = false)
+            }
+        }
+
+        compose.onAllNodesWithText("Automatic").assertCountEquals(0)
+    }
+
+    @Test
+    fun `the status tab has the run mode everywhere else`() {
+        Robolectric.buildActivity(ComponentActivity::class.java).setup().get().setContent {
+            ApplicationTheme { StatusTab(status = null, 0, actions = recording()) }
+        }
+
+        compose.onNodeWithText("Automatic").assertExists()
     }
 
     @Test
