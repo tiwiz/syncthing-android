@@ -42,3 +42,14 @@ Kept from the Kotlin migration:
 - `activities/FolderEditController.kt:279-282`: `servedFolder()` deep-copies the folder list with
   Gson on the main thread at save time. The cost is proportional to the `sendConfig` merge that
   follows, so it is fine for now.
+- `SyncthingServiceCertificateTest`, "a certificate Syncthing replaces with a generated one is
+  rolled back", failed once in CI (#164) with a `FileNotFoundException` at its
+  `awaitBackground { certFile.readBytes()... }`, and passed on the rerun. Likely cause, from reading
+  the code and not reproduced: `backupFile` moves the certificate to `.bak` before
+  `writeBytesAtomic` puts the new one in place, so the test can read while the file is missing. The
+  fix would be for the test's poll to check `certFile.exists()` first.
+- `activities/MainContent.kt` and `activities/MainDetail.kt` still call the deprecated
+  `currentWindowAdaptiveInfo()`; `ServiceChip` and the settings use `currentWindowAdaptiveInfoV2()`.
+  V2 also reports the large and extra-large width classes. `MainContent` already asks for them
+  (`supportLargeAndXLargeWidth = true`), but the pane directive in `MainDetail` does not, so the
+  pane layout may change: this needs its own PR with a screenshot review.
