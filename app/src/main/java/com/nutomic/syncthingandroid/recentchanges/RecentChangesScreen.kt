@@ -45,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -77,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.GROUP_GAP
 import com.nutomic.syncthingandroid.ui.groupedItemShape
+import com.nutomic.syncthingandroid.ui.isXrDevice
 import com.nutomic.syncthingandroid.util.isTelevision
 import java.text.DateFormat
 import java.util.Date
@@ -93,13 +95,16 @@ internal fun RecentChangesScreen(
     onItemClick: (RecentChange) -> Unit,
 ) {
     val configuration = LocalConfiguration.current
+    val headset = isXrDevice
+    // A pinch and drag scrolls on a headset, and would pull at the top of the list.
+    val pullToRefresh = !configuration.isTelevision && !headset
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         flingAnimationSpec = rememberSplineBasedDecay(),
     )
 
     // Kept alongside pull-to-refresh: on Android TV the list is driven by a D-pad, where a pull
-    // gesture is not reachable.
+    // gesture is not reachable, and on a headset the gesture is off.
     val refreshAction: @Composable () -> Unit = {
         IconButton(onClick = onRefresh) {
             Icon(
@@ -177,20 +182,28 @@ internal fun RecentChangesScreen(
             }
         }
 
-        if (configuration.isTelevision) {
-            // No pull-to-refresh on TV. The gesture is unreachable with a D-pad anyway, and the
-            // indicator's nested-scroll hook also reacts to the programmatic scrolling that focus
-            // movement causes: moving focus back up to the first row starts a "pull" that no gesture
-            // ever releases, leaving the spinner stuck on screen. The top bar's refresh action is the
-            // TV entry point.
-            Box(modifier = containerModifier, content = listContent)
-        } else {
+        if (pullToRefresh) {
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 modifier = containerModifier,
                 content = listContent,
             )
+        } else {
+            // No pull-to-refresh on TV. The gesture is unreachable with a D-pad anyway, and the
+            // indicator's nested-scroll hook also reacts to the programmatic scrolling that focus
+            // movement causes: moving focus back up to the first row starts a "pull" that no gesture
+            // ever releases, leaving the spinner stuck on screen. The top bar's refresh action is the
+            // TV entry point. On a headset the button is too, and the bar below takes the place of
+            // the pull's indicator.
+            Box(modifier = containerModifier) {
+                listContent()
+                if (headset && isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    )
+                }
+            }
         }
     }
 }

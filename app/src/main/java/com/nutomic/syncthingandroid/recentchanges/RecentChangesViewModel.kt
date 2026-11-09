@@ -27,14 +27,14 @@ import kotlinx.coroutines.launch
 /** What the recent changes screen shows. */
 internal data class RecentChangesUiState(
     val changes: List<RecentChange> = emptyList(),
-    /** Drives the pull-to-refresh indicator; only set for refreshes the user asked for. */
+    /** Drives the refresh indicator; only set for refreshes the user asked for. */
     val isRefreshing: Boolean = false,
     val showExactTimes: Boolean = false,
 )
 
 /**
  * The recent changes screen's state. The list is kept across a recreation; it is fetched when
- * Syncthing becomes active, when the user pulls, and on an interval while the screen is shown.
+ * Syncthing becomes active, when the user refreshes, and on an interval while the screen is shown.
  */
 @HiltViewModel
 internal class RecentChangesViewModel
