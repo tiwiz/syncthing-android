@@ -2,6 +2,7 @@ package com.nutomic.syncthingandroid.webgui
 
 import com.nutomic.syncthingandroid.util.isRunningOnTV
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.net.http.SslError
@@ -22,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.webkit.ProxyConfig
@@ -33,6 +35,7 @@ import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import com.nutomic.syncthingandroid.ui.SpatialScreenPanel
+import com.nutomic.syncthingandroid.ui.isSpatialUi
 import java.security.GeneralSecurityException
 import androidx.core.net.toUri
 
@@ -110,22 +113,18 @@ class WebGuiActivity : ThemedAppCompatActivity() {
         setContent {
             val loadState by viewModel.loadState.collectAsStateWithLifecycle()
             ApplicationTheme {
-                SpatialScreenPanel(PANEL_WIDTH.dp, PANEL_HEIGHT.dp) {
+                val screen: @Composable () -> Unit = {
                     WebGuiScreen(
                         loading = loadState.loading,
                         error = loadState.error,
                         onNavigateBack = { finish() },
-                        webViewFactory = { context ->
-                            viewModel.onWebViewCreated()
-                            createWebView(context, webViewClient).also {
-                                webView = it
-                                // The WebView is created lazily during composition, which may run
-                                // after the service already reported ACTIVE. Attempt the load here so
-                                // we don't miss that initial state and stay stuck on the spinner.
-                                loadWebGuiIfNeeded()
-                            }
-                        },
+                        webViewFactory = ::screenWebView,
                     )
+                }
+                if (isSpatialUi) {
+                    SpatialScreenPanel(PANEL_WIDTH.dp, PANEL_HEIGHT.dp, screen)
+                } else {
+                    screen()
                 }
             }
         }
@@ -162,6 +161,22 @@ class WebGuiActivity : ThemedAppCompatActivity() {
     private fun startSyncthingService() {
         val serviceIntent = Intent(this, SyncthingService::class.java)
         startForegroundService(serviceIntent)
+    }
+
+    /**
+     * The activity's one WebView. Composition can ask again, as when the app changes space: a second
+     * WebView would stay on the spinner, as the page already loaded in the first, which would leak.
+     */
+    private fun screenWebView(context: Context): WebView {
+        webView?.let { return it.detachedFromParent() }
+        viewModel.onWebViewCreated()
+        return createWebView(context, webViewClient).also {
+            webView = it
+            // The WebView is created lazily during composition, which may run after the service
+            // already reported ACTIVE. Attempt the load here so we don't miss that initial state
+            // and stay stuck on the spinner.
+            loadWebGuiIfNeeded()
+        }
     }
 
     private fun loadWebGuiIfNeeded() {

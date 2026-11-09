@@ -28,11 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -116,29 +112,17 @@ internal fun SpaceModeButton(
     }
 }
 
-/**
- * A whole screen: in Full Space a panel the user can move and resize, because the screen would
- * otherwise fill the view; elsewhere just [content]. The content keeps its state across the switch,
- * which matters for a WebView.
- */
+/** A panel of this size that the user can move, and resize down to the minimum. */
+fun movablePanel(width: Dp, height: Dp, minWidth: Dp, minHeight: Dp): SubspaceModifier =
+    SubspaceModifier.width(width)
+        .height(height)
+        .resizable(minimumSize = DpVolumeSize(minWidth, minHeight, 0.dp))
+        .movable()
+
+/** A whole screen in Full Space, in one panel instead of filling the view. */
 @Composable
 fun SpatialScreenPanel(width: Dp, height: Dp, content: @Composable () -> Unit) {
-    val currentContent by rememberUpdatedState(content)
-    val screen = remember { movableContentOf { currentContent() } }
-    if (isSpatialUi) {
-        Subspace {
-            SpatialPanel(
-                SubspaceModifier.width(width)
-                    .height(height)
-                    .resizable(minimumSize = DpVolumeSize(width / 2, height / 2, 0.dp))
-                    .movable()
-            ) {
-                screen()
-            }
-        }
-    } else {
-        screen()
-    }
+    Subspace { SpatialPanel(movablePanel(width, height, width / 2, height / 2)) { content() } }
 }
 
 /**

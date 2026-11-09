@@ -325,7 +325,7 @@ Next steps (to be confirmed with the owner):
    waits for the owner). Plan: https://claude.ai/artifact/2QtTFauKyWAmRpxwFy4Gim, design canvas:
    https://claude.ai/artifact/FeynMSvXf3EWdPN2zv5BJs. Done: tablet fixes X1-X6 (#163-#170); XR Compose
    and the Full Space button (#171); panel and orbiters in Full Space (XR4, #172); separate panels for list and
-   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). web GUI panel (XR7, not yet seen on the emulator). Next: XR8-XR9
+   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). web GUI panel (XR7, #177), kept in its own activity instead of beside the detail as planned, which would move the WebView and its certificate handling into `MainActivity`; not yet seen on the emulator, where popups from the WebView (`<select>`, `alert`) need checking too. Next: XR8-XR9
    (56 dp targets, no gestures that clash with pinch), milestone on the emulator.
    Decided: only `androidx.xr.compose`. XR Material 3 1.0.0-alpha17 crashes against Material 3
    1.5.0-beta01 (`NoSuchMethodError`, its override APIs are gone since alpha26 and beta01), and its
