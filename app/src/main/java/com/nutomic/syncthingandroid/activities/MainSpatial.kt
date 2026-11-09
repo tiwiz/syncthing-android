@@ -30,13 +30,9 @@ import androidx.xr.compose.subspace.SpatialRow
 import androidx.xr.compose.subspace.layout.SpatialArrangement
 import androidx.xr.compose.subspace.layout.SpatialRoundedCornerShape
 import androidx.xr.compose.subspace.layout.SubspaceModifier
-import androidx.xr.compose.subspace.layout.height
-import androidx.xr.compose.subspace.layout.movable
-import androidx.xr.compose.subspace.layout.resizable
-import androidx.xr.compose.subspace.layout.width
 import androidx.xr.compose.unit.DpVolumeOffset
-import androidx.xr.compose.unit.DpVolumeSize
 import com.nutomic.syncthingandroid.service.SyncthingService
+import com.nutomic.syncthingandroid.ui.movablePanel
 
 private const val LIST_WIDTH = 440
 private const val DETAIL_WIDTH = 600
@@ -119,10 +115,7 @@ internal fun SpatialMain(
 }
 
 private fun panelModifier(width: Int, minWidth: Int): SubspaceModifier =
-    SubspaceModifier.width(width.dp)
-        .height(PANEL_HEIGHT.dp)
-        .resizable(minimumSize = DpVolumeSize(minWidth.dp, MIN_HEIGHT.dp, 0.dp))
-        .movable()
+    movablePanel(width.dp, PANEL_HEIGHT.dp, minWidth.dp, MIN_HEIGHT.dp)
 
 /** A panel draws nothing of its own, so the content gets the screen's background here. */
 @Composable

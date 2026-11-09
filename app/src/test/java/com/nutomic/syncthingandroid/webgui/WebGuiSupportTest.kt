@@ -3,7 +3,9 @@ package com.nutomic.syncthingandroid.webgui
 import android.content.Context
 import android.net.http.SslCertificate
 import android.util.Base64
+import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.service.Constants
@@ -14,6 +16,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -94,5 +97,17 @@ class WebGuiSupportTest {
         assertFalse(webView.settings.allowFileAccess)
         assertFalse(webView.settings.allowContentAccess)
         assertSame(client, webView.webViewClient)
+    }
+
+    @Test
+    fun `the WebView can go into a new parent when the screen is composed again`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val webView = WebView(context)
+        FrameLayout(context).addView(webView)
+
+        val detached = webView.detachedFromParent()
+
+        assertSame(webView, detached)
+        assertNull(detached.parent)
     }
 }

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.http.SslCertificate
 import android.util.Base64
+import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.nutomic.syncthingandroid.service.Constants
@@ -25,6 +26,11 @@ internal fun createWebView(context: Context, client: WebViewClient): WebView =
         webViewClient = client
         clearCache(true)
     }
+
+/** Frees the WebView to go into a new parent, as an [android.view.View] has only one. */
+internal fun WebView.detachedFromParent(): WebView = apply {
+    (parent as? ViewGroup)?.removeView(this)
+}
 
 internal fun loadConfiguration(context: Context): ConfigXml =
     ConfigXml(context).apply {
