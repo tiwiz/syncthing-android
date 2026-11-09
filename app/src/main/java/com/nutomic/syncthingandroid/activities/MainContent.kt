@@ -77,6 +77,8 @@ internal data class MainUiState(
     val showWebGui: Boolean,
     /** The usage report to ask about, or null when not asking. */
     val usageReport: String?,
+    /** No app could open a folder: the screen suggests a file manager. */
+    val suggestFileManager: Boolean,
 )
 
 /** What the main screen's overflow menu can do; each entry also closes the menu. */
@@ -99,6 +101,9 @@ internal interface MainActions {
     fun onOpenFolder(folderId: String)
 
     fun onOpenFolderInFiles(path: String)
+
+    /** The answer to the suggested file manager; true installs it. */
+    fun onFileManagerSuggestion(install: Boolean)
 
     fun onOverride(folderId: String)
 
@@ -170,14 +175,14 @@ internal fun shortWindow(): Boolean =
  */
 @Composable
 private fun MainDialogs(
-    usageReport: String?,
+    state: MainUiState,
     deviceIdDialog: DeviceIdDialogState?,
     actions: MainActions,
 ) {
-    if (usageReport != null) {
-        UsageReportingDialog(usageReport, actions)
-    } else {
-        deviceIdDialog?.let { DeviceIdDialogHost(it) }
+    when {
+        state.usageReport != null -> UsageReportingDialog(state.usageReport, actions)
+        state.suggestFileManager -> FileManagerDialog(actions)
+        else -> deviceIdDialog?.let { DeviceIdDialogHost(it) }
     }
 }
 
@@ -239,7 +244,7 @@ internal fun MainContent(
                     showRunMode = false,
                 )
                 // In a panel: Subspace hides the main window, and a dialog anchored to it with it.
-                MainDialogs(state.usageReport, deviceIdDialog, actions)
+                MainDialogs(state, deviceIdDialog, actions)
             },
             detail =
                 if (tab == MainTab.STATUS) {
@@ -280,7 +285,7 @@ internal fun MainContent(
                 titleInBar = rail && !shortWindow(),
             )
         }
-        MainDialogs(state.usageReport, deviceIdDialog, actions)
+        MainDialogs(state, deviceIdDialog, actions)
     }
 }
 

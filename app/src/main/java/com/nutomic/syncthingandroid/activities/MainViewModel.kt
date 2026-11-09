@@ -74,6 +74,7 @@ constructor(
                     Constants.isDebuggable(context) ||
                         !context.resources.configuration.isTelevision,
                 usageReport = null,
+                suggestFileManager = false,
             )
         )
     val uiState: StateFlow<MainUiState> = state.asStateFlow()
@@ -252,6 +253,10 @@ constructor(
         Log.v(TAG, "showUsageReportingDialog triggered.")
         usageAsked = true
         restApi.getUsageReport { report -> state.update { it.copy(usageReport = report) } }
+    }
+
+    fun suggestFileManager(show: Boolean) {
+        state.update { it.copy(suggestFileManager = show) }
     }
 
     /** Answers the usage reporting question; [UsageAnswer.WEBSITE] is opened by the screen. */
