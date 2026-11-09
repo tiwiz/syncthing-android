@@ -325,16 +325,24 @@ Next steps (to be confirmed with the owner):
    waits for the owner). Plan: https://claude.ai/artifact/2QtTFauKyWAmRpxwFy4Gim, design canvas:
    https://claude.ai/artifact/FeynMSvXf3EWdPN2zv5BJs. Done: tablet fixes X1-X6 (#163-#170); XR Compose
    and the Full Space button (#171); panel and orbiters in Full Space (XR4, #172); separate panels for list and
-   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). web GUI panel (XR7, #177), kept in its own activity instead of beside the detail as planned, which would move the WebView and its certificate handling into `MainActivity`; not yet seen on the emulator, where popups from the WebView (`<select>`, `alert`) need checking too. In Full Space `ApplicationTheme` gives 56 dp targets and at least 14 sp text (XR8): rows with their own minimum read `LocalMinimumInteractiveComponentSize`, and text sizes come from the type scale. Only Full Space, not Home Space; the 3 dp focus ring is only on the main screen's rows. On a headset, in both spaces, `RecentChangesScreen` has no pull-to-refresh, only its Refresh button and a progress bar (XR9, #179). Next: milestone on the emulator.
+   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). web GUI panel (XR7, #177), kept in its own activity instead of beside the detail as planned, which would move the WebView and its certificate handling into `MainActivity`; not yet seen on the emulator, where popups from the WebView (`<select>`, `alert`) need checking too. In Full Space `ApplicationTheme` gives 56 dp targets and at least 14 sp text (XR8): rows with their own minimum read `LocalMinimumInteractiveComponentSize`, and text sizes come from the type scale. Only Full Space, not Home Space; the 3 dp focus ring is only on the main screen's rows. On a headset, in both spaces, `RecentChangesScreen` has no pull-to-refresh, only its Refresh button and a progress bar (XR9, #179). Next: the checks below that need a mouse, then the final PR to `main` waits for the owner.
    Decided: only `androidx.xr.compose`. XR Material 3 1.0.0-alpha17 crashes against Material 3
    1.5.0-beta01 (`NoSuchMethodError`, its override APIs are gone since alpha26 and beta01), and its
    `Spatial*` composables are in no published version. `androidx.xr.arcore` and `com.google.ar:core`
    are excluded in `app/build.gradle.kts`; SceneCore and `com.google.ar:impress` stay, XR Compose is
    built on them. The gate cannot see a break from that exclusion: SceneCore still calls ARCore in
    `MovableComponent`, so dragging a panel must be checked on the emulator.
-   Not verified yet: dragging a panel, the live label change, the return to Home Space, and whether
-   the foreground-service ANR on the 4-thread host comes from the slow host or from the XR session
-   being created on the main thread in the first composition. Only the main screen has the switch.
+   2026-11-09, milestone on the emulator with the native build: onboarding, Home Space, the Full Space
+   button, Syncthing running (native process, live status label and run mode), rail with 56 dp targets,
+   Add dropdown, file manager and device ID dialogs, and the web GUI in its own panel all show. An
+   activity started from Full Space stays in Full Space, and the main screen's panels hide while it is
+   open. The foreground-service ANR is the slow host: the main thread ran 4.5 s and waited 114.8 s for
+   CPU. `adb input` cannot reach panels or orbiters, as they are not input windows; it only reaches a
+   spatial dialog's own window, so taps need the emulator's mouse. Screens were driven by a temporary
+   broadcast receiver, never committed. Not verified, needs a mouse: dragging and resizing a panel
+   without ARCore, taps in orbiters and panels, `<select>` in the web GUI, a real pinch and drag on
+   recent changes, the return to Home Space, a real folder in the panels. Only the main screen has the
+   switch. Open problems in `docs/TECH-DEBT.md`.
    Panels are 440 + 600 dp wide: wider and the rail leaves the emulator's view. In Full Space a plain
    dialog is invisible, because it attaches to the main window `Subspace` hides: use `AppAlertDialog`
    (`ui/Spatial.kt`) in anything a panel can open. `SpatialDialog` measures with unbounded height,

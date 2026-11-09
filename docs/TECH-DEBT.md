@@ -31,6 +31,15 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
+- XR: `KEYCODE_BACK` does not close a spatial dialog in Full Space: tried on the file manager
+  suggestion, 90 s later it was still open, with the dialog's window focused and no ANR. Its
+  `dismissOnBackPress` is true and tapping the device ID dialog's close button works. Sent with
+  `adb shell input`, not yet with the emulator's own back; the cause is unknown.
+- XR: the web GUI in a Full Space panel gave three ANRs in a row on the 4-thread emulator host
+  ("Waited for FocusEvent"; main thread 10 s running, 167 s waiting for CPU), and none in the same
+  time in Home Space. The page does load and draw. Check on real hardware whether this is only the
+  host.
+
 - A unit test now and then fails with an NPE from `SyncthingConnection.onServiceDisconnected` on
   whichever test is running. Robolectric's `unbindService` calls it with a null `ComponentName`,
   which Android does not, and the parameter is non-null in Kotlin. Seen on
