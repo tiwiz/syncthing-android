@@ -28,10 +28,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.window.core.layout.WindowSizeClass
@@ -42,6 +47,14 @@ import androidx.xr.compose.platform.requestFullSpace
 import androidx.xr.compose.platform.requestHomeSpace
 import androidx.xr.compose.spatial.SpatialDialog
 import androidx.xr.compose.spatial.SpatialDialogProperties
+import androidx.xr.compose.spatial.Subspace
+import androidx.xr.compose.subspace.SpatialPanel
+import androidx.xr.compose.subspace.layout.SubspaceModifier
+import androidx.xr.compose.subspace.layout.height
+import androidx.xr.compose.subspace.layout.movable
+import androidx.xr.compose.subspace.layout.resizable
+import androidx.xr.compose.subspace.layout.width
+import androidx.xr.compose.unit.DpVolumeSize
 import com.nutomic.syncthingandroid.R
 import kotlinx.coroutines.launch
 
@@ -100,6 +113,31 @@ internal fun SpaceModeButton(
         }
     } else {
         FilledTonalIconButton(onClick = onToggle, modifier = modifier) { Icon(icon, label) }
+    }
+}
+
+/**
+ * A whole screen: in Full Space a panel the user can move and resize, because the screen would
+ * otherwise fill the view; elsewhere just [content]. The content keeps its state across the switch,
+ * which matters for a WebView.
+ */
+@Composable
+fun SpatialScreenPanel(width: Dp, height: Dp, content: @Composable () -> Unit) {
+    val currentContent by rememberUpdatedState(content)
+    val screen = remember { movableContentOf { currentContent() } }
+    if (isSpatialUi) {
+        Subspace {
+            SpatialPanel(
+                SubspaceModifier.width(width)
+                    .height(height)
+                    .resizable(minimumSize = DpVolumeSize(width / 2, height / 2, 0.dp))
+                    .movable()
+            ) {
+                screen()
+            }
+        }
+    } else {
+        screen()
     }
 }
 

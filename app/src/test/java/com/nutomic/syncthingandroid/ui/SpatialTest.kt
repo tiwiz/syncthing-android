@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import org.junit.Assert.assertEquals
@@ -136,6 +137,13 @@ class SpatialTest {
         compose.onNodeWithText("Yes").performClick()
 
         assertEquals(1, confirmed)
+    }
+
+    @Test
+    fun `outside Full Space a screen panel is just its content`() {
+        show { SpatialScreenPanel(width = 1024.dp, height = 720.dp) { Text("The screen") } }
+
+        compose.onNodeWithText("The screen").assertExists()
     }
 
     @Test

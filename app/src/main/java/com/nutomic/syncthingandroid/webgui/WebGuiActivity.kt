@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
@@ -31,8 +32,12 @@ import com.nutomic.syncthingandroid.activities.ThemedAppCompatActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import com.nutomic.syncthingandroid.ui.SpatialScreenPanel
 import java.security.GeneralSecurityException
 import androidx.core.net.toUri
+
+private const val PANEL_WIDTH = 1024
+private const val PANEL_HEIGHT = 720
 
 /**
  * Holds a WebView that shows the web ui of the local syncthing instance.
@@ -105,21 +110,23 @@ class WebGuiActivity : ThemedAppCompatActivity() {
         setContent {
             val loadState by viewModel.loadState.collectAsStateWithLifecycle()
             ApplicationTheme {
-                WebGuiScreen(
-                    loading = loadState.loading,
-                    error = loadState.error,
-                    onNavigateBack = { finish() },
-                    webViewFactory = { context ->
-                        viewModel.onWebViewCreated()
-                        createWebView(context, webViewClient).also {
-                            webView = it
-                            // The WebView is created lazily during composition, which may run
-                            // after the service already reported ACTIVE. Attempt the load here so
-                            // we don't miss that initial state and stay stuck on the spinner.
-                            loadWebGuiIfNeeded()
-                        }
-                    },
-                )
+                SpatialScreenPanel(PANEL_WIDTH.dp, PANEL_HEIGHT.dp) {
+                    WebGuiScreen(
+                        loading = loadState.loading,
+                        error = loadState.error,
+                        onNavigateBack = { finish() },
+                        webViewFactory = { context ->
+                            viewModel.onWebViewCreated()
+                            createWebView(context, webViewClient).also {
+                                webView = it
+                                // The WebView is created lazily during composition, which may run
+                                // after the service already reported ACTIVE. Attempt the load here so
+                                // we don't miss that initial state and stay stuck on the spinner.
+                                loadWebGuiIfNeeded()
+                            }
+                        },
+                    )
+                }
             }
         }
 
