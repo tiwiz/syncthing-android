@@ -252,6 +252,14 @@ class MainActivityTest {
         }
     }
 
+    /** Taps the files button while no app can handle the intent. */
+    private fun openCameraWithoutFileManager(screen: MainScreen) {
+        val app = shadowOf(context as Application)
+        app.checkActivities(true)
+        screen.openInFiles("Camera")
+        app.checkActivities(false)
+    }
+
     /** The app reports a missing folder before it looks for a file manager. */
     private fun cameraOnDisk() {
         val folder = File(context.cacheDir, "camera").apply { mkdirs() }
@@ -265,10 +273,7 @@ class MainActivityTest {
         cameraOnDisk()
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)
-            val app = context as Application
-            shadowOf(app).checkActivities(true)
-            screen.openInFiles("Camera")
-            shadowOf(app).checkActivities(false)
+            openCameraWithoutFileManager(screen)
             assertTrue(screen.fileManagerSuggested())
 
             screen.recreate()
@@ -285,10 +290,7 @@ class MainActivityTest {
         cameraOnDisk()
         stopped().use { screen ->
             screen.showTab(MainScreen.Tab.FOLDERS)
-            val app = context as Application
-            shadowOf(app).checkActivities(true)
-            screen.openInFiles("Camera")
-            shadowOf(app).checkActivities(false)
+            openCameraWithoutFileManager(screen)
 
             assertNull(screen.answerFileManager(install = false))
             assertFalse(screen.fileManagerSuggested())

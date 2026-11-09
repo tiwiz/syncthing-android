@@ -74,6 +74,7 @@ constructor(
                     Constants.isDebuggable(context) ||
                         !context.resources.configuration.isTelevision,
                 usageReport = null,
+                suggestFileManager = false,
             )
         )
     val uiState: StateFlow<MainUiState> = state.asStateFlow()
@@ -254,11 +255,11 @@ constructor(
         restApi.getUsageReport { report -> state.update { it.copy(usageReport = report) } }
     }
 
-    /** Answers the usage reporting question; [UsageAnswer.WEBSITE] is opened by the screen. */
     fun suggestFileManager(show: Boolean) {
         state.update { it.copy(suggestFileManager = show) }
     }
 
+    /** Answers the usage reporting question; [UsageAnswer.WEBSITE] is opened by the screen. */
     fun onUsageReporting(answer: UsageAnswer) {
         state.update { it.copy(usageReport = null) }
         val restApi = snapshot.api ?: return

@@ -78,7 +78,7 @@ internal data class MainUiState(
     /** The usage report to ask about, or null when not asking. */
     val usageReport: String?,
     /** No app could open a folder: the screen suggests a file manager. */
-    val suggestFileManager: Boolean = false,
+    val suggestFileManager: Boolean,
 )
 
 /** What the main screen's overflow menu can do; each entry also closes the menu. */
