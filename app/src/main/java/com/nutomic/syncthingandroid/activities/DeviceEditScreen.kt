@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -282,6 +283,7 @@ private fun DiscoveredDevices(
                             style = MaterialTheme.typography.bodyMedium,
                             modifier =
                                 Modifier.fillMaxWidth()
+                                    .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                                     .clickable {
                                         actions.onFormChange(
                                             form.copy(deviceId = entry.deviceId, changed = true)
@@ -510,18 +512,22 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
                         values.zip(titles).forEachIndexed { index, (value, title) ->
                             Row(
                                 modifier =
-                                    Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(
-                                        selected = index == selected,
-                                        role = Role.RadioButton,
-                                    ) {
-                                        // Only a different compression is a change.
-                                        if (index != selected) {
-                                            actions.onFormChange(
-                                                form.copy(compression = value, changed = true)
-                                            )
-                                        }
-                                        dismiss()
-                                    },
+                                    Modifier.fillMaxWidth()
+                                        .heightIn(
+                                            min = LocalMinimumInteractiveComponentSize.current
+                                        )
+                                        .selectable(
+                                            selected = index == selected,
+                                            role = Role.RadioButton,
+                                        ) {
+                                            // Only a different compression is a change.
+                                            if (index != selected) {
+                                                actions.onFormChange(
+                                                    form.copy(compression = value, changed = true)
+                                                )
+                                            }
+                                            dismiss()
+                                        },
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
