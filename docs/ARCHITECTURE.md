@@ -43,7 +43,6 @@ The namespace is inherited from the original app. The application id is
 | `model` | Kotlin | Gson models mirroring Syncthing's JSON (`Config`, `Folder`, `Device`, `Options`, `Gui`, `Event`, `FolderStatus`, `Connections`, …) plus local caches (`LocalCompletion`, `RemoteCompletion`, `CachedFolderStatus`) |
 | `util` | Kotlin | `ConfigXml` (DOM read/write of `config.xml`), `ConfigRouter`, `FileUtils`/`SafUtils`/`FileOpener`, `PermissionUtil`, `Util` (shell), `TextFormat`, `UiUtil`, `JobUtils`, `CertificateValidator`, `extensions.kt` |
 | `activities` | Kotlin, Compose | Every screen except onboarding, settings, recent changes and the web GUI: main (`MainContent`, `MainRows`, `MainDrawer`), folder (`FolderForm`, `FolderEditScreen`), device (`DeviceForm`, `DeviceEditScreen`), pickers and dialogs, share, Syncthing Camera, QR scanner, log, web page. `ThemedAppCompatActivity` applies the theme and edge-to-edge; each screen's state lives in its ViewModel (`MainViewModel`, `FolderEditViewModel`, `LogViewModel`, …) |
-| `fragments` | Kotlin, Compose | `DeviceIdDialogFragment` (Compose inside a dialog fragment) |
 | `views` | Kotlin | `FolderRowState`, `DeviceRowState`: what a row of the main screen's lists shows |
 | `onboarding` | Kotlin, Compose | Launcher activity: welcome, permissions, key generation |
 | `settings` | Kotlin, Compose | `SettingsActivity` with Navigation 3 and one screen per section, backed by `SharedPreferenceFlow.kt` |

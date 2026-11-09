@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.window.core.layout.WindowSizeClass
 import androidx.xr.compose.platform.LocalSpatialCapabilities
 import androidx.xr.compose.platform.LocalSpatialConfiguration
@@ -114,16 +115,16 @@ fun AppAlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    /** False for a question the user must answer: back and taps outside do not close it. */
-    dismissible: Boolean = true,
+    /** A spatial dialog takes only whether back and taps outside dismiss it. */
+    properties: DialogProperties = DialogProperties(),
 ) {
     if (isSpatialUi) {
         SpatialDialog(
             onDismissRequest = onDismissRequest,
             properties =
                 SpatialDialogProperties(
-                    dismissOnBackPress = dismissible,
-                    dismissOnClickOutside = dismissible,
+                    dismissOnBackPress = properties.dismissOnBackPress,
+                    dismissOnClickOutside = properties.dismissOnClickOutside,
                 ),
         ) {
             SpatialDialogBody(confirmButton, modifier, dismissButton, title, text)
@@ -136,6 +137,7 @@ fun AppAlertDialog(
             dismissButton = dismissButton,
             title = title,
             text = text,
+            properties = properties,
         )
     }
 }

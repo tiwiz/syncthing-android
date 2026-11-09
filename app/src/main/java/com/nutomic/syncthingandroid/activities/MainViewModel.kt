@@ -91,6 +91,9 @@ constructor(
     /** The folder or device open in the detail pane, or null with none. */
     val detail: StateFlow<DetailSelection?> = detailState.asStateFlow()
 
+    /** The device ID dialog over this screen. */
+    val deviceIdDialog = DeviceIdDialogState(savedState)
+
     private var snapshot = ServiceSnapshot.UNBOUND
 
     /** The figures from the last system status, while Syncthing runs. */

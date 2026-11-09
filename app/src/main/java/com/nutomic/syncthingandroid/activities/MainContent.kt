@@ -165,6 +165,23 @@ internal fun shortWindow(): Boolean =
         .isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
 
 /**
+ * The main screen's dialogs, one at a time: all spatial dialogs share one active flag, so closing
+ * one of two would break the other. The usage question goes first, as it blocks the screen.
+ */
+@Composable
+private fun MainDialogs(
+    usageReport: String?,
+    deviceIdDialog: DeviceIdDialogState?,
+    actions: MainActions,
+) {
+    if (usageReport != null) {
+        UsageReportingDialog(usageReport, actions)
+    } else {
+        deviceIdDialog?.let { DeviceIdDialogHost(it) }
+    }
+}
+
+/**
  * The main screen: the destinations in a navigation bar or rail, the top bar with the overflow
  * menu, and the exit button.
  */
@@ -179,6 +196,8 @@ internal fun MainContent(
     detail: Detail? = null,
     detailBackProgress: () -> Float = { 0f },
     onTwoPanesChange: (Boolean) -> Unit = {},
+    /** The device ID dialog over the screen; null only where a test does not need it. */
+    deviceIdDialog: DeviceIdDialogState? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
     val directive = paneDirective()
@@ -220,7 +239,7 @@ internal fun MainContent(
                     showRunMode = false,
                 )
                 // In a panel: Subspace hides the main window, and a dialog anchored to it with it.
-                state.usageReport?.let { UsageReportingDialog(it, actions) }
+                MainDialogs(state.usageReport, deviceIdDialog, actions)
             },
             detail =
                 if (tab == MainTab.STATUS) {
@@ -261,7 +280,7 @@ internal fun MainContent(
                 titleInBar = rail && !shortWindow(),
             )
         }
-        state.usageReport?.let { UsageReportingDialog(it, actions) }
+        MainDialogs(state.usageReport, deviceIdDialog, actions)
     }
 }
 

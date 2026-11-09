@@ -31,6 +31,12 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
+- A unit test now and then fails with an NPE from `SyncthingConnection.onServiceDisconnected` on
+  whichever test is running. Robolectric's `unbindService` calls it with a null `ComponentName`,
+  which Android does not, and the parameter is non-null in Kotlin. Seen on
+  `MainViewModelDetailTest` under load (full gate next to the XR emulator). A rerun passes. Fix it
+  in the test setup or a shadow, not in app code.
+
 - While Syncthing is stopped, the main screen's refresh (every second) reads `config.xml` twice on
   the main thread, once for the folders and once for the devices (`ConfigRouter` loads the file for
   every offline read). Reading it off the main thread, and only when the file changed, needs

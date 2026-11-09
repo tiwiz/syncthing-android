@@ -18,6 +18,7 @@ import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.settings.SettingsActivity
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
+import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
@@ -297,6 +298,21 @@ class MainActivityTest {
     }
 
     @Test
+    fun `the menu shows this device's ID, also after a configuration change`() {
+        stopped().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.recreate()
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.closeDeviceId()
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
+        }
+    }
+
+    @Test
     fun `the menu offers import and export, and needs Syncthing running for the rest`() {
         stopped().use { screen ->
             screen.openMenu()
@@ -457,6 +473,19 @@ class MainActivityTest {
 
             assertTrue(screen.usageReportingAsked())
             assertEquals(reportRequests, checkNotNull(syncthing).requests("/rest/svc/report").size)
+        }
+    }
+
+    @Test
+    fun `the device ID waits for the usage question, two dialogs would interfere in Full Space`() {
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.answerUsageReporting(MainScreen.YES)
+            awaitMain { screen.deviceIdShown(LOCAL_DEVICE_ID) }
         }
     }
 

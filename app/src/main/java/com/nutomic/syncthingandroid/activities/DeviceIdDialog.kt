@@ -1,6 +1,5 @@
-package com.nutomic.syncthingandroid.fragments
+package com.nutomic.syncthingandroid.activities
 
-import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -22,12 +21,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,12 +37,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -53,174 +55,176 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.FragmentManager
+import androidx.core.os.bundleOf
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.nutomic.syncthingandroid.R
-import com.nutomic.syncthingandroid.activities.CARD_CORNER
-import com.nutomic.syncthingandroid.theme.ApplicationTheme
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class DeviceIdDialogFragment : DialogFragment() {
+/** What the device ID dialog shows. */
+internal data class DeviceIdRequest(
+    val deviceName: String,
+    val deviceId: String,
+    val isCurrentDevice: Boolean,
+)
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val args = requireArguments()
-        val deviceName = requireNotNull(args.getString(ARG_DEVICE_NAME))
-        val deviceId = requireNotNull(args.getString(ARG_DEVICE_ID))
-        val isCurrentDevice = args.getBoolean(ARG_IS_CURRENT_DEVICE)
+/** Which device ID the screen shows, kept across configuration changes and process death. */
+internal class DeviceIdDialogState(private val savedState: SavedStateHandle) {
 
-        val qrCode = generateQrCode(deviceId)
-
-        return Dialog(requireContext()).apply {
-            setContentView(
-                ComposeView(context).apply {
-                    setContent {
-                        DeviceIdDialog(
-                            onDismiss = { dismiss() },
-                            deviceName,
-                            deviceId,
-                            qrCode,
-                            onCopy = { copyDeviceId(deviceId) },
-                            onShare = { shareDeviceId(deviceId) },
-                            isCurrentDevice,
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    private fun generateQrCode(deviceId: String): Bitmap {
-        val qrSize = 232
-        val black = 0xFF000000
-        val white = 0x00000000
-
-        val bitMatrix = MultiFormatWriter()
-            .encode(deviceId, BarcodeFormat.QR_CODE, qrSize, qrSize)
-        val bitMap = createBitmap(bitMatrix.width, bitMatrix.height, Bitmap.Config.ARGB_8888)
-
-        for (x in 0 until qrSize) {
-            for (y in 0 until qrSize) {
-                val pixel = if (bitMatrix[x, y]) black else white
-                bitMap[x, y] = pixel.toInt()
+    private val state =
+        MutableStateFlow(
+            savedState.get<Bundle>(STATE_REQUEST)?.let {
+                DeviceIdRequest(
+                    it.getString(ARG_DEVICE_NAME).orEmpty(),
+                    it.getString(ARG_DEVICE_ID).orEmpty(),
+                    it.getBoolean(ARG_IS_CURRENT_DEVICE),
+                )
             }
-        }
+        )
 
-        return bitMap
+    /** The device ID to show, or null with no dialog. */
+    val request: StateFlow<DeviceIdRequest?> = state.asStateFlow()
+
+    fun show(request: DeviceIdRequest) {
+        savedState[STATE_REQUEST] =
+            bundleOf(
+                ARG_DEVICE_NAME to request.deviceName,
+                ARG_DEVICE_ID to request.deviceId,
+                ARG_IS_CURRENT_DEVICE to request.isCurrentDevice,
+            )
+        state.value = request
     }
 
-    private fun copyDeviceId(id: String) {
-        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    fun dismiss() {
+        savedState.remove<Bundle>(STATE_REQUEST)
+        state.value = null
+    }
 
-        val clip = ClipData.newPlainText(getString(R.string.device_id), id)
-        clipboard.setPrimaryClip(clip)
+    private companion object {
+        const val STATE_REQUEST = "device_id_request"
+        const val ARG_DEVICE_NAME = "device_name"
+        const val ARG_DEVICE_ID = "device_id"
+        const val ARG_IS_CURRENT_DEVICE = "is_current_device"
+    }
+}
 
-        // Android 13+ shows a system confirmation automatically
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            Toast.makeText(
-                requireContext(),
-                R.string.device_id_copied_to_clipboard,
-                Toast.LENGTH_SHORT
-            ).show()
+/**
+ * Shows the dialog [state] asks for. Part of the screen, so it also shows in Full Space, where it
+ * has to sit inside a panel: Subspace hides the main window and whatever is anchored to it.
+ */
+@Composable
+internal fun DeviceIdDialogHost(state: DeviceIdDialogState) {
+    val request by state.request.collectAsStateWithLifecycle()
+    request?.let { DeviceIdDialog(it, onDismiss = state::dismiss) }
+}
+
+private fun generateQrCode(deviceId: String): Bitmap {
+    val qrSize = 232
+    val black = 0xFF000000
+    val white = 0x00000000
+
+    val bitMatrix = MultiFormatWriter().encode(deviceId, BarcodeFormat.QR_CODE, qrSize, qrSize)
+    val bitMap = createBitmap(bitMatrix.width, bitMatrix.height, Bitmap.Config.ARGB_8888)
+
+    for (x in 0 until qrSize) {
+        for (y in 0 until qrSize) {
+            val pixel = if (bitMatrix[x, y]) black else white
+            bitMap[x, y] = pixel.toInt()
         }
     }
 
-    private fun shareDeviceId(deviceId: String) {
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+    return bitMap
+}
+
+private fun copyDeviceId(context: Context, id: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+    val clip = ClipData.newPlainText(context.getString(R.string.device_id), id)
+    clipboard.setPrimaryClip(clip)
+
+    // Android 13+ shows a system confirmation automatically
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        Toast.makeText(context, R.string.device_id_copied_to_clipboard, Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun shareDeviceId(context: Context, deviceId: String) {
+    val shareIntent =
+        Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, deviceId)
         }
 
-        startActivity(
-            Intent.createChooser(shareIntent, getString(R.string.share_device_id_chooser))
-        )
-    }
-
-
-    companion object {
-        private const val ARG_DEVICE_NAME = "device_name"
-        private const val ARG_DEVICE_ID = "device_id"
-        private const val ARG_IS_CURRENT_DEVICE = "is_current_device"
-
-        fun show(
-            fm: FragmentManager,
-            deviceName: String,
-            deviceId: String,
-            isCurrentDevice: Boolean = false,
-        ) {
-            DeviceIdDialogFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_DEVICE_NAME, deviceName)
-                    putString(ARG_DEVICE_ID, deviceId)
-                    putBoolean(ARG_IS_CURRENT_DEVICE, isCurrentDevice)
-                }
-            }.show(fm, "DeviceIdDialog")
-        }
-    }
+    context.startActivity(
+        Intent.createChooser(shareIntent, context.getString(R.string.share_device_id_chooser))
+    )
 }
 
-
 @Composable
-fun DeviceIdDialog(
+internal fun DeviceIdDialog(
+    request: DeviceIdRequest,
     onDismiss: () -> Unit,
-    deviceName: String,
-    deviceId: String,
-    qrCode: Bitmap,
-    onCopy: () -> Unit,
-    onShare: () -> Unit,
-    isCurrentDevice: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    ApplicationTheme {
-        AlertDialog(
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-            modifier = Modifier.let {
-                if (!isLandscape()) it.widthIn(max = 460.dp).fillMaxWidth(DIALOG_WIDTH_FRACTION) else it
+    val context = LocalContext.current
+    val deviceId = request.deviceId
+    val qrCode = remember(deviceId) { generateQrCode(deviceId) }
+    val onCopy = { copyDeviceId(context, deviceId) }
+    val onShare = { shareDeviceId(context, deviceId) }
+    val landscape = isLandscape()
+    AppAlertDialog(
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier =
+            modifier.let {
+                if (!landscape) it.widthIn(max = 460.dp).fillMaxWidth(DIALOG_WIDTH_FRACTION) else it
             },
-            onDismissRequest = { onDismiss() },
-            title = {
-                if (isLandscape()) {
-                    Row(Modifier.fillMaxWidth()) {
-                        DialogTitle(deviceName, isCurrentDevice, Modifier.weight(1f))
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Outlined.Close, stringResource(R.string.close_device_id))
-                        }
-                    }
-                } else {
-                    DialogTitle(deviceName, isCurrentDevice)
-                }
-            },
-            text = {
-                if (isLandscape()) {
-                    LandscapeDialogContent(deviceId, qrCode, onCopy, onShare)
-                } else {
-                    PortraitDialogContent(deviceId, qrCode, onCopy, onShare)
-                }
-            },
-            confirmButton = {
-                if (!isLandscape()) {
-                    TextButton(onClick = { onDismiss() }) {
-                        Text(stringResource(R.string.finish))
+        onDismissRequest = onDismiss,
+        title = {
+            if (landscape) {
+                Row(Modifier.fillMaxWidth()) {
+                    DialogTitle(request.deviceName, request.isCurrentDevice, Modifier.weight(1f))
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Outlined.Close, stringResource(R.string.close_device_id))
                     }
                 }
-            },
-        )
-    }
+            } else {
+                DialogTitle(request.deviceName, request.isCurrentDevice)
+            }
+        },
+        text = {
+            if (landscape) {
+                LandscapeDialogContent(deviceId, qrCode, onCopy, onShare)
+            } else {
+                PortraitDialogContent(deviceId, qrCode, onCopy, onShare)
+            }
+        },
+        confirmButton = {
+            if (!landscape) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.finish)) }
+            }
+        },
+    )
 }
 
 private const val DIALOG_WIDTH_FRACTION = 0.9f
 
 @Composable
 @ReadOnlyComposable
-fun isLandscape(): Boolean {
+private fun isLandscape(): Boolean {
     val configuration = LocalConfiguration.current
     return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 }
 
 @Composable
-fun DialogTitle(
+private fun DialogTitle(
     deviceName: String,
     isCurrentDevice: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val thisDeviceText = stringResource(R.string.this_device)
 
@@ -229,13 +233,13 @@ fun DialogTitle(
         Spacer(Modifier.height(4.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-                .semantics(mergeDescendants = true) {
+            modifier =
+                Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
                     contentDescription = deviceName
                     if (isCurrentDevice) {
                         stateDescription = thisDeviceText
                     }
-                }
+                },
         ) {
             Text(
                 text = deviceName,
@@ -265,7 +269,7 @@ fun DialogTitle(
 }
 
 @Composable
-fun PortraitDialogContent(
+private fun PortraitDialogContent(
     deviceId: String,
     qrCode: Bitmap,
     onCopy: () -> Unit,
@@ -276,17 +280,18 @@ fun PortraitDialogContent(
     val containerHeightDp = windowInfo.containerDpSize.height
     val qrMaxHeight = minOf(containerHeightDp * 0.30f, 280.dp)
 
-    Column(modifier) {
+    // Scrolls so that large text cannot push the buttons out of the dialog.
+    Column(modifier.verticalScroll(rememberScrollState())) {
         // Tight corners: rounder ones would cut into the QR code's quiet zone.
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
-            modifier = Modifier.heightIn(min = 160.dp, max = qrMaxHeight).fillMaxWidth()
+            modifier = Modifier.heightIn(min = 160.dp, max = qrMaxHeight).fillMaxWidth(),
         ) {
             Image(
                 bitmap = qrCode.asImageBitmap(),
                 contentDescription = stringResource(R.string.device_id),
-                Modifier.fillMaxHeight()
+                Modifier.fillMaxHeight(),
             )
         }
         Spacer(Modifier.height(16.dp))
@@ -301,7 +306,7 @@ fun PortraitDialogContent(
             FilledTonalButton(onCopy, Modifier.weight(1f)) {
                 Icon(
                     imageVector = Icons.Outlined.ContentCopy,
-                    contentDescription = stringResource(R.string.copy)
+                    contentDescription = stringResource(R.string.copy),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.copy))
@@ -309,7 +314,7 @@ fun PortraitDialogContent(
             FilledTonalButton(onShare, Modifier.weight(1f)) {
                 Icon(
                     imageVector = Icons.Outlined.Share,
-                    contentDescription = stringResource(R.string.share_title)
+                    contentDescription = stringResource(R.string.share_title),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.share_title))
@@ -319,7 +324,7 @@ fun PortraitDialogContent(
 }
 
 @Composable
-fun LandscapeDialogContent(
+private fun LandscapeDialogContent(
     deviceId: String,
     qrCode: Bitmap,
     onCopy: () -> Unit,
@@ -331,16 +336,16 @@ fun LandscapeDialogContent(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
-            modifier = Modifier.fillMaxHeight().weight(1f)
+            modifier = Modifier.fillMaxHeight().weight(1f),
         ) {
             Image(
                 bitmap = qrCode.asImageBitmap(),
                 contentDescription = stringResource(R.string.device_id),
-                Modifier.fillMaxHeight()
+                Modifier.fillMaxHeight(),
             )
         }
         Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Surface(
                 shape = RoundedCornerShape(CARD_CORNER.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -352,7 +357,7 @@ fun LandscapeDialogContent(
                 FilledTonalButton(onCopy, Modifier.weight(1f)) {
                     Icon(
                         imageVector = Icons.Outlined.ContentCopy,
-                        contentDescription = stringResource(R.string.copy)
+                        contentDescription = stringResource(R.string.copy),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.copy))
@@ -360,7 +365,7 @@ fun LandscapeDialogContent(
                 FilledTonalButton(onShare, Modifier.weight(1f)) {
                     Icon(
                         imageVector = Icons.Outlined.Share,
-                        contentDescription = stringResource(R.string.share_title)
+                        contentDescription = stringResource(R.string.share_title),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.share_title))

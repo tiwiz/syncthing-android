@@ -124,6 +124,9 @@ constructor(
     @Assisted args: DeviceEditArgs,
 ) : ViewModel() {
 
+    /** The device ID dialog over this screen. */
+    val deviceIdDialog = DeviceIdDialogState(savedState)
+
     private val eventChannel = Channel<EditEvent<DeviceRequest>>(Channel.BUFFERED)
     val events: Flow<EditEvent<DeviceRequest>> = eventChannel.receiveAsFlow()
 
