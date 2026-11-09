@@ -23,6 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -148,7 +149,7 @@ private fun PickerRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable(enabled = file.isDirectory) { onOpen(file) }

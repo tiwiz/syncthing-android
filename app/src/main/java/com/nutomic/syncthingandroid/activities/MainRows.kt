@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.theme.focusRing
 import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.StateBadge
 import com.nutomic.syncthingandroid.ui.SyncProgress
@@ -225,6 +226,7 @@ private fun ListRow(
                     if (selected) MaterialTheme.colorScheme.secondaryContainer
                     else MaterialTheme.colorScheme.surfaceContainerLow
                 )
+                .then(focusRing(interactionSource, shape, MaterialTheme.colorScheme.primary))
                 .clickable(
                     interactionSource = interactionSource,
                     indication = ripple(),

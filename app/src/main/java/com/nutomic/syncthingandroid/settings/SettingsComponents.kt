@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -325,7 +326,7 @@ private fun SingleChoiceDialog(
                     Row(
                         modifier =
                             Modifier.fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                                 .selectable(selected = selected, role = Role.RadioButton) {
                                     onValueChange(item)
                                     onDismiss()
@@ -368,7 +369,7 @@ private fun MultiChoiceDialog(
                     Row(
                         modifier =
                             Modifier.fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                                 .toggleable(value = checked, role = Role.Checkbox) {
                                     dialogValue = if (it) dialogValue + item else dialogValue - item
                                 }

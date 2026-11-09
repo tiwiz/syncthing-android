@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -477,7 +478,7 @@ private fun SsidSelectionDialog(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                                 .toggleable(checked, true, Role.Checkbox) {
                                     dialogValue =
                                         if (it) dialogValue + itemValue else dialogValue - itemValue
