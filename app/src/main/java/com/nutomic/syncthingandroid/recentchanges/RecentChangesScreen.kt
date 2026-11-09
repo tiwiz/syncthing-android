@@ -74,6 +74,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.xr.compose.platform.LocalSpatialConfiguration
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.GROUP_GAP
 import com.nutomic.syncthingandroid.ui.groupedItemShape
@@ -91,6 +92,10 @@ internal fun RecentChangesScreen(
     onRefresh: () -> Unit,
     onToggleExactTimes: () -> Unit,
     onItemClick: (RecentChange) -> Unit,
+    // A pinch and drag scrolls on a headset, and would pull at the top of the list.
+    pullToRefresh: Boolean =
+        !LocalConfiguration.current.isTelevision &&
+            !LocalSpatialConfiguration.current.hasXrSpatialFeature,
 ) {
     val configuration = LocalConfiguration.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -99,7 +104,7 @@ internal fun RecentChangesScreen(
     )
 
     // Kept alongside pull-to-refresh: on Android TV the list is driven by a D-pad, where a pull
-    // gesture is not reachable.
+    // gesture is not reachable, and on a headset the gesture is off.
     val refreshAction: @Composable () -> Unit = {
         IconButton(onClick = onRefresh) {
             Icon(
@@ -177,20 +182,20 @@ internal fun RecentChangesScreen(
             }
         }
 
-        if (configuration.isTelevision) {
-            // No pull-to-refresh on TV. The gesture is unreachable with a D-pad anyway, and the
-            // indicator's nested-scroll hook also reacts to the programmatic scrolling that focus
-            // movement causes: moving focus back up to the first row starts a "pull" that no gesture
-            // ever releases, leaving the spinner stuck on screen. The top bar's refresh action is the
-            // TV entry point.
-            Box(modifier = containerModifier, content = listContent)
-        } else {
+        if (pullToRefresh) {
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 modifier = containerModifier,
                 content = listContent,
             )
+        } else {
+            // No pull-to-refresh on TV. The gesture is unreachable with a D-pad anyway, and the
+            // indicator's nested-scroll hook also reacts to the programmatic scrolling that focus
+            // movement causes: moving focus back up to the first row starts a "pull" that no gesture
+            // ever releases, leaving the spinner stuck on screen. The top bar's refresh action is the
+            // TV entry point.
+            Box(modifier = containerModifier, content = listContent)
         }
     }
 }
