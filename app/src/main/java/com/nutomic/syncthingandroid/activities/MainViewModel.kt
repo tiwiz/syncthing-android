@@ -255,6 +255,10 @@ constructor(
     }
 
     /** Answers the usage reporting question; [UsageAnswer.WEBSITE] is opened by the screen. */
+    fun suggestFileManager(show: Boolean) {
+        state.update { it.copy(suggestFileManager = show) }
+    }
+
     fun onUsageReporting(answer: UsageAnswer) {
         state.update { it.copy(usageReport = null) }
         val restApi = snapshot.api ?: return

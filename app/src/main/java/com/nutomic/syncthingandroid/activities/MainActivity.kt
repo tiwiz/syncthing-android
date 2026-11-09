@@ -267,7 +267,14 @@ class MainActivity : ThemedAppCompatActivity() {
             }
 
             override fun onOpenFolderInFiles(path: String) =
-                FileOpener.openFolder(this@MainActivity, path)
+                FileOpener.openFolder(this@MainActivity, path) {
+                    viewModel.suggestFileManager(true)
+                }
+
+            override fun onFileManagerSuggestion(install: Boolean) {
+                viewModel.suggestFileManager(false)
+                if (install) FileOpener.openFileManagerInStore(this@MainActivity)
+            }
 
             override fun onOverride(folderId: String) =
                 sendFolderAction(SyncthingService.ACTION_OVERRIDE_CHANGES, folderId)

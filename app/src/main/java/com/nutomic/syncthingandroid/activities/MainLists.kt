@@ -200,6 +200,26 @@ private fun EmptyList(text: Int) {
     }
 }
 
+/** Part of the screen, unlike the View dialog in `FileOpener`, so it also shows in Full Space. */
+@Composable
+internal fun FileManagerDialog(actions: MainActions) {
+    AppAlertDialog(
+        onDismissRequest = { actions.onFileManagerSuggestion(install = false) },
+        title = { Text(stringResource(R.string.suggest_file_manager_app_dialog_title)) },
+        text = { Text(stringResource(R.string.suggest_file_manager_app_dialog_text)) },
+        confirmButton = {
+            TextButton(onClick = { actions.onFileManagerSuggestion(install = true) }) {
+                Text(stringResource(R.string.yes))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { actions.onFileManagerSuggestion(install = false) }) {
+                Text(stringResource(R.string.no))
+            }
+        },
+    )
+}
+
 @Composable
 internal fun UsageReportingDialog(report: String, actions: MainActions) {
     AppAlertDialog(

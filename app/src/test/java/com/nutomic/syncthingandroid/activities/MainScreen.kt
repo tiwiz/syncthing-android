@@ -509,6 +509,20 @@ internal class MainScreen(
         return viewModel
     }
 
+    /** Whether the screen's own dialog suggests a file manager app. */
+    fun fileManagerSuggested(): Boolean =
+        compose
+            .onAllNodes(hasText("No compatible file manager app found"))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    /** Answers the suggestion; returns what it started. */
+    fun answerFileManager(install: Boolean): Intent? {
+        compose.onNode(hasText(if (install) "Yes" else "No") and hasClickAction()).performClick()
+        compose.waitForIdle()
+        return nextStarted()
+    }
+
     /** Whether the device ID dialog shows [deviceId]. */
     fun deviceIdShown(deviceId: String): Boolean =
         compose.onAllNodes(hasText(deviceId)).fetchSemanticsNodes().isNotEmpty()

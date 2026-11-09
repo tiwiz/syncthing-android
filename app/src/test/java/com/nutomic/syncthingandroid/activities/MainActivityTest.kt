@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -28,6 +29,7 @@ import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.awaitMain
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -39,6 +41,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -246,6 +249,49 @@ class MainActivityTest {
             val started = screen.openInFiles("Camera")
 
             assertNotEquals(FolderActivity::class.java.name, started?.component?.className)
+        }
+    }
+
+    /** The app reports a missing folder before it looks for a file manager. */
+    private fun cameraOnDisk() {
+        val folder = File(context.cacheDir, "camera").apply { mkdirs() }
+        ConfigFixture.install(context) {
+            it.replace("/storage/emulated/0/DCIM/Camera", folder.path)
+        }
+    }
+
+    @Test
+    fun `without a file manager the screen suggests one, also after a configuration change`() {
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            val app = context as Application
+            shadowOf(app).checkActivities(true)
+            screen.openInFiles("Camera")
+            shadowOf(app).checkActivities(false)
+            assertTrue(screen.fileManagerSuggested())
+
+            screen.recreate()
+            assertTrue(screen.fileManagerSuggested())
+
+            val store = checkNotNull(screen.answerFileManager(install = true))
+            assertEquals("market", store.data?.scheme)
+            assertFalse(screen.fileManagerSuggested())
+        }
+    }
+
+    @Test
+    fun `the suggested file manager can be declined`() {
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            val app = context as Application
+            shadowOf(app).checkActivities(true)
+            screen.openInFiles("Camera")
+            shadowOf(app).checkActivities(false)
+
+            assertNull(screen.answerFileManager(install = false))
+            assertFalse(screen.fileManagerSuggested())
         }
     }
 
