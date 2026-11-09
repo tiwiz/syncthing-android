@@ -31,10 +31,14 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
-- XR: `KEYCODE_BACK` does not close a spatial dialog in Full Space: tried on the file manager
-  suggestion, 90 s later it was still open, with the dialog's window focused and no ANR. Its
-  `dismissOnBackPress` is true and tapping the device ID dialog's close button works. Sent with
-  `adb shell input`, not yet with the emulator's own back; the cause is unknown.
+- XR: Back does not close a spatial dialog in Full Space, on the emulator and on an Android XR Puck
+  (`FullSpaceTest`, ignored for this reason). A library bug in `androidx.xr.compose`
+  1.0.0-beta02, read from its bytecode: `LayoutSpatialDialog` composes a hidden `Dialog` whose
+  `onDismissRequest` only clears `DialogManager.isSpatialDialogActive`, and the effect meant to
+  call the app's `onDismissRequest` checks that flag once, when it starts. `LocalDialogManager`
+  is internal, so the app cannot watch the flag; a `BackHandler` in the dialog or a callback on
+  the activity's dispatcher never sees the Back, which goes to the hidden window. The dialogs
+  still close with their own buttons. Remove the `@Ignore` once the library is fixed.
 - XR: the web GUI in a Full Space panel gave three ANRs in a row on the 4-thread emulator host
   ("Waited for FocusEvent"; main thread 10 s running, 167 s waiting for CPU), and none in the same
   time in Home Space. The page does load and draw. Check on real hardware whether this is only the
