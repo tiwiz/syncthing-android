@@ -6,6 +6,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 
 /**
@@ -31,6 +34,24 @@ fun OnboardingScreen(
         if (uiState.currentPage != pagerState.currentPage) {
             pagerState.animateScrollToPage(uiState.currentPage)
         }
+    }
+    // The pager only follows the flow: whatever moves it elsewhere (a window laid out at zero width
+    // first, or the jump to the last page seen on Android XR), it goes back to the flow's page once
+    // it has a size and is not moving.
+    val currentPage by rememberUpdatedState(uiState.currentPage)
+    LaunchedEffect(pagerState) {
+        snapshotFlow {
+                Triple(
+                    pagerState.currentPage,
+                    pagerState.isScrollInProgress,
+                    pagerState.layoutInfo.viewportSize.width,
+                )
+            }
+            .collect { (page, scrolling, width) ->
+                if (width > 0 && !scrolling && page != currentPage) {
+                    pagerState.scrollToPage(currentPage)
+                }
+            }
     }
 
     HorizontalPager(
