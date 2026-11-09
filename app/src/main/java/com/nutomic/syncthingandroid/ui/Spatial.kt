@@ -63,10 +63,14 @@ private const val DIALOG_TEXT_MAX_HEIGHT = 480
 val isSpatialUi: Boolean
     @Composable @ReadOnlyComposable get() = LocalSpatialCapabilities.current.isSpatialUiEnabled
 
+/** Whether this is a headset, in Home Space or Full Space. */
+val isXrDevice: Boolean
+    @Composable @ReadOnlyComposable get() = LocalSpatialConfiguration.current.hasXrSpatialFeature
+
 /** The switch between Home Space and Full Space; nothing on devices without Android XR. */
 @Composable
 fun SpaceModeAction(modifier: Modifier = Modifier) {
-    if (!LocalSpatialConfiguration.current.hasXrSpatialFeature) return
+    if (!isXrDevice) return
     val activity = LocalActivity.current as? ComponentActivity ?: return
     val scope = rememberCoroutineScope()
     val fullSpace = isSpatialUi

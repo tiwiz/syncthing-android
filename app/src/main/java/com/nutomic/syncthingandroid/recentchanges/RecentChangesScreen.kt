@@ -45,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -74,10 +75,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.xr.compose.platform.LocalSpatialConfiguration
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.GROUP_GAP
 import com.nutomic.syncthingandroid.ui.groupedItemShape
+import com.nutomic.syncthingandroid.ui.isXrDevice
 import com.nutomic.syncthingandroid.util.isTelevision
 import java.text.DateFormat
 import java.util.Date
@@ -92,12 +93,11 @@ internal fun RecentChangesScreen(
     onRefresh: () -> Unit,
     onToggleExactTimes: () -> Unit,
     onItemClick: (RecentChange) -> Unit,
-    // A pinch and drag scrolls on a headset, and would pull at the top of the list.
-    pullToRefresh: Boolean =
-        !LocalConfiguration.current.isTelevision &&
-            !LocalSpatialConfiguration.current.hasXrSpatialFeature,
 ) {
     val configuration = LocalConfiguration.current
+    val headset = isXrDevice
+    // A pinch and drag scrolls on a headset, and would pull at the top of the list.
+    val pullToRefresh = !configuration.isTelevision && !headset
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         flingAnimationSpec = rememberSplineBasedDecay(),
@@ -194,8 +194,16 @@ internal fun RecentChangesScreen(
             // indicator's nested-scroll hook also reacts to the programmatic scrolling that focus
             // movement causes: moving focus back up to the first row starts a "pull" that no gesture
             // ever releases, leaving the spinner stuck on screen. The top bar's refresh action is the
-            // TV entry point.
-            Box(modifier = containerModifier, content = listContent)
+            // TV entry point. On a headset the button is too, and the bar below takes the place of
+            // the pull's indicator.
+            Box(modifier = containerModifier) {
+                listContent()
+                if (headset && isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+                    )
+                }
+            }
         }
     }
 }
