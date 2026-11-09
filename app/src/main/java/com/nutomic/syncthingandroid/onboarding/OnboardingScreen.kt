@@ -6,6 +6,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
@@ -35,20 +37,18 @@ fun OnboardingScreen(
             pagerState.animateScrollToPage(uiState.currentPage)
         }
     }
-    // The pager only follows the flow: whatever moves it elsewhere (a window laid out at zero width
-    // first, or the jump to the last page seen on Android XR), it goes back to the flow's page once
-    // it has a size and is not moving.
+    // The pager only follows the flow. On an Android XR headset it settled on the last page half a
+    // second after start, with no scroll call and no size change, for a reason not found; a window
+    // laid out at zero width first does the same. Whenever it is at rest away from the flow's page
+    // and not already heading there, put it back.
     val currentPage by rememberUpdatedState(uiState.currentPage)
+    val hasWidth by remember { derivedStateOf { pagerState.layoutInfo.viewportSize.width > 0 } }
     LaunchedEffect(pagerState) {
         snapshotFlow {
-                Triple(
-                    pagerState.currentPage,
-                    pagerState.isScrollInProgress,
-                    pagerState.layoutInfo.viewportSize.width,
-                )
+                Triple(pagerState.settledPage, pagerState.isScrollInProgress, hasWidth)
             }
             .collect { (page, scrolling, width) ->
-                if (width > 0 && !scrolling && page != currentPage) {
+                if (width && !scrolling && page != currentPage && pagerState.targetPage != currentPage) {
                     pagerState.scrollToPage(currentPage)
                 }
             }

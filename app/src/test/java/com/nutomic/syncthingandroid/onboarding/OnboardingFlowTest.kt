@@ -112,6 +112,7 @@ class OnboardingFlowTest {
                 compose.waitForIdle()
 
                 compose.onNodeWithText("Storage Permission").assertIsNotDisplayed()
+                compose.onNodeWithText("Key Generation").assertIsDisplayed()
             }
         } finally {
             ShadowEnvironmentWithAllFilesAccess.allFilesAccess = true
