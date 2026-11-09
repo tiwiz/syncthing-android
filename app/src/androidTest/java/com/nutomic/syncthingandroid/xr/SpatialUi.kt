@@ -7,7 +7,6 @@ import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.fail
 
 /**
  * Reaches the app's spatial panels and orbiters through accessibility. On Android XR each panel and
@@ -27,28 +26,26 @@ class SpatialUi {
     fun windowsWith(text: String): List<AccessibilityWindowInfo> =
         automation.windows.filter { window -> window.root?.let { find(it, text) } != null }
 
-    /** The node showing [text], waiting for it up to [timeoutMillis]. */
-    fun waitFor(text: String, timeoutMillis: Long = TIMEOUT_MILLIS): AccessibilityNodeInfo {
+    /** Waits until [condition] holds, failing with [what] after [timeoutMillis]. */
+    fun waitUntil(what: String, timeoutMillis: Long = TIMEOUT_MILLIS, condition: () -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + timeoutMillis
-        while (SystemClock.uptimeMillis() < deadline) {
-            nodeWith(text)?.let {
-                return it
+        while (!condition()) {
+            if (SystemClock.uptimeMillis() > deadline) {
+                throw AssertionError("$what, still not after $timeoutMillis ms")
             }
             SystemClock.sleep(STEP_MILLIS)
         }
-        fail("Nothing shows \"$text\" after $timeoutMillis ms")
-        error("unreachable")
+    }
+
+    /** The node showing [text], waiting for it. */
+    fun waitFor(text: String): AccessibilityNodeInfo {
+        var node: AccessibilityNodeInfo? = null
+        waitUntil("Something shows \"$text\"") { nodeWith(text).also { node = it } != null }
+        return checkNotNull(node)
     }
 
     /** Waits until nothing shows [text]. */
-    fun waitGone(text: String, timeoutMillis: Long = TIMEOUT_MILLIS) {
-        val deadline = SystemClock.uptimeMillis() + timeoutMillis
-        while (SystemClock.uptimeMillis() < deadline) {
-            if (nodeWith(text) == null) return
-            SystemClock.sleep(STEP_MILLIS)
-        }
-        fail("\"$text\" still shows after $timeoutMillis ms")
-    }
+    fun waitGone(text: String) = waitUntil("Nothing shows \"$text\"") { nodeWith(text) == null }
 
     fun nodeWith(text: String): AccessibilityNodeInfo? =
         automation.windows.firstNotNullOfOrNull { window -> window.root?.let { find(it, text) } }
@@ -57,9 +54,8 @@ class SpatialUi {
     fun click(text: String) {
         var node: AccessibilityNodeInfo? = waitFor(text)
         while (node != null && !node.isClickable) node = node.parent
-        if (node == null) fail("Nothing clickable around \"$text\"")
         if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) {
-            fail("The click on \"$text\" was refused")
+            throw AssertionError("No click on \"$text\": nothing clickable, or it was refused")
         }
     }
 

@@ -2,6 +2,8 @@ package com.nutomic.syncthingandroid.xr
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.service.Constants
+import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.util.ConfigXml
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -42,19 +45,58 @@ class FullSpaceTest {
         val pkg = context.packageName
         ui.shell("appops set $pkg MANAGE_EXTERNAL_STORAGE allow")
         ui.shell("pm grant $pkg ${Manifest.permission.POST_NOTIFICATIONS}")
-        if (!Constants.getConfigFile(context).exists()) ConfigXml(context).generateConfig()
+        ensureOwnConfig()
+        setRunMode(Constants.BTNSTATE_NO_FORCE_START_STOP)
         scenario = ActivityScenario.launch(MainActivity::class.java)
-        ui.click(text(R.string.fork_full_space))
+        if (ui.nodeWith(text(R.string.fork_home_space)) == null) {
+            ui.click(text(R.string.fork_full_space))
+        }
         ui.waitFor(text(R.string.fork_home_space))
     }
 
     @After
     fun tearDown() {
+        if (scenario == null) return // skipped: not an XR device
+        // Leave Full Space, so the next launch starts where setUp expects.
+        if (ui.nodeWith(text(R.string.fork_home_space)) != null) {
+            ui.click(text(R.string.fork_home_space))
+            ui.waitFor(text(R.string.fork_full_space))
+        }
         scenario?.close()
+        setRunMode(Constants.BTNSTATE_NO_FORCE_START_STOP)
+    }
+
+    private fun runMode(): Int =
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .getInt(
+                Constants.PREF_BTNSTATE_FORCE_START_STOP,
+                Constants.BTNSTATE_NO_FORCE_START_STOP,
+            )
+
+    /** Sets the run mode and tells the service, as the app does. */
+    private fun setRunMode(mode: Int) {
         PreferenceManager.getDefaultSharedPreferences(context)
             .edit()
-            .remove(Constants.PREF_BTNSTATE_FORCE_START_STOP)
+            .putInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, mode)
             .commit()
+        LocalBroadcastManager.getInstance(context)
+            .sendBroadcast(Intent(RunConditionMonitor.ACTION_UPDATE_SHOULDRUN_DECISION))
+    }
+
+    /**
+     * A config made by this device's Syncthing. Other instrumented tests leave a fake one behind,
+     * pointing at a mock server, so this class makes its own once.
+     */
+    private fun ensureOwnConfig() {
+        if (configMade) return
+        listOf(
+                Constants.getConfigFile(context),
+                Constants.getHttpsCertFile(context),
+                Constants.getHttpsKeyFile(context),
+            )
+            .forEach { it.delete() }
+        ConfigXml(context).generateConfig()
+        configMade = true
     }
 
     @Test
@@ -72,18 +114,7 @@ class FullSpaceTest {
     fun the_run_mode_orbiter_changes_the_run_mode() {
         ui.click(text(R.string.run_mode_run))
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val deadline = System.currentTimeMillis() + WAIT_MILLIS
-        while (
-            prefs.getInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, -1) !=
-                Constants.BTNSTATE_FORCE_START && System.currentTimeMillis() < deadline
-        ) {
-            Thread.sleep(STEP_MILLIS)
-        }
-        assertEquals(
-            Constants.BTNSTATE_FORCE_START,
-            prefs.getInt(Constants.PREF_BTNSTATE_FORCE_START_STOP, -1),
-        )
+        ui.waitUntil("The run mode is Run") { runMode() == Constants.BTNSTATE_FORCE_START }
     }
 
     @Test
@@ -112,11 +143,10 @@ class FullSpaceTest {
     fun the_device_id_dialog_shows_and_back_closes_it() {
         ui.click(text(R.string.show_device_id))
 
-        val copy = ui.waitFor(text(R.string.copy))
+        ui.waitFor(text(R.string.copy))
         val dialogWindow = ui.windowsWith(text(R.string.copy)).single()
         val railWindow = ui.windowsWith(text(R.string.show_device_id)).single()
         assertNotEquals(railWindow.id, dialogWindow.id)
-        copy.recycle()
 
         ui.back()
         ui.waitGone(text(R.string.copy))
@@ -127,12 +157,13 @@ class FullSpaceTest {
         ui.click(text(R.string.fork_home_space))
 
         ui.waitFor(text(R.string.fork_full_space))
-        assertEquals(0, ui.windowsWith(text(R.string.run_mode_stop)).size)
+        ui.waitGone(text(R.string.run_mode_stop))
     }
 
     private companion object {
         const val XR_SPATIAL_FEATURE = "android.software.xr.api.spatial"
-        const val WAIT_MILLIS = 15_000L
-        const val STEP_MILLIS = 200L
+
+        /** The config is made once per run of this class. */
+        var configMade = false
     }
 }
