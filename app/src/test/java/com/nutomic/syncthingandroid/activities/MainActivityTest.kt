@@ -477,6 +477,19 @@ class MainActivityTest {
     }
 
     @Test
+    fun `the device ID waits for the usage question, two dialogs would interfere in Full Space`() {
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.answerUsageReporting(MainScreen.YES)
+            awaitMain { screen.deviceIdShown(LOCAL_DEVICE_ID) }
+        }
+    }
+
+    @Test
     fun `the usage reporting website can be opened from the question`() {
         running(usageReport = true).use { screen ->
             awaitMain { screen.usageReportingAsked() }

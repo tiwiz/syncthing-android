@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
+import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
 import com.nutomic.syncthingandroid.testutil.ShadowEnvironmentWithAllFilesAccess
 import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
@@ -111,6 +112,17 @@ class MainActivityRailTest {
                 val folder = checkNotNull(screen.run(MainScreen.Action.ADD_FOLDER))
                 assertEquals(tab.name, FolderActivity::class.java.name, folder.component?.className)
             }
+        }
+    }
+
+    @Test
+    fun `the detail pane's share button shows that device's ID`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.DEVICES)
+            screen.open(MainScreen.Tab.DEVICES, "laptop")
+            screen.shareDeviceIdInDetail()
+
+            assertTrue(screen.deviceIdDialogShows(REMOTE_DEVICE_ID))
         }
     }
 

@@ -5,12 +5,17 @@ import android.content.ClipboardManager
 import android.content.Intent
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,12 +39,21 @@ class DeviceIdDialogTest {
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    private fun show(isCurrentDevice: Boolean = false, onDismiss: () -> Unit = {}) {
+    private fun show(
+        isCurrentDevice: Boolean = false,
+        fontScale: Float = 1f,
+        onDismiss: () -> Unit = {},
+    ) {
         Robolectric.buildActivity(AppCompatActivity::class.java).setup().get().apply {
             setTheme(R.style.Theme_Syncthing)
             setContent {
                 ApplicationTheme {
-                    DeviceIdDialog(DeviceIdRequest(NAME, ID, isCurrentDevice), onDismiss)
+                    val density = LocalDensity.current
+                    CompositionLocalProvider(
+                        LocalDensity provides Density(density.density, fontScale)
+                    ) {
+                        DeviceIdDialog(DeviceIdRequest(NAME, ID, isCurrentDevice), onDismiss)
+                    }
                 }
             }
         }
@@ -90,6 +104,21 @@ class DeviceIdDialogTest {
         compose.onNodeWithContentDescription("Close device id").performClick()
 
         assertEquals(true, dismissed)
+    }
+
+    @Test
+    fun `with very large text the buttons can still be scrolled to`() {
+        show(fontScale = 3f)
+
+        button("Share").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-land")
+    fun `with very large text in landscape the buttons can still be scrolled to`() {
+        show(fontScale = 3f)
+
+        button("Share").performScrollTo().assertIsDisplayed()
     }
 
     @Test

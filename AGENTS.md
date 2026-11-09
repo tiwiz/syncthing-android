@@ -325,7 +325,7 @@ Next steps (to be confirmed with the owner):
    waits for the owner). Plan: https://claude.ai/artifact/2QtTFauKyWAmRpxwFy4Gim, design canvas:
    https://claude.ai/artifact/FeynMSvXf3EWdPN2zv5BJs. Done: tablet fixes X1-X6 (#163-#170); XR Compose
    and the Full Space button (#171); panel and orbiters in Full Space (XR4, #172); separate panels for list and
-   detail (XR5, #173); run mode orbiter and spatial alert dialogs (XR6). Next: device ID dialog, XR7 (web GUI), XR8-XR9
+   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). Next: `FileOpener` dialog, XR7 (web GUI), XR8-XR9
    (56 dp targets, no gestures that clash with pinch), milestone on the emulator.
    Decided: only `androidx.xr.compose`. XR Material 3 1.0.0-alpha17 crashes against Material 3
    1.5.0-beta01 (`NoSuchMethodError`, its override APIs are gone since alpha26 and beta01), and its
@@ -339,9 +339,10 @@ Next steps (to be confirmed with the owner):
    Panels are 440 + 600 dp wide: wider and the rail leaves the emulator's view. In Full Space a plain
    dialog is invisible, because it attaches to the main window `Subspace` hides: use `AppAlertDialog`
    (`ui/Spatial.kt`) in anything a panel can open. `SpatialDialog` measures with unbounded height,
-   so a `verticalScroll` inside it needs a height limit or the app crashes. `DeviceIdDialogFragment`
-   and the View dialog in `FileOpener.suggestFileManagerApp` still have this problem; dropdown menus
-   in orbiters are unchecked. All spatial dialogs share one active flag, so two open at once interfere.
+   so a `verticalScroll` inside it needs a height limit or the app crashes. A dialog composed at the root of
+   `setContent` is invisible too: it needs to be inside a panel, as in `MainDialogs`. The View dialog
+   in `FileOpener.suggestFileManagerApp` still has this problem; dropdown menus in orbiters are
+   unchecked. All spatial dialogs share one active flag, so `MainDialogs` shows one at a time.
 
 ## HANDOFF
 

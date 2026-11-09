@@ -115,9 +115,7 @@ fun AppAlertDialog(
     dismissButton: (@Composable () -> Unit)? = null,
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
-    /** False for a question the user must answer: back and taps outside do not close it. */
-    dismissible: Boolean = true,
-    /** For the usual dialog; a spatial one has its own window handling. */
+    /** A spatial dialog takes only whether back and taps outside dismiss it. */
     properties: DialogProperties = DialogProperties(),
 ) {
     if (isSpatialUi) {
@@ -125,8 +123,8 @@ fun AppAlertDialog(
             onDismissRequest = onDismissRequest,
             properties =
                 SpatialDialogProperties(
-                    dismissOnBackPress = dismissible,
-                    dismissOnClickOutside = dismissible,
+                    dismissOnBackPress = properties.dismissOnBackPress,
+                    dismissOnClickOutside = properties.dismissOnClickOutside,
                 ),
         ) {
             SpatialDialogBody(confirmButton, modifier, dismissButton, title, text)

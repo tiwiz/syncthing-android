@@ -513,6 +513,17 @@ internal class MainScreen(
     fun deviceIdShown(deviceId: String): Boolean =
         compose.onAllNodes(hasText(deviceId)).fetchSemanticsNodes().isNotEmpty()
 
+    /** Taps the share button of the device open in the detail pane. */
+    fun shareDeviceIdInDetail() {
+        compose.onNode(hasContentDescription("Share Device ID")).performClick()
+        compose.waitForIdle()
+    }
+
+    /** Whether the dialog is open on [deviceId]: its Copy button only exists in the dialog. */
+    fun deviceIdDialogShows(deviceId: String): Boolean =
+        deviceIdShown(deviceId) &&
+            compose.onAllNodes(hasText("Copy")).fetchSemanticsNodes().isNotEmpty()
+
     /** Closes the device ID dialog with its button. */
     fun closeDeviceId() {
         compose.onNode(hasText("Finish") and hasClickAction()).performClick()

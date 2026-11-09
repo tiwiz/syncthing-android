@@ -5,11 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Looper
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -98,6 +100,8 @@ class DeviceActivityTest {
             screen.showDeviceId()
 
             compose.onNodeWithText("Copy").assertExists()
+            // Once in the form, once in the dialog.
+            compose.onAllNodesWithText(REMOTE_DEVICE_ID).assertCountEquals(2)
         }
     }
 

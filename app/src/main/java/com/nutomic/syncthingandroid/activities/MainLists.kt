@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.SyncProgress
@@ -203,7 +204,7 @@ private fun EmptyList(text: Int) {
 internal fun UsageReportingDialog(report: String, actions: MainActions) {
     AppAlertDialog(
         onDismissRequest = {},
-        dismissible = false,
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
         title = { Text(stringResource(R.string.usage_reporting_dialog_title)) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -278,7 +280,8 @@ private fun PortraitDialogContent(
     val containerHeightDp = windowInfo.containerDpSize.height
     val qrMaxHeight = minOf(containerHeightDp * 0.30f, 280.dp)
 
-    Column(modifier) {
+    // Scrolls so that large text cannot push the buttons out of the dialog.
+    Column(modifier.verticalScroll(rememberScrollState())) {
         // Tight corners: rounder ones would cut into the QR code's quiet zone.
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -342,7 +345,7 @@ private fun LandscapeDialogContent(
             )
         }
         Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Surface(
                 shape = RoundedCornerShape(CARD_CORNER.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
