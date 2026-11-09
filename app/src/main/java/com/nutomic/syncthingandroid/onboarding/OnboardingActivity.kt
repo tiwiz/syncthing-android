@@ -115,6 +115,18 @@ class OnboardingActivity : ThemedAppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        checkPermissionsAgain()
+    }
+
+    // On Android XR the settings open beside the app, which stays resumed, so onResume never comes
+    // back: the window getting focus again is the only sign the user may have granted something.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) checkPermissionsAgain()
+    }
+
+    /** Advances past the current permission page if the user just granted it. */
+    private fun checkPermissionsAgain() {
         val oldState = viewModel.uiState.value
         viewModel.refreshPermissionState()
         val newState = viewModel.uiState.value

@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.ComponentName
 import android.os.PowerManager
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -90,6 +91,31 @@ class OnboardingFlowTest {
                 ),
                 startedActivities().toSet(),
             )
+        }
+    }
+
+    @Test
+    fun `access granted in a panel beside the app is seen when the app gets focus back`() {
+        // On Android XR the settings open beside the app, which stays resumed: onResume never
+        // comes, only the window focus.
+        ShadowEnvironmentWithAllFilesAccess.allFilesAccess = false
+        try {
+            ActivityScenario.launch(OnboardingActivity::class.java).use { scenario ->
+                compose.onNodeWithText("Continue").performClick()
+                compose.onNodeWithText("Storage Permission").assertIsDisplayed()
+
+                ShadowEnvironmentWithAllFilesAccess.allFilesAccess = true
+                scenario.onActivity {
+                    it.onWindowFocusChanged(false)
+                    it.onWindowFocusChanged(true)
+                }
+                compose.waitForIdle()
+
+                compose.onNodeWithText("Storage Permission").assertIsNotDisplayed()
+                compose.onNodeWithText("Key Generation").assertIsDisplayed()
+            }
+        } finally {
+            ShadowEnvironmentWithAllFilesAccess.allFilesAccess = true
         }
     }
 
