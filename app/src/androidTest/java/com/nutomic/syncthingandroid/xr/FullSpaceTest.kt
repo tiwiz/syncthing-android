@@ -49,6 +49,10 @@ class FullSpaceTest {
         ui.shell("pm grant $pkg ${Manifest.permission.POST_NOTIFICATIONS}")
         ensureOwnConfig()
         setRunMode(Constants.BTNSTATE_NO_FORCE_START_STOP)
+        launchInFullSpace()
+    }
+
+    private fun launchInFullSpace() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
         if (ui.nodeWith(text(R.string.fork_home_space)) == null) {
             ui.click(text(R.string.fork_full_space))
@@ -157,6 +161,27 @@ class FullSpaceTest {
 
         ui.back()
         ui.waitGone(text(R.string.copy))
+    }
+
+    @Test
+    fun the_exit_question_shows_in_full_space_and_no_closes_it() {
+        // Asked only when the app also starts at boot; the screen reads that when it starts.
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val before = prefs.getBoolean(Constants.PREF_START_SERVICE_ON_BOOT, false)
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        try {
+            scenario?.close()
+            launchInFullSpace()
+            ui.click(text(R.string.exit))
+
+            ui.waitFor(text(R.string.dialog_exit_while_running_as_service_title))
+            ui.click(text(R.string.no))
+            ui.waitGone(text(R.string.dialog_exit_while_running_as_service_title))
+            // Still there: No did not exit.
+            ui.waitFor(text(R.string.fork_home_space))
+        } finally {
+            prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, before).commit()
+        }
     }
 
     @Test

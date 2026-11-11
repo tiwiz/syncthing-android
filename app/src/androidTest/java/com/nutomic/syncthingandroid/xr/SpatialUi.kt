@@ -83,7 +83,13 @@ class SpatialUi {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 30_000L
+        /**
+         * Enough on a headset. The emulator can take minutes to draw a panel: pass a longer one
+         * with `-Pandroid.testInstrumentationRunnerArguments.spatialTimeoutMillis=...`.
+         */
+        val TIMEOUT_MILLIS: Long =
+            InstrumentationRegistry.getArguments().getString("spatialTimeoutMillis")?.toLongOrNull()
+                ?: 30_000L
         const val STEP_MILLIS = 250L
     }
 }
