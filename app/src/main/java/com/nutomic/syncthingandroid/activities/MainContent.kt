@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
@@ -169,9 +170,18 @@ internal fun shortWindow(): Boolean =
         .windowSizeClass
         .isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
 
+/** The main screen's dialogs, in the order they are shown when several are wanted at once. */
+private enum class MainDialog {
+    USAGE_REPORT,
+    FILE_MANAGER,
+    MENU_QUESTION,
+    DEVICE_ID,
+}
+
 /**
  * The main screen's dialogs, one at a time: all spatial dialogs share one active flag, so closing
- * one of two would break the other. The usage question goes first, as it blocks the screen.
+ * one of two would break the other. The one that is up stays until it is answered, or a tap meant
+ * for it would land on the dialog that took its place; the others wait their turn.
  */
 @Composable
 private fun MainDialogs(
@@ -180,11 +190,25 @@ private fun MainDialogs(
     menu: MenuState,
     actions: MainActions,
 ) {
-    when {
-        state.usageReport != null -> UsageReportingDialog(state.usageReport, actions)
-        state.suggestFileManager -> FileManagerDialog(actions)
-        menu.confirmations.asking -> MenuConfirmationDialog(menu.confirmations, menu.actions)
-        else -> deviceIdDialog?.let { DeviceIdDialogHost(it) }
+    val deviceId = deviceIdDialog?.request?.collectAsStateWithLifecycle()?.value
+    val wanted = buildList {
+        if (state.usageReport != null) add(MainDialog.USAGE_REPORT)
+        if (state.suggestFileManager) add(MainDialog.FILE_MANAGER)
+        if (menu.confirmations.question != null) add(MainDialog.MENU_QUESTION)
+        if (deviceId != null) add(MainDialog.DEVICE_ID)
+    }
+    var last by rememberSaveable { mutableStateOf<MainDialog?>(null) }
+    val shown = last.takeIf { it in wanted } ?: wanted.firstOrNull()
+    SideEffect { last = shown }
+    when (shown) {
+        MainDialog.USAGE_REPORT -> state.usageReport?.let { UsageReportingDialog(it, actions) }
+        MainDialog.FILE_MANAGER -> FileManagerDialog(actions)
+        MainDialog.MENU_QUESTION -> MenuConfirmationDialog(menu.confirmations, menu.actions)
+        MainDialog.DEVICE_ID ->
+            if (deviceId != null && deviceIdDialog != null) {
+                DeviceIdDialog(deviceId, onDismiss = deviceIdDialog::dismiss)
+            }
+        null -> Unit
     }
 }
 

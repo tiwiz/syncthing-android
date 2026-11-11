@@ -21,7 +21,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -78,12 +77,13 @@ internal fun MenuEntries(
         add(entry(Icons.Outlined.ImportExport, R.string.category_backup) { actions.onBackup() })
         add(
             entry(Icons.Outlined.Autorenew, R.string.restart, running) {
-                confirmations.restart = true
+                confirmations.question = MenuQuestion.RESTART
             }
         )
         add(
             entry(Icons.AutoMirrored.Outlined.ExitToApp, R.string.exit, apart = true) {
-                if (runningAsService) confirmations.exit = true else actions.onExit()
+                if (runningAsService) confirmations.question = MenuQuestion.EXIT
+                else actions.onExit()
             }
         )
     }
@@ -96,33 +96,40 @@ internal fun MenuEntries(
  */
 @Composable
 internal fun MenuConfirmationDialog(confirmations: MenuConfirmations, actions: MenuActions) {
-    if (confirmations.restart) {
-        ConfirmRestartDialog(onDismiss = { confirmations.restart = false }) {
-            confirmations.restart = false
-            actions.onRestart()
-        }
-    } else if (confirmations.exit) {
-        ConfirmExitDialog(onDismiss = { confirmations.exit = false }) {
-            confirmations.exit = false
-            actions.onExit()
-        }
+    val close = { confirmations.question = null }
+    when (confirmations.question) {
+        MenuQuestion.RESTART ->
+            ConfirmRestartDialog(onDismiss = close) {
+                close()
+                actions.onRestart()
+            }
+        MenuQuestion.EXIT ->
+            ConfirmExitDialog(onDismiss = close) {
+                close()
+                actions.onExit()
+            }
+        null -> Unit
     }
 }
 
-/** Whether the menu is asking before a restart or an exit. */
-@Stable
-internal class MenuConfirmations(restart: Boolean = false, exit: Boolean = false) {
-    var restart by mutableStateOf(restart)
-    var exit by mutableStateOf(exit)
+/** What the menu asks before it acts. */
+internal enum class MenuQuestion {
+    RESTART,
+    EXIT,
+}
 
-    val asking: Boolean
-        get() = restart || exit
+/** The question the menu is asking, if any: a new one takes the place of the one before. */
+@Stable
+internal class MenuConfirmations(question: MenuQuestion? = null) {
+    var question by mutableStateOf(question)
 
     companion object {
-        val Saver: Saver<MenuConfirmations, Any> =
-            listSaver(
-                save = { listOf(it.restart, it.exit) },
-                restore = { MenuConfirmations(it[0], it[1]) },
+        val Saver: Saver<MenuConfirmations, String> =
+            Saver(
+                save = { it.question?.name.orEmpty() },
+                restore = { saved ->
+                    MenuConfirmations(MenuQuestion.entries.firstOrNull { it.name == saved })
+                },
             )
     }
 }

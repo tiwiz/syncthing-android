@@ -53,7 +53,7 @@ class OnboardingScreenTest {
     }
 
     @Test
-    fun `two quick steps end on the second page`() {
+    fun `two quick steps end two pages on`() {
         var page by mutableIntStateOf(0)
         val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup()
         try {
@@ -61,7 +61,7 @@ class OnboardingScreenTest {
             compose.waitForIdle()
             compose.mainClock.autoAdvance = false
 
-            // The second step comes while the pager is still scrolling to the first.
+            // The second step comes two frames after the first, before the pager is at rest.
             page = 1
             compose.mainClock.advanceTimeByFrame()
             compose.mainClock.advanceTimeByFrame()
@@ -70,7 +70,7 @@ class OnboardingScreenTest {
             compose.waitForIdle()
 
             compose.onNodeWithText("Syncthing for Android", substring = true).assertDoesNotExist()
-            compose.onNodeWithText(PAGE_TWO_TITLE).assertIsDisplayed()
+            compose.onNodeWithText(THIRD_PAGE_TITLE).assertIsDisplayed()
         } finally {
             controller.pause().stop().destroy()
         }
@@ -98,6 +98,6 @@ class OnboardingScreenTest {
     }
 
     private companion object {
-        const val PAGE_TWO_TITLE = "Battery Optimization"
+        const val THIRD_PAGE_TITLE = "Battery Optimization"
     }
 }

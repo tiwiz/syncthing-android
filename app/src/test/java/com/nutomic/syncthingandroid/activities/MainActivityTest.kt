@@ -553,6 +553,46 @@ class MainActivityTest {
     }
 
     @Test
+    fun `a question that is up stays up when another dialog is asked for`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertTrue(screen.exitAsked())
+
+            // Swapping the dialogs under a finger would send its tap to the wrong question.
+            openCameraWithoutFileManager(screen)
+            assertTrue(screen.exitAsked())
+            assertFalse(screen.fileManagerSuggested())
+
+            screen.declineExit()
+            assertFalse(screen.exitAsked())
+            assertTrue(screen.fileManagerSuggested())
+        }
+    }
+
+    @Test
+    fun `exit chosen while restart is asking takes its place`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        running().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.RESTART)
+            assertTrue(screen.restartAsked())
+
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertTrue(screen.exitAsked())
+            assertFalse(screen.restartAsked())
+
+            screen.declineExit()
+            assertFalse(screen.exitAsked())
+            assertFalse(screen.restartAsked())
+        }
+    }
+
+    @Test
     fun `the usage reporting website can be opened from the question`() {
         running(usageReport = true).use { screen ->
             awaitMain { screen.usageReportingAsked() }

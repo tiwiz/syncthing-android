@@ -208,6 +208,19 @@ internal class MainScreen(
     fun exitAsked(): Boolean =
         compose.onAllNodes(hasText("Confirm to quit app")).fetchSemanticsNodes().isNotEmpty()
 
+    /** Answers no when exit asks for confirmation. */
+    fun declineExit() {
+        compose.onNode(hasText("No") and hasClickAction()).performClick()
+        idle()
+    }
+
+    /** Whether restart is asking for confirmation. */
+    fun restartAsked(): Boolean =
+        compose
+            .onAllNodes(hasText("Do you want to restart Syncthing?"))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
     fun usageReportingAsked(): Boolean =
         compose
             .onAllNodes(hasText("Allow Anonymous Usage Reporting?"))
