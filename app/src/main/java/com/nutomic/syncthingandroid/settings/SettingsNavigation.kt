@@ -177,6 +177,17 @@ private fun SettingsListDetail(
     modifier: Modifier = Modifier,
 ) {
     val detailRoute = backStack.lastOrNull().takeIf { it != SettingsRoute.Root }
+    // The list stays in reach next to a page: what it opens takes that page's place, so the page's
+    // close button always leaves the list alone.
+    val listNavigator =
+        remember(backStack, navigator) {
+            object : Navigator<SettingsRoute> by navigator {
+                override fun navigateTo(route: SettingsRoute) {
+                    while (backStack.size > 1) backStack.removeLastOrNull()
+                    navigator.navigateTo(route)
+                }
+            }
+        }
     if (detailRoute == null) {
         SettingsRootRoute(navigator = navigator, modifier = modifier)
         return
@@ -193,7 +204,7 @@ private fun SettingsListDetail(
         modifier = modifier,
         listPane = {
             AnimatedPane {
-                SettingsRootRoute(navigator = navigator)
+                SettingsRootRoute(navigator = listNavigator)
             }
         },
         detailPane = {

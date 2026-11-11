@@ -134,6 +134,7 @@ internal fun SpatialRail(
     showWebGui: Boolean,
     runningAsService: Boolean,
     menuActions: MenuActions,
+    confirmations: MenuConfirmations,
     actions: MainActions,
     modifier: Modifier = Modifier,
 ) {
@@ -150,7 +151,7 @@ internal fun SpatialRail(
             RailHeader(expanded = true, actions)
             Spacer(modifier = Modifier.padding(vertical = 4.dp))
             TabItems(tab, onTabChange, type)
-            RailMenu(running, showWebGui, runningAsService, menuActions, type)
+            RailMenu(running, showWebGui, runningAsService, menuActions, confirmations, type)
         }
     }
 }

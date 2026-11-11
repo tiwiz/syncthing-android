@@ -13,7 +13,9 @@ import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.util.ConfigXml
+import java.io.File
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assume.assumeTrue
@@ -85,16 +87,16 @@ class FullSpaceTest {
 
     /**
      * A config made by this device's Syncthing. Other instrumented tests leave a fake one behind,
-     * pointing at a mock server, so this class makes its own once.
+     * pointing at a mock server, so this class makes its own once. What was there, maybe a real
+     * setup with its folders and devices, is put aside and comes back in [restoreConfig].
      */
     private fun ensureOwnConfig() {
         if (configMade) return
-        listOf(
-                Constants.getConfigFile(context),
-                Constants.getHttpsCertFile(context),
-                Constants.getHttpsKeyFile(context),
-            )
-            .forEach { it.delete() }
+        configFiles(context).forEach { file ->
+            val backup = backupOf(file)
+            backup.delete()
+            if (file.exists()) check(file.renameTo(backup)) { "Cannot put $file aside" }
+        }
         ConfigXml(context).generateConfig()
         configMade = true
     }
@@ -160,10 +162,33 @@ class FullSpaceTest {
         ui.waitGone(text(R.string.run_mode_stop))
     }
 
-    private companion object {
-        const val XR_SPATIAL_FEATURE = "android.software.xr.api.spatial"
+    companion object {
+        private const val XR_SPATIAL_FEATURE = "android.software.xr.api.spatial"
 
         /** The config is made once per run of this class. */
-        var configMade = false
+        private var configMade = false
+
+        private fun configFiles(context: Context): List<File> =
+            listOf(
+                Constants.getConfigFile(context),
+                Constants.getHttpsCertFile(context),
+                Constants.getHttpsKeyFile(context),
+            )
+
+        private fun backupOf(file: File) = File(file.parentFile, file.name + ".before-test")
+
+        /** Puts back the config that was there before this class made its own. */
+        @JvmStatic
+        @AfterClass
+        fun restoreConfig() {
+            if (!configMade) return
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            configFiles(context).forEach { file ->
+                file.delete()
+                val backup = backupOf(file)
+                if (backup.exists()) check(backup.renameTo(file)) { "Cannot restore $file" }
+            }
+            configMade = false
+        }
     }
 }

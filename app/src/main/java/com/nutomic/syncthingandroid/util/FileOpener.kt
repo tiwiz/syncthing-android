@@ -135,12 +135,18 @@ object FileOpener {
                 Intent(Intent.ACTION_VIEW, "market://details?id=$FILE_MANAGER_PACKAGE".toUri())
             )
         } catch (_: ActivityNotFoundException) {
-            context.startActivity(
+            val web =
                 Intent(
                     Intent.ACTION_VIEW,
                     "https://play.google.com/store/apps/details?id=$FILE_MANAGER_PACKAGE".toUri(),
                 )
-            )
+            try {
+                context.startActivity(web)
+            } catch (e: ActivityNotFoundException) {
+                // Neither a store nor a browser, as on some TV boxes and restricted profiles.
+                Log.w(TAG, "openFileManagerInStore: nothing opens a web link", e)
+                Toast.makeText(context, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

@@ -3,9 +3,11 @@ package com.nutomic.syncthingandroid.activities
 import android.content.Context
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ShadowContentResolverWithStatusListeners
@@ -20,6 +22,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -66,6 +69,28 @@ class MainActivityRailTest {
         stopped().use { screen ->
             assertEquals(MainScreen.MenuItem.entries.toList(), screen.railEntries())
             assertFalse(screen.hasOverflowButton())
+        }
+    }
+
+    @Test
+    fun `the exit question stays open when the window loses its expanded rail`() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true)
+            .commit()
+        stopped().use { screen ->
+            screen.chooseInRail(MainScreen.MenuItem.EXIT)
+            assertFalse(screen.finishing())
+
+            // Held upright the tablet has no room for the expanded rail: the menu moves to the
+            // top bar, and the question must not go with the rail.
+            RuntimeEnvironment.setQualifiers("en-rUS-w800dp-h1280dp-port")
+            screen.recreate()
+            assertTrue(screen.hasOverflowButton())
+
+            screen.confirmExit()
+
+            assertTrue(screen.finishing())
         }
     }
 

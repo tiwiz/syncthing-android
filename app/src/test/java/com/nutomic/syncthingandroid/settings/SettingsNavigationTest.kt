@@ -134,6 +134,27 @@ class SettingsNavigationTest {
 
     @Test
     @Config(qualifiers = "en-rUS-w840dp-h900dp-xxhdpi")
+    fun `close leaves the root alone however many pages the list opened`() {
+        launch("Root").use {
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .performClick()
+            compose
+                .onNode(
+                    hasText("User Interface") and hasAnyAncestor(hasTestTag("settingsRootList"))
+                )
+                .performClick()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
+
+            compose.onNodeWithContentDescription("Close").performClick()
+
+            compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w840dp-h900dp-xxhdpi")
     fun `a page reached from another page keeps its back arrow`() {
         launch("Root").use {
             compose

@@ -49,6 +49,7 @@ class SpatialChromeTest {
                     showWebGui = true,
                     runningAsService = false,
                     menuActions = recording(),
+                    confirmations = rememberMenuConfirmations(),
                     actions = recording(),
                 )
             }
