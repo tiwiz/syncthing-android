@@ -101,8 +101,11 @@ constructor(
             state.value.hasNotificationPermission &&
             state.value.hasConfig
 
-    /** Refreshes the permission/config flags from the system. */
-    fun refreshPermissionState() {
+    /**
+     * Refreshes the permission flags from the system and, [withConfig], whether there is a config:
+     * that reads and parses `config.xml`, too much for a caller that runs often.
+     */
+    fun refreshPermissionState(withConfig: Boolean = true) {
         state.update {
             it.copy(
                 hasStoragePermission = context.haveStoragePermission(),
@@ -110,7 +113,7 @@ constructor(
                 hasLocationPermission = context.haveLocationPermission(),
                 hasLocalNetworkPermission = context.haveLocalNetworkPermission(),
                 hasNotificationPermission = context.haveNotificationPermission(),
-                hasConfig = context.checkForParseableConfig(),
+                hasConfig = if (withConfig) context.checkForParseableConfig() else it.hasConfig,
             )
         }
     }

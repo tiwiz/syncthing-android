@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,29 +41,43 @@ import com.nutomic.syncthingandroid.ui.groupedItemShape
 private const val TILE_CORNER = 20
 private const val HERO_BADGE_SIZE = 72
 
+/** The status tab stays a readable column on large windows. */
+private const val STATUS_MAX_WIDTH = 720
+
 /** The run modes, in the order of the Constants.BTNSTATE_* values. */
 private val RUN_MODES =
     listOf(R.string.run_mode_automatic, R.string.run_mode_run, R.string.run_mode_stop)
 
 @Composable
-internal fun StatusTab(status: StatusInfo?, forceStartStop: Int, actions: MainActions) {
+internal fun StatusTab(
+    status: StatusInfo?,
+    forceStartStop: Int,
+    actions: MainActions,
+    showTitle: Boolean = true,
+    /** False in Full Space, where an orbiter always has the run mode. */
+    showRunMode: Boolean = true,
+) {
     Column(
         modifier =
-            Modifier.fillMaxSize()
+            Modifier.widthIn(max = STATUS_MAX_WIDTH.dp)
+                .fillMaxSize()
+                .testTag("statusColumn")
                 .verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
     ) {
-        ListTitle(MainTab.STATUS)
+        if (showTitle) ListTitle(MainTab.STATUS) else NoTitleGap()
         status?.let { StatusHero(it) }
-        SectionHeader(stringResource(R.string.run_mode_title))
-        RunModeButtons(forceStartStop, actions)
-        Text(
-            stringResource(R.string.run_mode_help),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+        if (showRunMode) {
+            SectionHeader(stringResource(R.string.run_mode_title))
+            RunModeButtons(forceStartStop, actions)
+            Text(
+                stringResource(R.string.run_mode_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
         if (!status?.reasons.isNullOrEmpty()) {
             SectionHeader(stringResource(R.string.run_conditions_title))
             status.reasons.forEachIndexed { index, reason ->
@@ -122,9 +137,13 @@ internal fun StatusHero(status: StatusInfo, modifier: Modifier = Modifier) {
 
 /** Follow the run conditions, force Syncthing to run or to stop: a connected button group. */
 @Composable
-private fun RunModeButtons(forceStartStop: Int, actions: MainActions) {
+internal fun RunModeButtons(
+    forceStartStop: Int,
+    actions: MainActions,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
         RUN_MODES.forEachIndexed { index, label ->

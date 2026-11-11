@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -131,7 +132,7 @@ internal fun ChoiceOption(
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)

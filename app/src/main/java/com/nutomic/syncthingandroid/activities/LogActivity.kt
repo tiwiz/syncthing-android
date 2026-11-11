@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nutomic.syncthingandroid.R
@@ -129,8 +128,8 @@ private fun LogScreen(
             SelectionContainer {
                 Text(
                     text = logText ?: stringResource(R.string.retrieving_logs),
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
+                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
                     modifier =
                         Modifier.padding(16.dp)
                             .background(

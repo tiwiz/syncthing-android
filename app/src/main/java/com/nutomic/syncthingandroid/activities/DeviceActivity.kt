@@ -9,7 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.nutomic.syncthingandroid.fragments.DeviceIdDialogFragment
 import com.nutomic.syncthingandroid.service.NotificationHandler
 import com.nutomic.syncthingandroid.theme.ApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -59,12 +58,7 @@ class DeviceActivity : ThemedAppCompatActivity() {
                         },
                         onLeave = ::finish,
                         onShowDeviceId = { name, id ->
-                            DeviceIdDialogFragment.show(
-                                supportFragmentManager,
-                                name,
-                                id,
-                                false,
-                            )
+                            viewModel.deviceIdDialog.show(DeviceIdRequest(name, id, false))
                         },
                     ),
                     viewModel::refreshWhileShown,
@@ -77,6 +71,7 @@ class DeviceActivity : ThemedAppCompatActivity() {
                         actions = controller.actions,
                     )
                 }
+                DeviceIdDialogHost(viewModel.deviceIdDialog)
             }
         }
         onBackPressedDispatcher.addCallback(this, backPressedCallback)

@@ -17,14 +17,15 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -42,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.nutomic.syncthingandroid.R
+import com.nutomic.syncthingandroid.ui.AppAlertDialog
 import com.nutomic.syncthingandroid.ui.SectionHeader
 import com.nutomic.syncthingandroid.util.Compression
 
@@ -105,6 +107,8 @@ internal fun DeviceEditScreen(
     dialog: DeviceDialog,
     actions: DeviceScreenActions,
     modifier: Modifier = Modifier,
+    /** Shown in a pane next to its list: a close button instead of a back arrow. */
+    inPane: Boolean = false,
 ) {
     Scaffold(
         modifier = modifier,
@@ -120,7 +124,11 @@ internal fun DeviceEditScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = actions::onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        if (inPane) {
+                            Icon(Icons.Filled.Close, stringResource(R.string.fork_close))
+                        } else {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        }
                     }
                 },
                 actions = {
@@ -275,6 +283,7 @@ private fun DiscoveredDevices(
                             style = MaterialTheme.typography.bodyMedium,
                             modifier =
                                 Modifier.fillMaxWidth()
+                                    .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                                     .clickable {
                                         actions.onFormChange(
                                             form.copy(deviceId = entry.deviceId, changed = true)
@@ -495,7 +504,7 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
             val titles = stringArrayResource(R.array.compress_entries)
             val values = stringArrayResource(R.array.compress_values)
             val selected = compressionIndex(values, form.compression)
-            AlertDialog(
+            AppAlertDialog(
                 onDismissRequest = dismiss,
                 title = { Text(stringResource(R.string.compression)) },
                 text = {
@@ -503,18 +512,22 @@ private fun DeviceDialogs(form: DeviceForm, dialog: DeviceDialog, actions: Devic
                         values.zip(titles).forEachIndexed { index, (value, title) ->
                             Row(
                                 modifier =
-                                    Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(
-                                        selected = index == selected,
-                                        role = Role.RadioButton,
-                                    ) {
-                                        // Only a different compression is a change.
-                                        if (index != selected) {
-                                            actions.onFormChange(
-                                                form.copy(compression = value, changed = true)
-                                            )
-                                        }
-                                        dismiss()
-                                    },
+                                    Modifier.fillMaxWidth()
+                                        .heightIn(
+                                            min = LocalMinimumInteractiveComponentSize.current
+                                        )
+                                        .selectable(
+                                            selected = index == selected,
+                                            role = Role.RadioButton,
+                                        ) {
+                                            // Only a different compression is a change.
+                                            if (index != selected) {
+                                                actions.onFormChange(
+                                                    form.copy(compression = value, changed = true)
+                                                )
+                                            }
+                                            dismiss()
+                                        },
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {

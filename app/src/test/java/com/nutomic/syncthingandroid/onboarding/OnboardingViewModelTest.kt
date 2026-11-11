@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -90,5 +91,17 @@ class OnboardingViewModelTest {
 
         assertEquals(expectedPage, restoredViewModel.uiState.value.currentPage)
         assertEquals(viewModel.uiState.value.pages, restoredViewModel.uiState.value.pages)
+    }
+
+    @Test
+    fun `a permission-only refresh does not read the config again`() {
+        val viewModel = OnboardingViewModel(app, SavedStateHandle())
+        Constants.getConfigFile(app).delete()
+
+        viewModel.refreshPermissionState(withConfig = false)
+        assertTrue(viewModel.uiState.value.hasConfig)
+
+        viewModel.refreshPermissionState()
+        assertFalse(viewModel.uiState.value.hasConfig)
     }
 }

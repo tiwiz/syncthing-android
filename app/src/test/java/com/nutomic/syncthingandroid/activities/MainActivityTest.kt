@@ -1,5 +1,6 @@
 package com.nutomic.syncthingandroid.activities
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -18,6 +19,7 @@ import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.service.SyncthingService
 import com.nutomic.syncthingandroid.settings.SettingsActivity
 import com.nutomic.syncthingandroid.testutil.ConfigFixture
+import com.nutomic.syncthingandroid.testutil.ConfigFixture.LOCAL_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.ConfigFixture.REMOTE_DEVICE_ID
 import com.nutomic.syncthingandroid.testutil.FakeSyncthing
 import com.nutomic.syncthingandroid.testutil.RunningSyncthingService
@@ -27,9 +29,11 @@ import com.nutomic.syncthingandroid.testutil.ShadowUtilDeviceShell
 import com.nutomic.syncthingandroid.testutil.StoppedSyncthingService
 import com.nutomic.syncthingandroid.testutil.awaitMain
 import com.nutomic.syncthingandroid.webgui.WebGuiActivity
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -37,6 +41,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -234,6 +239,65 @@ class MainActivityTest {
     }
 
     @Test
+    fun `a folder's file manager button is a large target of its own`() {
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            val (width, height) = screen.filesButtonSizeDp("Camera")
+            assertTrue("$width x $height", width >= MIN_TARGET_DP && height >= MIN_TARGET_DP)
+            assertTrue(screen.filesButtonGapDp("Camera") >= MIN_GAP_DP)
+
+            val started = screen.openInFiles("Camera")
+
+            assertNotEquals(FolderActivity::class.java.name, started?.component?.className)
+        }
+    }
+
+    /** Taps the files button while no app can handle the intent. */
+    private fun openCameraWithoutFileManager(screen: MainScreen) {
+        val app = shadowOf(context as Application)
+        app.checkActivities(true)
+        screen.openInFiles("Camera")
+        app.checkActivities(false)
+    }
+
+    /** The app reports a missing folder before it looks for a file manager. */
+    private fun cameraOnDisk() {
+        val folder = File(context.cacheDir, "camera").apply { mkdirs() }
+        ConfigFixture.install(context) {
+            it.replace("/storage/emulated/0/DCIM/Camera", folder.path)
+        }
+    }
+
+    @Test
+    fun `without a file manager the screen suggests one, also after a configuration change`() {
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            openCameraWithoutFileManager(screen)
+            assertTrue(screen.fileManagerSuggested())
+
+            screen.recreate()
+            assertTrue(screen.fileManagerSuggested())
+
+            val store = checkNotNull(screen.answerFileManager(install = true))
+            assertEquals("market", store.data?.scheme)
+            assertFalse(screen.fileManagerSuggested())
+        }
+    }
+
+    @Test
+    fun `the suggested file manager can be declined`() {
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            openCameraWithoutFileManager(screen)
+
+            assertNull(screen.answerFileManager(install = false))
+            assertFalse(screen.fileManagerSuggested())
+        }
+    }
+
+    @Test
     fun `the add button offers new folders and devices on both lists`() {
         stopped().use { screen ->
             for (tab in listOf(MainScreen.Tab.FOLDERS, MainScreen.Tab.DEVICES)) {
@@ -278,6 +342,21 @@ class MainActivityTest {
                     settings.component?.className,
                 )
             }
+        }
+    }
+
+    @Test
+    fun `the menu shows this device's ID, also after a configuration change`() {
+        stopped().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.recreate()
+            assertTrue(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.closeDeviceId()
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
         }
     }
 
@@ -446,6 +525,74 @@ class MainActivityTest {
     }
 
     @Test
+    fun `the device ID waits for the usage question, two dialogs would interfere in Full Space`() {
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.DEVICE_ID)
+            assertFalse(screen.deviceIdShown(LOCAL_DEVICE_ID))
+
+            screen.answerUsageReporting(MainScreen.YES)
+            awaitMain { screen.deviceIdShown(LOCAL_DEVICE_ID) }
+        }
+    }
+
+    @Test
+    fun `the exit question waits for the usage question too`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            // In Full Space the rail is a panel of its own, in reach while the question is up.
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertFalse(screen.exitAsked())
+
+            screen.answerUsageReporting(MainScreen.YES)
+            awaitMain { screen.exitAsked() }
+        }
+    }
+
+    @Test
+    fun `a question that is up stays up when another dialog is asked for`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        cameraOnDisk()
+        stopped().use { screen ->
+            screen.showTab(MainScreen.Tab.FOLDERS)
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertTrue(screen.exitAsked())
+
+            // Swapping the dialogs under a finger would send its tap to the wrong question.
+            openCameraWithoutFileManager(screen)
+            assertTrue(screen.exitAsked())
+            assertFalse(screen.fileManagerSuggested())
+
+            screen.declineExit()
+            assertFalse(screen.exitAsked())
+            assertTrue(screen.fileManagerSuggested())
+        }
+    }
+
+    @Test
+    fun `exit chosen while restart is asking takes its place`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        running().use { screen ->
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.RESTART)
+            assertTrue(screen.restartAsked())
+
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertTrue(screen.exitAsked())
+            assertFalse(screen.restartAsked())
+
+            screen.declineExit()
+            assertFalse(screen.exitAsked())
+            assertFalse(screen.restartAsked())
+        }
+    }
+
+    @Test
     fun `the usage reporting website can be opened from the question`() {
         running(usageReport = true).use { screen ->
             awaitMain { screen.usageReportingAsked() }
@@ -462,5 +609,11 @@ class MainActivityTest {
                     .startsWith("https://")
             )
         }
+    }
+
+    private companion object {
+        /** Android XR's comfortable target for a hand ray, and its spacing to the row's edge. */
+        const val MIN_TARGET_DP = 56f
+        const val MIN_GAP_DP = 8f
     }
 }

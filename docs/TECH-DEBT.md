@@ -31,6 +31,25 @@ Kept from the Kotlin migration:
 
 ## TODOs
 
+- XR: Back does not close a spatial dialog in Full Space, on the emulator and on an Android XR Puck
+  (`FullSpaceTest`, ignored for this reason). A library bug in `androidx.xr.compose`
+  1.0.0-beta02, read from its bytecode: `LayoutSpatialDialog` composes a hidden `Dialog` whose
+  `onDismissRequest` only clears `DialogManager.isSpatialDialogActive`, and the effect meant to
+  call the app's `onDismissRequest` checks that flag once, when it starts. `LocalDialogManager`
+  is internal, so the app cannot watch the flag; a `BackHandler` in the dialog or a callback on
+  the activity's dispatcher never sees the Back, which goes to the hidden window. The dialogs
+  still close with their own buttons. Remove the `@Ignore` once the library is fixed.
+- XR: the web GUI in a Full Space panel gave three ANRs in a row on the 4-thread emulator host
+  ("Waited for FocusEvent"; main thread 10 s running, 167 s waiting for CPU), and none in the same
+  time in Home Space. The page does load and draw. Check on real hardware whether this is only the
+  host.
+
+- A unit test now and then fails with an NPE from `SyncthingConnection.onServiceDisconnected` on
+  whichever test is running. Robolectric's `unbindService` calls it with a null `ComponentName`,
+  which Android does not, and the parameter is non-null in Kotlin. Seen on
+  `MainViewModelDetailTest` under load (full gate next to the XR emulator). A rerun passes. Fix it
+  in the test setup or a shadow, not in app code.
+
 - While Syncthing is stopped, the main screen's refresh (every second) reads `config.xml` twice on
   the main thread, once for the folders and once for the devices (`ConfigRouter` loads the file for
   every offline read). Reading it off the main thread, and only when the file changed, needs
@@ -42,3 +61,14 @@ Kept from the Kotlin migration:
 - `activities/FolderEditController.kt:279-282`: `servedFolder()` deep-copies the folder list with
   Gson on the main thread at save time. The cost is proportional to the `sendConfig` merge that
   follows, so it is fine for now.
+- `SyncthingServiceCertificateTest`, "a certificate Syncthing replaces with a generated one is
+  rolled back", failed once in CI (#164) with a `FileNotFoundException` at its
+  `awaitBackground { certFile.readBytes()... }`, and passed on the rerun. Likely cause, from reading
+  the code and not reproduced: `backupFile` moves the certificate to `.bak` before
+  `writeBytesAtomic` puts the new one in place, so the test can read while the file is missing. The
+  fix would be for the test's poll to check `certFile.exists()` first.
+- `activities/MainContent.kt` and `activities/MainDetail.kt` still call the deprecated
+  `currentWindowAdaptiveInfo()`; `ServiceChip` and the settings use `currentWindowAdaptiveInfoV2()`.
+  V2 also reports the large and extra-large width classes. `MainContent` already asks for them
+  (`supportLargeAndXLargeWidth = true`), but the pane directive in `MainDetail` does not, so the
+  pane layout may change: this needs its own PR with a screenshot review.

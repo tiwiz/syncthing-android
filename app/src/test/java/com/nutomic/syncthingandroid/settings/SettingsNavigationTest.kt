@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -113,6 +114,67 @@ class SettingsNavigationTest {
             compose
                 .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
                 .assertIsDisplayed()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w840dp-h900dp-xxhdpi")
+    fun `a page next to the root closes with a close button`() {
+        launch("Root").use {
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .performClick()
+
+            compose.onNodeWithContentDescription("Close").performClick()
+
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
+            compose.onNodeWithText("Settings").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w840dp-h900dp-xxhdpi")
+    fun `close leaves the root alone however many pages the list opened`() {
+        launch("Root").use {
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .performClick()
+            compose
+                .onNode(
+                    hasText("User Interface") and hasAnyAncestor(hasTestTag("settingsRootList"))
+                )
+                .performClick()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
+
+            compose.onNodeWithContentDescription("Close").performClick()
+
+            compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+            compose.onNodeWithText("Expressive Syncthing Wrapper Version").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w840dp-h900dp-xxhdpi")
+    fun `a page reached from another page keeps its back arrow`() {
+        launch("Root").use {
+            compose
+                .onNode(hasText("About") and hasAnyAncestor(hasTestTag("settingsRootList")))
+                .performClick()
+            compose.onNodeWithContentDescription("Close").assertExists()
+
+            compose.onNodeWithText("Open Source Licenses").performScrollTo().performClick()
+
+            compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun `on a phone a page keeps its back arrow`() {
+        launch("Root").use {
+            compose.onNodeWithText("About").performClick()
+
+            compose.onNodeWithContentDescription("Back").assertExists()
+            compose.onNodeWithContentDescription("Close").assertDoesNotExist()
         }
     }
 

@@ -1,23 +1,11 @@
 package com.nutomic.syncthingandroid.activities
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -30,7 +18,6 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
@@ -38,9 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -56,19 +41,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import com.nutomic.syncthingandroid.R
 import com.nutomic.syncthingandroid.service.SyncthingService
-import com.nutomic.syncthingandroid.ui.SyncProgress
+import com.nutomic.syncthingandroid.ui.SpaceModeAction
+import com.nutomic.syncthingandroid.ui.isSpatialUi
 import com.nutomic.syncthingandroid.views.DeviceRowState
 import com.nutomic.syncthingandroid.views.FolderRowState
 
@@ -95,6 +78,8 @@ internal data class MainUiState(
     val showWebGui: Boolean,
     /** The usage report to ask about, or null when not asking. */
     val usageReport: String?,
+    /** No app could open a folder: the screen suggests a file manager. */
+    val suggestFileManager: Boolean,
 )
 
 /** What the main screen's overflow menu can do; each entry also closes the menu. */
@@ -117,6 +102,9 @@ internal interface MainActions {
     fun onOpenFolder(folderId: String)
 
     fun onOpenFolderInFiles(path: String)
+
+    /** The answer to the suggested file manager; true installs it. */
+    fun onFileManagerSuggestion(install: Boolean)
 
     fun onOverride(folderId: String)
 
@@ -177,10 +165,52 @@ private fun navigationType(): NavigationSuiteType {
 
 /** Whether the window is short, as a phone turned sideways. */
 @Composable
-private fun shortWindow(): Boolean =
+internal fun shortWindow(): Boolean =
     !currentWindowAdaptiveInfo()
         .windowSizeClass
         .isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
+
+/** The main screen's dialogs, in the order they are shown when several are wanted at once. */
+private enum class MainDialog {
+    USAGE_REPORT,
+    FILE_MANAGER,
+    MENU_QUESTION,
+    DEVICE_ID,
+}
+
+/**
+ * The main screen's dialogs, one at a time: all spatial dialogs share one active flag, so closing
+ * one of two would break the other. The one that is up stays until it is answered, or a tap meant
+ * for it would land on the dialog that took its place; the others wait their turn.
+ */
+@Composable
+private fun MainDialogs(
+    state: MainUiState,
+    deviceIdDialog: DeviceIdDialogState?,
+    menu: MenuState,
+    actions: MainActions,
+) {
+    val deviceId = deviceIdDialog?.request?.collectAsStateWithLifecycle()?.value
+    val wanted = buildList {
+        if (state.usageReport != null) add(MainDialog.USAGE_REPORT)
+        if (state.suggestFileManager) add(MainDialog.FILE_MANAGER)
+        if (menu.confirmations.question != null) add(MainDialog.MENU_QUESTION)
+        if (deviceId != null) add(MainDialog.DEVICE_ID)
+    }
+    var last by rememberSaveable { mutableStateOf<MainDialog?>(null) }
+    val shown = last.takeIf { it in wanted } ?: wanted.firstOrNull()
+    SideEffect { last = shown }
+    when (shown) {
+        MainDialog.USAGE_REPORT -> state.usageReport?.let { UsageReportingDialog(it, actions) }
+        MainDialog.FILE_MANAGER -> FileManagerDialog(actions)
+        MainDialog.MENU_QUESTION -> MenuConfirmationDialog(menu.confirmations, menu.actions)
+        MainDialog.DEVICE_ID ->
+            if (deviceId != null && deviceIdDialog != null) {
+                DeviceIdDialog(deviceId, onDismiss = deviceIdDialog::dismiss)
+            }
+        null -> Unit
+    }
+}
 
 /**
  * The main screen: the destinations in a navigation bar or rail, the top bar with the overflow
@@ -197,43 +227,104 @@ internal fun MainContent(
     detail: Detail? = null,
     detailBackProgress: () -> Float = { 0f },
     onTwoPanesChange: (Boolean) -> Unit = {},
+    /** The device ID dialog over the screen; null only where a test does not need it. */
+    deviceIdDialog: DeviceIdDialogState? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(MainTab.FOLDERS) }
     val directive = paneDirective()
-    SideEffect(directive.twoPanes) { onTwoPanesChange(directive.twoPanes) }
+    val spatial = isSpatialUi
+    val besideList = detailBesideList(spatial, directive)
+    SideEffect(besideList) { onTwoPanesChange(besideList) }
     val type = navigationType()
-    NavigationSuiteScaffold(
-        navigationSuiteType = type,
-        modifier = modifier,
-        navigationItems = {
-            for (destination in MainTab.entries) {
-                val selected = destination == tab
-                NavigationSuiteItem(
-                    selected = selected,
-                    onClick = { tab = destination },
-                    icon = {
-                        Icon(if (selected) destination.selectedIcon else destination.icon, null)
-                    },
-                    label = { Text(stringResource(destination.title)) },
-                    navigationSuiteType = type,
+    val rail = type.isRail()
+    val railExpanded = spatial || type == NavigationSuiteType.WideNavigationRailExpanded
+    // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
+    // (menu key, or a window grown while it was open) would hide nothing and swallow back.
+    SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
+    val menu = MenuState(menuOpen, onMenuOpenChange, menuActions, rememberMenuConfirmations())
+    val panes = Panes(directive, besideList, detail, detailBackProgress)
+    val running = state.serviceState == SyncthingService.State.ACTIVE
+    if (spatial) {
+        SpatialMain(
+            modifier = modifier,
+            rail = {
+                SpatialRail(
+                    tab = tab,
+                    onTabChange = { tab = it },
+                    running = running,
+                    showWebGui = state.showWebGui,
+                    runningAsService = state.runningAsService,
+                    menuActions = menuActions,
+                    confirmations = menu.confirmations,
+                    actions = actions,
                 )
-            }
-        },
-    ) {
-        MainScaffold(
-            state = state,
-            tab = tab,
-            panes = Panes(directive, detail, detailBackProgress),
-            menu = MenuState(menuOpen, onMenuOpenChange, menuActions),
-            actions = actions,
+            },
+            topBar = { SpatialTopBar(tab, state.serviceState, actions) },
+            statusBar = { SpatialStatusBar(state.forceStartStop, actions) },
+            list = {
+                TabList(
+                    state,
+                    tab,
+                    panes.shownDetail,
+                    actions,
+                    showTitle = false,
+                    showRunMode = false,
+                )
+                // In a panel: Subspace hides the main window, and a dialog anchored to it with it.
+                MainDialogs(state, deviceIdDialog, menu, actions)
+            },
+            detail =
+                if (tab == MainTab.STATUS) {
+                    null
+                } else {
+                    {
+                        val shown = panes.detailOf(tab)
+                        if (shown == null) TabPlaceholder(tab)
+                        else DetailPane(shown, detailBackProgress)
+                    }
+                },
         )
+    } else {
+        NavigationSuiteScaffold(
+            navigationSuiteType = type,
+            modifier = modifier,
+            navigationItems = {
+                TabItems(tab, onTabChange = { tab = it }, type)
+                if (railExpanded) {
+                    RailMenu(
+                        running = running,
+                        showWebGui = state.showWebGui,
+                        runningAsService = state.runningAsService,
+                        actions = menu.actions,
+                        confirmations = menu.confirmations,
+                        type = type,
+                    )
+                }
+            },
+            primaryActionContent = { if (rail) RailHeader(expanded = railExpanded, actions) },
+        ) {
+            MainScaffold(
+                state = state,
+                tab = tab,
+                panes = panes,
+                menu = menu.takeUnless { railExpanded },
+                actions = actions,
+                addButton = !rail,
+                titleInBar = rail && !shortWindow(),
+            )
+        }
+        MainDialogs(state, deviceIdDialog, menu, actions)
     }
-    state.usageReport?.let { UsageReportingDialog(it, actions) }
 }
+
+/** Whether a detail opens next to its list: in Full Space each has a panel of its own. */
+internal fun detailBesideList(spatial: Boolean, directive: PaneScaffoldDirective): Boolean =
+    spatial || directive.twoPanes
 
 /** The list and detail panes of the current window. */
 private class Panes(
     val directive: PaneScaffoldDirective,
+    val besideList: Boolean,
     val detail: Detail?,
     /** How far a back gesture closing the detail pane has gone, 0 to 1. */
     val backProgress: () -> Float,
@@ -243,7 +334,7 @@ private class Panes(
 
     /** The detail next to the list; a detail kept while the window is too narrow is not shown. */
     val shownDetail: Detail?
-        get() = detail.takeIf { directive.twoPanes }
+        get() = detail.takeIf { besideList }
 
     fun detailOf(tab: MainTab): Detail? =
         when (tab) {
@@ -254,10 +345,11 @@ private class Panes(
 }
 
 /** The overflow menu's state, hoisted to the activity. */
-private class MenuState(
+internal class MenuState(
     val open: Boolean,
     val onOpenChange: (Boolean) -> Unit,
     val actions: MenuActions,
+    val confirmations: MenuConfirmations,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -266,32 +358,49 @@ private fun MainScaffold(
     state: MainUiState,
     tab: MainTab,
     panes: Panes,
-    menu: MenuState,
+    /** The overflow menu; null when the expanded rail lists its entries. */
+    menu: MenuState?,
     actions: MainActions,
+    /** A floating add button; false when the rail has it. */
+    addButton: Boolean,
+    /** The tab's name is the top bar's title instead of a headline above the list. */
+    titleInBar: Boolean,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.fork_app_name)) },
-                actions = {
-                    StatusLight(state.serviceState)
-                    TabActions(tab, actions)
-                    IconButton(onClick = actions::onSettings) {
-                        Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
+                title = {
+                    if (titleInBar) {
+                        Text(
+                            stringResource(tab.title),
+                            style = MaterialTheme.typography.headlineMediumEmphasized,
+                            modifier = Modifier.testTag("topBarTitle"),
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.fork_app_name),
+                            modifier = Modifier.testTag("topBarTitle"),
+                        )
                     }
-                    MainMenu(
-                        open = menu.open,
-                        onOpenChange = menu.onOpenChange,
-                        running = state.serviceState == SyncthingService.State.ACTIVE,
-                        showWebGui = state.showWebGui,
-                        runningAsService = state.runningAsService,
-                        actions = menu.actions,
-                    )
+                },
+                actions = {
+                    TopBarActions(tab, state.serviceState, actions)
+                    if (menu != null) {
+                        MainMenu(
+                            open = menu.open,
+                            onOpenChange = menu.onOpenChange,
+                            running = state.serviceState == SyncthingService.State.ACTIVE,
+                            showWebGui = state.showWebGui,
+                            runningAsService = state.runningAsService,
+                            actions = menu.actions,
+                            confirmations = menu.confirmations,
+                        )
+                    }
                 },
             )
         },
         floatingActionButton = {
-            if (tab != MainTab.STATUS && !panes.detailShown) AddMenu(actions)
+            if (addButton && tab != MainTab.STATUS && !panes.detailShown) AddMenu(actions)
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -301,33 +410,21 @@ private fun MainScaffold(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
                         backProgress = panes.backProgress,
+                        placeholder = { TabPlaceholder(tab) },
                     ) {
-                        FolderList(
-                            state.folders,
-                            state.totalProgress,
-                            actions,
-                            selectedFolderId =
-                                (panes.shownDetail as? Detail.FolderDetail)
-                                    ?.key
-                                    ?.removePrefix(DetailSelection.FOLDER),
-                        )
+                        TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
                     }
                 MainTab.DEVICES ->
                     ListWithDetail(
                         directive = panes.directive,
                         detail = panes.detailOf(tab),
                         backProgress = panes.backProgress,
+                        placeholder = { TabPlaceholder(tab) },
                     ) {
-                        DeviceList(
-                            state.devices,
-                            actions,
-                            selectedDeviceId =
-                                (panes.shownDetail as? Detail.DeviceDetail)
-                                    ?.key
-                                    ?.removePrefix(DetailSelection.DEVICE),
-                        )
+                        TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
                     }
-                MainTab.STATUS -> StatusTab(state.status, state.forceStartStop, actions)
+                MainTab.STATUS ->
+                    TabList(state, tab, panes.shownDetail, actions, showTitle = !titleInBar)
             }
         }
     }
@@ -350,23 +447,34 @@ private fun TabActions(tab: MainTab, actions: MainActions) {
     }
 }
 
-/** A dot: green while Syncthing runs, orange while it starts, grey otherwise. */
+/** The space switch, the service state and the actions, in the top bar or its orbiter. */
 @Composable
-private fun StatusLight(state: SyncthingService.State) {
-    val (color, tag) =
-        when (state) {
-            SyncthingService.State.ACTIVE -> colorResource(R.color.text_green) to "light:ACTIVE"
-            SyncthingService.State.STARTING ->
-                colorResource(R.color.text_orange) to "light:STARTING"
-            else -> MaterialTheme.colorScheme.outline to "light:DISABLED"
-        }
-    Box(
-        modifier =
-            Modifier.padding(horizontal = 8.dp)
-                .size(LIGHT_SIZE.dp)
-                .background(color, CircleShape)
-                .testTag(tag)
-    )
+internal fun RowScope.TopBarActions(
+    tab: MainTab,
+    serviceState: SyncthingService.State,
+    actions: MainActions,
+) {
+    SpaceModeAction()
+    ServiceChip(serviceState)
+    TabActions(tab, actions)
+    IconButton(onClick = actions::onSettings) {
+        Icon(Icons.Outlined.Settings, stringResource(R.string.settings_title))
+    }
+}
+
+/** One navigation item per destination, for the bar or a rail. */
+@Composable
+internal fun TabItems(tab: MainTab, onTabChange: (MainTab) -> Unit, type: NavigationSuiteType) {
+    for (destination in MainTab.entries) {
+        val selected = destination == tab
+        NavigationSuiteItem(
+            selected = selected,
+            onClick = { onTabChange(destination) },
+            icon = { Icon(if (selected) destination.selectedIcon else destination.icon, null) },
+            label = { Text(stringResource(destination.title)) },
+            navigationSuiteType = type,
+        )
+    }
 }
 
 /** Adds a folder or a device: a FAB that opens into a menu. */
@@ -403,161 +511,3 @@ private fun AddMenu(actions: MainActions) {
         )
     }
 }
-
-/** The overall progress of the devices in sync, above the folders. */
-@Composable
-private fun TotalProgressCard(percent: Int, modifier: Modifier = Modifier) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(CARD_CORNER.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                stringResource(
-                    if (percent < PERCENT) R.string.state_syncing_general
-                    else R.string.state_up_to_date
-                ),
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Text(
-                "$percent%",
-                style = MaterialTheme.typography.displayMediumEmphasized,
-                modifier = Modifier.testTag("totalProgress"),
-            )
-            SyncProgress(progress = percent / PERCENT.toFloat())
-        }
-    }
-}
-
-/** A list's title, with room above it under the top bar; smaller in a short window. */
-@Composable
-internal fun ListTitle(tab: MainTab, modifier: Modifier = Modifier) {
-    val short = shortWindow()
-    Text(
-        stringResource(tab.title),
-        style =
-            if (short) MaterialTheme.typography.titleLargeEmphasized
-            else MaterialTheme.typography.displaySmallEmphasized,
-        modifier =
-            modifier
-                .padding(start = 8.dp, top = 8.dp, bottom = if (short) 8.dp else 16.dp)
-                .testTag("listTitle"),
-    )
-}
-
-@Composable
-private fun FolderList(
-    folders: List<FolderItem>,
-    totalProgress: Int?,
-    actions: MainActions,
-    selectedFolderId: String?,
-) {
-    if (folders.isEmpty()) {
-        EmptyList(R.string.folder_list_empty)
-        return
-    }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
-        verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
-    ) {
-        item { ListTitle(MainTab.FOLDERS) }
-        totalProgress?.let { item { TotalProgressCard(it, Modifier.padding(bottom = 16.dp)) } }
-        itemsIndexed(folders, key = { _, folder -> folder.folderId }) { index, item ->
-            FolderRow(
-                item = item,
-                actions = actions,
-                index = index,
-                count = folders.size,
-                selected = item.folderId == selectedFolderId,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DeviceList(
-    devices: List<DeviceItem>,
-    actions: MainActions,
-    selectedDeviceId: String?,
-) {
-    if (devices.isEmpty()) {
-        EmptyList(R.string.no_devices_configured)
-        return
-    }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LIST_BOTTOM_PADDING.dp),
-        verticalArrangement = Arrangement.spacedBy(GROUP_GAP.dp),
-    ) {
-        item { ListTitle(MainTab.DEVICES) }
-        itemsIndexed(devices, key = { _, device -> device.deviceId }) { index, item ->
-            DeviceRow(
-                item = item,
-                actions = actions,
-                index = index,
-                count = devices.size,
-                selected = item.deviceId == selectedDeviceId,
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyList(text: Int) {
-    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Text(
-            stringResource(text),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun UsageReportingDialog(report: String, actions: MainActions) {
-    AlertDialog(
-        onDismissRequest = {},
-        title = { Text(stringResource(R.string.usage_reporting_dialog_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(stringResource(R.string.usage_reporting_dialog_description))
-                Text(
-                    report,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp).heightIn(max = REPORT_MAX_HEIGHT.dp),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { actions.onUsageReporting(UsageAnswer.YES) }) {
-                Text(stringResource(R.string.yes))
-            }
-        },
-        dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { actions.onUsageReporting(UsageAnswer.WEBSITE) }) {
-                    Text(stringResource(R.string.open_website))
-                }
-                TextButton(onClick = { actions.onUsageReporting(UsageAnswer.NO) }) {
-                    Text(stringResource(R.string.no))
-                }
-            }
-        },
-    )
-}
-
-private const val LIGHT_SIZE = 12
-private const val PERCENT = 100
-internal const val CARD_CORNER = 32
-
-/** Room below the last item, so the add button never covers it. */
-private const val LIST_BOTTOM_PADDING = 96
-
-/** The gap between the items of a grouped list. */
-internal const val GROUP_GAP = 3
-private const val REPORT_MAX_HEIGHT = 240

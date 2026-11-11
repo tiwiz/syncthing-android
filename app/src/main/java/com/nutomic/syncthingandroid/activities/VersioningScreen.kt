@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -191,7 +192,7 @@ private fun StaggeredParams(params: Map<String, String>, onParamChange: (String,
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .heightIn(min = 48.dp)
+                        .heightIn(min = LocalMinimumInteractiveComponentSize.current)
                         .clip(groupedItemShape(0, 1))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .clickable {

@@ -64,7 +64,11 @@ object FileOpener {
 
     /** Opens a folder in a compatible file manager app, or suggests installing one. */
     @JvmStatic
-    fun openFolder(context: Context, folderPath: String) {
+    fun openFolder(
+        context: Context,
+        folderPath: String,
+        onNoFileManager: () -> Unit = { suggestFileManagerApp(context) },
+    ) {
         val folder = File(folderPath)
         if (!folder.exists() || !folder.isDirectory) {
             Toast.makeText(
@@ -98,7 +102,7 @@ object FileOpener {
             )
         intent.setDataAndType(documentUri, DocumentsContract.Document.MIME_TYPE_DIR)
         if (!tryStart(context, intent, "stage #2")) {
-            suggestFileManagerApp(context)
+            onNoFileManager()
         }
     }
 
@@ -108,10 +112,10 @@ object FileOpener {
             context.startActivity(intent)
             true
         } catch (e: ActivityNotFoundException) {
-            Log.e(TAG, "openFolder: No compatible file manager app found ($stage)", e)
+            Log.e(TAG, "No app to open this with ($stage)", e)
             false
         } catch (e: SecurityException) {
-            Log.e(TAG, "openFolder: File manager app has insufficient permissions ($stage)", e)
+            Log.e(TAG, "Not allowed to open this ($stage)", e)
             false
         }
 
@@ -119,25 +123,22 @@ object FileOpener {
         AlertDialog.Builder(context)
             .setTitle(R.string.suggest_file_manager_app_dialog_title)
             .setMessage(R.string.suggest_file_manager_app_dialog_text)
-            .setPositiveButton(R.string.yes) { _, _ ->
-                try {
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            "market://details?id=$FILE_MANAGER_PACKAGE".toUri(),
-                        )
-                    )
-                } catch (_: ActivityNotFoundException) {
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            "https://play.google.com/store/apps/details?id=$FILE_MANAGER_PACKAGE"
-                                .toUri(),
-                        )
-                    )
-                }
-            }
+            .setPositiveButton(R.string.yes) { _, _ -> openFileManagerInStore(context) }
             .setNegativeButton(R.string.no) { _, _ -> }
             .show()
+    }
+
+    /** Shows the suggested file manager app in an app store, or else on the web. */
+    fun openFileManagerInStore(context: Context) {
+        val store = Intent(Intent.ACTION_VIEW, "market://details?id=$FILE_MANAGER_PACKAGE".toUri())
+        val web =
+            Intent(
+                Intent.ACTION_VIEW,
+                "https://play.google.com/store/apps/details?id=$FILE_MANAGER_PACKAGE".toUri(),
+            )
+        if (!tryStart(context, store, "app store") && !tryStart(context, web, "web")) {
+            // Neither a store nor a browser, as on some TV boxes and restricted profiles.
+            Toast.makeText(context, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
+        }
     }
 }

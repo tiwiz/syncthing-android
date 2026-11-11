@@ -93,6 +93,11 @@ IS_COPILOT=true ./gradlew -Pcoverage=true :app:verifyRoborazziDebug :app:createD
 emulator -avd pixel_phone -no-window -no-audio &
 ANDROID_SERIAL=emulator-5554 IS_COPILOT=true ./gradlew :app:connectedDebugAndroidTest
 
+# Android XR emulator (AVD `xr`, image system-images;android-34;google-xr;x86_64). Needs a real GPU and a
+# window: software rendering gives black screenshots. Give the XR shell about 5 minutes after boot.
+ANDROID_SDK_ROOT=/opt/android-sdk emulator -avd xr -no-audio -no-snapshot -gpu host -port 5570
+adb -s emulator-5570 emu screenrecord screenshot "$PWD"   # adb screencap does not see the XR scene
+
 # Full build with the native binary
 git submodule update --init --recursive         # Syncthing sources
 # install Go = go_version in gradle/libs.versions.toml (currently 1.27.1)
@@ -125,7 +130,6 @@ app/                         Android application (only Gradle module with code)
     util/          ConfigXml (config.xml DOM), ConfigRouter, FileUtils, PermissionUtil, …
     activities/    Compose screens: Main (+ overflow menu, detail pane on large windows), Folder, Device, pickers, dialogs, Share,
                    PhotoShoot, QR scanner, Log, web page, their ViewModels; `ThemedAppCompatActivity` base class
-    fragments/     DeviceIdDialogFragment (Compose)
     views/         FolderRowState, DeviceRowState (main screen list rows)
     onboarding/    Compose launcher flow (permissions, key generation)
     settings/      Compose settings, Navigation 3, SharedPreferenceFlow
@@ -317,6 +321,36 @@ Next steps (to be confirmed with the owner):
    **Resume here:** the two private security advisories, with the owner.
    2026-11-07: H5's last piece, the detail pane's selection moved from `DetailPanes` (deleted) to
    `MainViewModel`'s `SavedStateHandle` (branch `refactor/detail-pane-selection`).
+9. 2026-11-08, Android XR, on the long-lived branch `xr` (every PR targets it; one final PR to `main`
+   waits for the owner). Plan: https://claude.ai/artifact/2QtTFauKyWAmRpxwFy4Gim, design canvas:
+   https://claude.ai/artifact/FeynMSvXf3EWdPN2zv5BJs. Done: tablet fixes X1-X6 (#163-#170); XR Compose
+   and the Full Space button (#171); panel and orbiters in Full Space (XR4, #172); separate panels for list and
+   detail (XR5, #173); run mode orbiter, spatial alert dialogs and the device ID dialog (XR6, #174, #175). web GUI panel (XR7, #177), kept in its own activity instead of beside the detail as planned, which would move the WebView and its certificate handling into `MainActivity`; not yet seen on the emulator, where popups from the WebView (`<select>`, `alert`) need checking too. In Full Space `ApplicationTheme` gives 56 dp targets and at least 14 sp text (XR8): rows with their own minimum read `LocalMinimumInteractiveComponentSize`, and text sizes come from the type scale. Only Full Space, not Home Space; the 3 dp focus ring is only on the main screen's rows. On a headset, in both spaces, `RecentChangesScreen` has no pull-to-refresh, only its Refresh button and a progress bar (XR9, #179). Next: the checks below that need a mouse, then the final PR to `main` waits for the owner.
+   Decided: only `androidx.xr.compose`. XR Material 3 1.0.0-alpha17 crashes against Material 3
+   1.5.0-beta01 (`NoSuchMethodError`, its override APIs are gone since alpha26 and beta01), and its
+   `Spatial*` composables are in no published version. `androidx.xr.arcore` and `com.google.ar:core`
+   are excluded in `app/build.gradle.kts`; SceneCore and `com.google.ar:impress` stay, XR Compose is
+   built on them. The gate cannot see a break from that exclusion: SceneCore still calls ARCore in
+   `MovableComponent`, so dragging a panel must be checked on the emulator.
+   2026-11-09, milestone on the emulator with the native build: onboarding, Home Space, the Full Space
+   button, Syncthing running (native process, live status label and run mode), rail with 56 dp targets,
+   Add dropdown, file manager and device ID dialogs, and the web GUI in its own panel all show. An
+   activity started from Full Space stays in Full Space, and the main screen's panels hide while it is
+   open. The foreground-service ANR is the slow host: the main thread ran 4.5 s and waited 114.8 s for
+   CPU. `adb input` cannot reach panels or orbiters, as they are not input windows; it only reaches a
+   spatial dialog's own window, so taps need the emulator's mouse. Screens were driven by a temporary
+   broadcast receiver, never committed. Not verified, needs a mouse: dragging and resizing a panel
+   without ARCore, taps in orbiters and panels, `<select>` in the web GUI, a real pinch and drag on
+   recent changes, the return to Home Space, a real folder in the panels. Only the main screen has the
+   switch. Open problems in `docs/TECH-DEBT.md`.
+   Panels are 440 + 600 dp wide: wider and the rail leaves the emulator's view. In Full Space a plain
+   dialog is invisible, because it attaches to the main window `Subspace` hides: use `AppAlertDialog`
+   (`ui/Spatial.kt`) in anything a panel can open. `SpatialDialog` measures with unbounded height,
+   so a `verticalScroll` inside it needs a height limit or the app crashes. A dialog composed at the root of
+   `setContent` is invisible too: it needs to be inside a panel, as in `MainDialogs`. The main
+   screen shows the file manager suggestion that way too; `RecentChangesActivity` keeps
+   `FileOpener`'s View dialog, as that screen has no Subspace. Dropdown menus in orbiters are
+   unchecked. All spatial dialogs share one active flag, so `MainDialogs` shows one at a time.
 
 ## HANDOFF
 
@@ -342,5 +376,10 @@ Next steps (to be confirmed with the owner):
   when the port is taken (`webui_tcp_port_unavailable`).
 - The sync-complete broadcast only reaches packages hard-coded in `RestApi.sendBroadcastToApps`.
 - Import/export zips include `SharedPreferences`; key renames break old backups.
+- XR emulator: start it with the tool's background mode, not `&` (it dies between turns). Tap
+  coordinates are window pixels, 2 per dp, with content starting at y=48. To pass onboarding without
+  keys: `adb shell appops set <package> MANAGE_EXTERNAL_STORAGE allow`.
+- `gh pr edit` fails here with a Projects (classic) GraphQL error; change a PR body with
+  `gh api -X PATCH repos/tiwiz/syncthing-android/pulls/<n> -F body=@file`.
 - `connectedDebugAndroidTest` installs and then uninstalls the debug app with its data: with a phone
   plugged in, always set `ANDROID_SERIAL` to the emulator. Disable animations on the emulator.

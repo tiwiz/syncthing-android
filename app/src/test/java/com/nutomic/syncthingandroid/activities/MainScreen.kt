@@ -9,11 +9,14 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -136,7 +139,7 @@ internal class MainScreen(
     /** Runs [action] and returns the screen it started, if any. */
     fun run(action: Action): Intent? {
         if (action.inAddMenu) {
-            compose.onNodeWithContentDescription("Add").performClick()
+            addButton().performClick()
             idle()
             compose.onNode(hasText(action.description) and hasClickAction()).performClick()
         } else {
@@ -181,7 +184,7 @@ internal class MainScreen(
 
     fun light(): Light =
         Light.entries.single {
-            compose.onAllNodesWithTag("light:${it.name}").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("serviceChip:${it.name}").fetchSemanticsNodes().isNotEmpty()
         }
 
     /** The overall sync progress shown in the top bar, or null when hidden. */
@@ -200,6 +203,23 @@ internal class MainScreen(
         compose.onNode(hasText("Yes") and hasClickAction()).performClick()
         idle()
     }
+
+    /** Whether exit is asking for confirmation. */
+    fun exitAsked(): Boolean =
+        compose.onAllNodes(hasText("Confirm to quit app")).fetchSemanticsNodes().isNotEmpty()
+
+    /** Answers no when exit asks for confirmation. */
+    fun declineExit() {
+        compose.onNode(hasText("No") and hasClickAction()).performClick()
+        idle()
+    }
+
+    /** Whether restart is asking for confirmation. */
+    fun restartAsked(): Boolean =
+        compose
+            .onAllNodes(hasText("Do you want to restart Syncthing?"))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
     fun usageReportingAsked(): Boolean =
         compose
@@ -241,6 +261,50 @@ internal class MainScreen(
         compose.onNode(
             hasText(item.label) and hasClickAction() and hasAnyAncestor(hasTestTag("mainMenu"))
         )
+
+    fun hasOverflowButton(): Boolean =
+        compose.onAllNodesWithContentDescription("More options").fetchSemanticsNodes().isNotEmpty()
+
+    private fun railNode(item: MenuItem) =
+        compose.onNode(hasText(item.label) and hasAnyAncestor(hasTestTag("railMenu")))
+
+    /** The overflow entries the expanded rail lists, in order; empty without them. */
+    fun railEntries(): List<MenuItem> =
+        MenuItem.entries.filter {
+            compose
+                .onAllNodes(hasText(it.label) and hasAnyAncestor(hasTestTag("railMenu")))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+    fun railEntryEnabled(item: MenuItem): Boolean =
+        SemanticsProperties.Disabled !in railNode(item).fetchSemanticsNode().config
+
+    /** Chooses [item] in the expanded rail and returns the screen it started, if any. */
+    fun chooseInRail(item: MenuItem): Intent? {
+        railNode(item).performClick()
+        idle()
+        return nextStarted()
+    }
+
+    /** Whether the add button is the rail's header rather than a floating button. */
+    fun addInRail(): Boolean =
+        compose.onAllNodesWithTag("railAdd").fetchSemanticsNodes().any { it.layoutInfo.isPlaced } &&
+            compose.onAllNodes(isAddButton).fetchSemanticsNodes().count {
+                it.layoutInfo.isPlaced
+            } == 1
+
+    /** The add button: an icon named "Add", or the expanded rail's button that says it. */
+    private val isAddButton = (hasContentDescription("Add") or hasText("Add")) and hasClickAction()
+
+    /**
+     * The add button the user sees. The rail also composes its header once more to measure it; that
+     * copy is never placed.
+     */
+    private fun addButton(): SemanticsNodeInteraction {
+        val all = compose.onAllNodes(isAddButton)
+        return all[all.fetchSemanticsNodes().indexOfFirst { it.layoutInfo.isPlaced }]
+    }
 
     fun menuItemEnabled(item: MenuItem): Boolean =
         SemanticsProperties.Disabled !in menuNode(item).fetchSemanticsNode().config
@@ -299,6 +363,88 @@ internal class MainScreen(
     fun rootSize(): IntSize = compose.onRoot().fetchSemanticsNode().size
 
     /** How tall the title above the list of the current tab is, in pixels. */
+    fun topBarTitle(): String =
+        compose
+            .onNodeWithTag("topBarTitle", useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.Text]
+            .joinToString()
+
+    fun hasListTitle(): Boolean =
+        compose.onAllNodesWithTag("listTitle").fetchSemanticsNodes().isNotEmpty()
+
+    /** Whether the app's name heads the rail, above the add button. */
+    fun appNameInRail(): Boolean =
+        compose
+            .onAllNodes(
+                hasText("Expressive Syncthing") and hasAnyAncestor(hasTestTag("railHeader"))
+            )
+            .fetchSemanticsNodes()
+            .any { it.layoutInfo.isPlaced }
+
+    /** What the empty detail pane says, or null when it shows a folder or device. */
+    fun detailPlaceholder(): String? =
+        compose
+            .onAllNodesWithTag("detailPlaceholder", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .firstOrNull()
+            ?.config
+            ?.get(SemanticsProperties.Text)
+            ?.joinToString()
+
+    fun rowWidth(tag: String): Float =
+        compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.width
+
+    /** The status tab's width in dp. */
+    fun statusWidthDp(): Float {
+        val node = compose.onNodeWithTag("statusColumn").fetchSemanticsNode()
+        return node.boundsInRoot.width / node.layoutInfo.density.density
+    }
+
+    private val inDetailPane = hasAnyAncestor(hasTestTag("detailPane"))
+
+    /** The detail pane's navigation buttons ("Back", "Close"), by what they say. */
+    fun detailNavigation(): List<String> =
+        listOf("Back", "Close").filter {
+            compose
+                .onAllNodes(hasContentDescription(it) and inDetailPane)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+    fun closeDetail() {
+        compose.onNode(hasContentDescription("Close") and inDetailPane).performClick()
+        idle()
+    }
+
+    private fun filesButton(folder: String) =
+        compose.onNode(
+            hasContentDescription("Open file manager") and
+                hasAnyAncestor(hasTestTag("folder:$folder"))
+        )
+
+    /** The width and height of the folder's file manager button, in dp. */
+    fun filesButtonSizeDp(folder: String): Pair<Float, Float> {
+        val node = filesButton(folder).fetchSemanticsNode()
+        val density = node.layoutInfo.density.density
+        return node.size.width / density to node.size.height / density
+    }
+
+    /** The room between the folder's file manager button and the row's end edge, in dp. */
+    fun filesButtonGapDp(folder: String): Float {
+        val button = filesButton(folder).fetchSemanticsNode()
+        val row = compose.onNodeWithTag("folder:$folder").fetchSemanticsNode()
+        return (row.boundsInRoot.right - button.boundsInRoot.right) /
+            button.layoutInfo.density.density
+    }
+
+    /** Taps the folder's file manager button and returns the screen it started, if any. */
+    fun openInFiles(folder: String): Intent? {
+        filesButton(folder).performClick()
+        idle()
+        return nextStarted()
+    }
+
     fun listTitleHeight(): Float =
         compose.onNodeWithTag("listTitle").fetchSemanticsNode().boundsInRoot.height
 
@@ -378,6 +524,41 @@ internal class MainScreen(
             viewModel = provider[selection.viewModelKey, type]
         }
         return viewModel
+    }
+
+    /** Whether the screen's own dialog suggests a file manager app. */
+    fun fileManagerSuggested(): Boolean =
+        compose
+            .onAllNodes(hasText("No compatible file manager app found"))
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+
+    /** Answers the suggestion; returns what it started. */
+    fun answerFileManager(install: Boolean): Intent? {
+        compose.onNode(hasText(if (install) "Yes" else "No") and hasClickAction()).performClick()
+        compose.waitForIdle()
+        return nextStarted()
+    }
+
+    /** Whether the device ID dialog shows [deviceId]. */
+    fun deviceIdShown(deviceId: String): Boolean =
+        compose.onAllNodes(hasText(deviceId)).fetchSemanticsNodes().isNotEmpty()
+
+    /** Taps the share button of the device open in the detail pane. */
+    fun shareDeviceIdInDetail() {
+        compose.onNode(hasContentDescription("Share Device ID")).performClick()
+        compose.waitForIdle()
+    }
+
+    /** Whether the dialog is open on [deviceId]: its Copy button only exists in the dialog. */
+    fun deviceIdDialogShows(deviceId: String): Boolean =
+        deviceIdShown(deviceId) &&
+            compose.onAllNodes(hasText("Copy")).fetchSemanticsNodes().isNotEmpty()
+
+    /** Closes the device ID dialog with its button. */
+    fun closeDeviceId() {
+        compose.onNode(hasText("Finish") and hasClickAction()).performClick()
+        compose.waitForIdle()
     }
 
     /** Recreates the screen, as a rotation or a fold does. */
