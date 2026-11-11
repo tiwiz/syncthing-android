@@ -17,8 +17,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,7 +35,9 @@ import com.nutomic.syncthingandroid.ui.AppAlertDialog
  * What used to be in the navigation drawer, for the overflow menu or the expanded rail ([content]).
  * Recent changes, the web GUI and restart need Syncthing [running]; the web GUI is left out on TVs
  * ([showWebGui]). With the app [runningAsService], exit asks first. [onChoose] runs before an
- * entry's action, so a menu can close.
+ * entry's action, so a menu can close. The questions restart and exit ask are in [confirmations],
+ * owned by the screen: the entries move between the top bar, the rail and a spatial panel as the
+ * window changes, and an open question must not go with the one that showed it.
  */
 @Composable
 internal fun MenuEntries(
@@ -40,11 +45,10 @@ internal fun MenuEntries(
     showWebGui: Boolean,
     runningAsService: Boolean,
     actions: MenuActions,
+    confirmations: MenuConfirmations,
     onChoose: () -> Unit,
     content: @Composable (List<MenuEntryItem>) -> Unit,
 ) {
-    var confirmRestart by rememberSaveable { mutableStateOf(false) }
-    var confirmExit by rememberSaveable { mutableStateOf(false) }
     fun entry(
         icon: ImageVector,
         label: Int,
@@ -71,24 +75,51 @@ internal fun MenuEntries(
             )
         }
         add(entry(Icons.Outlined.ImportExport, R.string.category_backup) { actions.onBackup() })
-        add(entry(Icons.Outlined.Autorenew, R.string.restart, running) { confirmRestart = true })
+        add(
+            entry(Icons.Outlined.Autorenew, R.string.restart, running) {
+                confirmations.restart = true
+            }
+        )
         add(
             entry(Icons.AutoMirrored.Outlined.ExitToApp, R.string.exit, apart = true) {
-                if (runningAsService) confirmExit = true else actions.onExit()
+                if (runningAsService) confirmations.exit = true else actions.onExit()
             }
         )
     }
     content(entries)
-    if (confirmRestart) {
-        ConfirmRestartDialog(onDismiss = { confirmRestart = false }) {
-            confirmRestart = false
+    if (confirmations.restart) {
+        ConfirmRestartDialog(onDismiss = { confirmations.restart = false }) {
+            confirmations.restart = false
             actions.onRestart()
         }
     }
-    if (confirmExit) {
-        ConfirmExitDialog(onDismiss = { confirmExit = false }, onConfirm = actions::onExit)
+    if (confirmations.exit) {
+        ConfirmExitDialog(onDismiss = { confirmations.exit = false }) {
+            confirmations.exit = false
+            actions.onExit()
+        }
     }
 }
+
+/** Whether the menu is asking before a restart or an exit. */
+@Stable
+internal class MenuConfirmations(restart: Boolean = false, exit: Boolean = false) {
+    var restart by mutableStateOf(restart)
+    var exit by mutableStateOf(exit)
+
+    companion object {
+        val Saver: Saver<MenuConfirmations, Any> =
+            listSaver(
+                save = { listOf(it.restart, it.exit) },
+                restore = { MenuConfirmations(it[0], it[1]) },
+            )
+    }
+}
+
+/** [MenuConfirmations] that survive a recreation. */
+@Composable
+internal fun rememberMenuConfirmations(): MenuConfirmations =
+    rememberSaveable(saver = MenuConfirmations.Saver) { MenuConfirmations() }
 
 /** The top bar's overflow menu. [open] is hoisted so the menu key can toggle it. */
 @Composable
@@ -99,6 +130,7 @@ internal fun MainMenu(
     showWebGui: Boolean,
     runningAsService: Boolean,
     actions: MenuActions,
+    confirmations: MenuConfirmations,
     modifier: Modifier = Modifier,
 ) {
     MenuEntries(
@@ -106,6 +138,7 @@ internal fun MainMenu(
         showWebGui,
         runningAsService,
         actions,
+        confirmations,
         onChoose = { onOpenChange(false) },
     ) { entries ->
         Box(modifier = modifier) {

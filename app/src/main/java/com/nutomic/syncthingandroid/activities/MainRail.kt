@@ -49,6 +49,7 @@ internal fun RailMenu(
     showWebGui: Boolean,
     runningAsService: Boolean,
     actions: MenuActions,
+    confirmations: MenuConfirmations,
     type: NavigationSuiteType,
 ) {
     MenuEntries(
@@ -56,6 +57,7 @@ internal fun RailMenu(
         showWebGui = showWebGui,
         runningAsService = runningAsService,
         actions = actions,
+        confirmations = confirmations,
         onChoose = {},
     ) { entries ->
         Column(modifier = Modifier.testTag("railMenu").verticalScroll(rememberScrollState())) {

@@ -54,7 +54,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
 import androidx.core.os.bundleOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -129,16 +128,16 @@ private fun generateQrCode(deviceId: String): Bitmap {
     val white = 0x00000000
 
     val bitMatrix = MultiFormatWriter().encode(deviceId, BarcodeFormat.QR_CODE, qrSize, qrSize)
-    val bitMap = createBitmap(bitMatrix.width, bitMatrix.height, Bitmap.Config.ARGB_8888)
-
-    for (x in 0 until qrSize) {
-        for (y in 0 until qrSize) {
-            val pixel = if (bitMatrix[x, y]) black else white
-            bitMap[x, y] = pixel.toInt()
+    val width = bitMatrix.width
+    val height = bitMatrix.height
+    // One write for the whole picture: this runs in the frame that opens the dialog.
+    val pixels =
+        IntArray(width * height) { i ->
+            (if (bitMatrix[i % width, i / width]) black else white).toInt()
         }
+    return createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+        setPixels(pixels, 0, width, 0, 0, width, height)
     }
-
-    return bitMap
 }
 
 private fun copyDeviceId(context: Context, id: String) {

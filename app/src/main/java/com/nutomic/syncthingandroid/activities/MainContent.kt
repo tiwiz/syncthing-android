@@ -215,7 +215,7 @@ internal fun MainContent(
     // The expanded rail lists the menu's entries, so the menu cannot open there: a menu left open
     // (menu key, or a window grown while it was open) would hide nothing and swallow back.
     SideEffect(railExpanded, menuOpen) { if (railExpanded && menuOpen) onMenuOpenChange(false) }
-    val menu = MenuState(menuOpen, onMenuOpenChange, menuActions)
+    val menu = MenuState(menuOpen, onMenuOpenChange, menuActions, rememberMenuConfirmations())
     val panes = Panes(directive, besideList, detail, detailBackProgress)
     val running = state.serviceState == SyncthingService.State.ACTIVE
     if (spatial) {
@@ -229,6 +229,7 @@ internal fun MainContent(
                     showWebGui = state.showWebGui,
                     runningAsService = state.runningAsService,
                     menuActions = menuActions,
+                    confirmations = menu.confirmations,
                     actions = actions,
                 )
             },
@@ -269,6 +270,7 @@ internal fun MainContent(
                         showWebGui = state.showWebGui,
                         runningAsService = state.runningAsService,
                         actions = menu.actions,
+                        confirmations = menu.confirmations,
                         type = type,
                     )
                 }
@@ -321,6 +323,7 @@ internal class MenuState(
     val open: Boolean,
     val onOpenChange: (Boolean) -> Unit,
     val actions: MenuActions,
+    val confirmations: MenuConfirmations,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -364,6 +367,7 @@ private fun MainScaffold(
                             showWebGui = state.showWebGui,
                             runningAsService = state.runningAsService,
                             actions = menu.actions,
+                            confirmations = menu.confirmations,
                         )
                     }
                 },

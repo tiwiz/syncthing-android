@@ -13,7 +13,9 @@ import com.nutomic.syncthingandroid.activities.MainActivity
 import com.nutomic.syncthingandroid.service.Constants
 import com.nutomic.syncthingandroid.service.RunConditionMonitor
 import com.nutomic.syncthingandroid.util.ConfigXml
+import java.io.File
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assume.assumeTrue
@@ -85,18 +87,23 @@ class FullSpaceTest {
 
     /**
      * A config made by this device's Syncthing. Other instrumented tests leave a fake one behind,
-     * pointing at a mock server, so this class makes its own once.
+     * pointing at a mock server, so this class makes its own once. What was there, maybe a real
+     * setup with its folders and devices, is put aside and comes back in [restoreConfig].
      */
     private fun ensureOwnConfig() {
         if (configMade) return
-        listOf(
-                Constants.getConfigFile(context),
-                Constants.getHttpsCertFile(context),
-                Constants.getHttpsKeyFile(context),
-            )
-            .forEach { it.delete() }
-        ConfigXml(context).generateConfig()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        configFiles(context).forEach { file ->
+            val backup = backupOf(file)
+            // A backup still there is from a run that never got to restore it: that one is the
+            // setup to keep, and the file next to it is a test's.
+            if (backup.exists()) file.delete()
+            else if (file.exists()) check(file.renameTo(backup)) { "Cannot put $file aside" }
+        }
+        // Making a config also writes these two.
+        savedPrefs = configPrefs.associateWith { prefs.getString(it, null) }
         configMade = true
+        ConfigXml(context).generateConfig()
     }
 
     @Test
@@ -160,10 +167,47 @@ class FullSpaceTest {
         ui.waitGone(text(R.string.run_mode_stop))
     }
 
-    private companion object {
-        const val XR_SPATIAL_FEATURE = "android.software.xr.api.spatial"
+    companion object {
+        private const val XR_SPATIAL_FEATURE = "android.software.xr.api.spatial"
 
         /** The config is made once per run of this class. */
-        var configMade = false
+        private var configMade = false
+
+        private fun configFiles(context: Context): List<File> =
+            listOf(
+                Constants.getConfigFile(context),
+                Constants.getHttpsCertFile(context),
+                Constants.getHttpsKeyFile(context),
+            )
+
+        private fun backupOf(file: File) = File(file.parentFile, file.name + ".before-test")
+
+        private val configPrefs =
+            listOf(Constants.PREF_WEBUI_PASSWORD, Constants.PREF_LOCAL_DEVICE_ID)
+
+        private var savedPrefs: Map<String, String?> = emptyMap()
+
+        /**
+         * Puts back the config that was there before this class made its own. Syncthing is not
+         * stopped first: if a test left it running, it may still write its own config over the
+         * restored one.
+         */
+        @JvmStatic
+        @AfterClass
+        fun restoreConfig() {
+            if (!configMade) return
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            configFiles(context).forEach { file ->
+                file.delete()
+                val backup = backupOf(file)
+                if (backup.exists()) check(backup.renameTo(file)) { "Cannot restore $file" }
+            }
+            val editor = PreferenceManager.getDefaultSharedPreferences(context).edit()
+            savedPrefs.forEach { (key, value) ->
+                if (value == null) editor.remove(key) else editor.putString(key, value)
+            }
+            editor.commit()
+            configMade = false
+        }
     }
 }
