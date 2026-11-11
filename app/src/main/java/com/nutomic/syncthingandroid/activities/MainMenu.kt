@@ -35,9 +35,10 @@ import com.nutomic.syncthingandroid.ui.AppAlertDialog
  * What used to be in the navigation drawer, for the overflow menu or the expanded rail ([content]).
  * Recent changes, the web GUI and restart need Syncthing [running]; the web GUI is left out on TVs
  * ([showWebGui]). With the app [runningAsService], exit asks first. [onChoose] runs before an
- * entry's action, so a menu can close. The questions restart and exit ask are in [confirmations],
- * owned by the screen: the entries move between the top bar, the rail and a spatial panel as the
- * window changes, and an open question must not go with the one that showed it.
+ * entry's action, so a menu can close. Restart and exit only raise their question in
+ * [confirmations]; the screen owns and shows it ([MenuConfirmationDialog]): the entries move
+ * between the top bar, the rail and a spatial panel as the window changes, and an open question
+ * must not go with the one that showed it.
  */
 @Composable
 internal fun MenuEntries(
@@ -87,13 +88,20 @@ internal fun MenuEntries(
         )
     }
     content(entries)
+}
+
+/**
+ * The question [confirmations] is asking, if any. Shown by the screen with its other dialogs, so
+ * that only one is up at a time.
+ */
+@Composable
+internal fun MenuConfirmationDialog(confirmations: MenuConfirmations, actions: MenuActions) {
     if (confirmations.restart) {
         ConfirmRestartDialog(onDismiss = { confirmations.restart = false }) {
             confirmations.restart = false
             actions.onRestart()
         }
-    }
-    if (confirmations.exit) {
+    } else if (confirmations.exit) {
         ConfirmExitDialog(onDismiss = { confirmations.exit = false }) {
             confirmations.exit = false
             actions.onExit()
@@ -106,6 +114,9 @@ internal fun MenuEntries(
 internal class MenuConfirmations(restart: Boolean = false, exit: Boolean = false) {
     var restart by mutableStateOf(restart)
     var exit by mutableStateOf(exit)
+
+    val asking: Boolean
+        get() = restart || exit
 
     companion object {
         val Saver: Saver<MenuConfirmations, Any> =

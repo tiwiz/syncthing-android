@@ -204,6 +204,10 @@ internal class MainScreen(
         idle()
     }
 
+    /** Whether exit is asking for confirmation. */
+    fun exitAsked(): Boolean =
+        compose.onAllNodes(hasText("Confirm to quit app")).fetchSemanticsNodes().isNotEmpty()
+
     fun usageReportingAsked(): Boolean =
         compose
             .onAllNodes(hasText("Allow Anonymous Usage Reporting?"))

@@ -177,11 +177,13 @@ internal fun shortWindow(): Boolean =
 private fun MainDialogs(
     state: MainUiState,
     deviceIdDialog: DeviceIdDialogState?,
+    menu: MenuState,
     actions: MainActions,
 ) {
     when {
         state.usageReport != null -> UsageReportingDialog(state.usageReport, actions)
         state.suggestFileManager -> FileManagerDialog(actions)
+        menu.confirmations.asking -> MenuConfirmationDialog(menu.confirmations, menu.actions)
         else -> deviceIdDialog?.let { DeviceIdDialogHost(it) }
     }
 }
@@ -245,7 +247,7 @@ internal fun MainContent(
                     showRunMode = false,
                 )
                 // In a panel: Subspace hides the main window, and a dialog anchored to it with it.
-                MainDialogs(state, deviceIdDialog, actions)
+                MainDialogs(state, deviceIdDialog, menu, actions)
             },
             detail =
                 if (tab == MainTab.STATUS) {
@@ -287,7 +289,7 @@ internal fun MainContent(
                 titleInBar = rail && !shortWindow(),
             )
         }
-        MainDialogs(state, deviceIdDialog, actions)
+        MainDialogs(state, deviceIdDialog, menu, actions)
     }
 }
 

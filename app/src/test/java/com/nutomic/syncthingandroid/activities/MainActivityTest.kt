@@ -538,6 +538,21 @@ class MainActivityTest {
     }
 
     @Test
+    fun `the exit question waits for the usage question too`() {
+        prefs.edit().putBoolean(Constants.PREF_START_SERVICE_ON_BOOT, true).commit()
+        running(usageReport = true).use { screen ->
+            awaitMain { screen.usageReportingAsked() }
+            // In Full Space the rail is a panel of its own, in reach while the question is up.
+            screen.openMenu()
+            screen.choose(MainScreen.MenuItem.EXIT)
+            assertFalse(screen.exitAsked())
+
+            screen.answerUsageReporting(MainScreen.YES)
+            awaitMain { screen.exitAsked() }
+        }
+    }
+
+    @Test
     fun `the usage reporting website can be opened from the question`() {
         running(usageReport = true).use { screen ->
             awaitMain { screen.usageReportingAsked() }
