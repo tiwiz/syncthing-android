@@ -100,7 +100,6 @@ internal fun MenuEntries(
         }
     }
 }
-}
 
 /** Whether the menu is asking before a restart or an exit. */
 @Stable
