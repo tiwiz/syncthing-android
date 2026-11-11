@@ -112,10 +112,10 @@ object FileOpener {
             context.startActivity(intent)
             true
         } catch (e: ActivityNotFoundException) {
-            Log.e(TAG, "openFolder: No compatible file manager app found ($stage)", e)
+            Log.e(TAG, "No app to open this with ($stage)", e)
             false
         } catch (e: SecurityException) {
-            Log.e(TAG, "openFolder: File manager app has insufficient permissions ($stage)", e)
+            Log.e(TAG, "Not allowed to open this ($stage)", e)
             false
         }
 
@@ -130,23 +130,15 @@ object FileOpener {
 
     /** Shows the suggested file manager app in an app store, or else on the web. */
     fun openFileManagerInStore(context: Context) {
-        try {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, "market://details?id=$FILE_MANAGER_PACKAGE".toUri())
+        val store = Intent(Intent.ACTION_VIEW, "market://details?id=$FILE_MANAGER_PACKAGE".toUri())
+        val web =
+            Intent(
+                Intent.ACTION_VIEW,
+                "https://play.google.com/store/apps/details?id=$FILE_MANAGER_PACKAGE".toUri(),
             )
-        } catch (_: ActivityNotFoundException) {
-            val web =
-                Intent(
-                    Intent.ACTION_VIEW,
-                    "https://play.google.com/store/apps/details?id=$FILE_MANAGER_PACKAGE".toUri(),
-                )
-            try {
-                context.startActivity(web)
-            } catch (e: ActivityNotFoundException) {
-                // Neither a store nor a browser, as on some TV boxes and restricted profiles.
-                Log.w(TAG, "openFileManagerInStore: nothing opens a web link", e)
-                Toast.makeText(context, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
-            }
+        if (!tryStart(context, store, "app store") && !tryStart(context, web, "web")) {
+            // Neither a store nor a browser, as on some TV boxes and restricted profiles.
+            Toast.makeText(context, R.string.no_app_to_open_link, Toast.LENGTH_SHORT).show()
         }
     }
 }

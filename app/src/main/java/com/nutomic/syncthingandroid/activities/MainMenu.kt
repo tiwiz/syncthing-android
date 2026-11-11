@@ -94,8 +94,12 @@ internal fun MenuEntries(
         }
     }
     if (confirmations.exit) {
-        ConfirmExitDialog(onDismiss = { confirmations.exit = false }, onConfirm = actions::onExit)
+        ConfirmExitDialog(onDismiss = { confirmations.exit = false }) {
+            confirmations.exit = false
+            actions.onExit()
+        }
     }
+}
 }
 
 /** Whether the menu is asking before a restart or an exit. */

@@ -92,13 +92,18 @@ class FullSpaceTest {
      */
     private fun ensureOwnConfig() {
         if (configMade) return
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         configFiles(context).forEach { file ->
             val backup = backupOf(file)
-            backup.delete()
-            if (file.exists()) check(file.renameTo(backup)) { "Cannot put $file aside" }
+            // A backup still there is from a run that never got to restore it: that one is the
+            // setup to keep, and the file next to it is a test's.
+            if (backup.exists()) file.delete()
+            else if (file.exists()) check(file.renameTo(backup)) { "Cannot put $file aside" }
         }
-        ConfigXml(context).generateConfig()
+        // Making a config also writes these two.
+        savedPrefs = configPrefs.associateWith { prefs.getString(it, null) }
         configMade = true
+        ConfigXml(context).generateConfig()
     }
 
     @Test
@@ -177,7 +182,16 @@ class FullSpaceTest {
 
         private fun backupOf(file: File) = File(file.parentFile, file.name + ".before-test")
 
-        /** Puts back the config that was there before this class made its own. */
+        private val configPrefs =
+            listOf(Constants.PREF_WEBUI_PASSWORD, Constants.PREF_LOCAL_DEVICE_ID)
+
+        private var savedPrefs: Map<String, String?> = emptyMap()
+
+        /**
+         * Puts back the config that was there before this class made its own. Syncthing is not
+         * stopped first: if a test left it running, it may still write its own config over the
+         * restored one.
+         */
         @JvmStatic
         @AfterClass
         fun restoreConfig() {
@@ -188,6 +202,11 @@ class FullSpaceTest {
                 val backup = backupOf(file)
                 if (backup.exists()) check(backup.renameTo(file)) { "Cannot restore $file" }
             }
+            val editor = PreferenceManager.getDefaultSharedPreferences(context).edit()
+            savedPrefs.forEach { (key, value) ->
+                if (value == null) editor.remove(key) else editor.putString(key, value)
+            }
+            editor.commit()
             configMade = false
         }
     }
